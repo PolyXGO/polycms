@@ -163,10 +163,10 @@ type User {
     email_verified_at: DateTime
 
     "User roles."
-    roles: [String!]! @method(name: "getRoleNames")
+    roles: [String!]! @method(name: "getRoleNamesAttribute")
 
     "User permissions."
-    permissions: [String!]! @method(name: "getAllPermissions")
+    permissions: [String!]! @method(name: "getAllPermissionsAttribute")
 
     "When the account was created."
     created_at: DateTime!

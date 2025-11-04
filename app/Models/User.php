@@ -77,15 +77,15 @@ class User extends Authenticatable
     /**
      * Get role names for GraphQL
      */
-    public function getRoleNames(): array
+    public function getRoleNamesAttribute(): array
     {
-        return $this->getRoleNames()->toArray();
+        return $this->roles->pluck('name')->toArray();
     }
 
     /**
      * Get all permission names for GraphQL
      */
-    public function getAllPermissions(): array
+    public function getAllPermissionsAttribute(): array
     {
         return $this->getAllPermissions()->pluck('name')->toArray();
     }
