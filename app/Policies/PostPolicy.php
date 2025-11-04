@@ -29,7 +29,7 @@ class PostPolicy
         }
 
         // Draft/archived posts require permission
-        return $user->can('view post') || 
+        return $user->can('view post') ||
                $user->hasRole(['admin', 'editor']) ||
                ($user->hasRole('author') && $post->user_id === $user->id);
     }

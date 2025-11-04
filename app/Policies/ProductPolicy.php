@@ -29,7 +29,7 @@ class ProductPolicy
         }
 
         // Draft/archived products require permission
-        return $user->can('view product') || 
+        return $user->can('view product') ||
                $user->hasRole(['admin', 'editor']) ||
                ($user->hasRole('author') && $product->user_id === $user->id);
     }
