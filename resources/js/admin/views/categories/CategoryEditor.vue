@@ -138,7 +138,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
 
@@ -278,6 +278,20 @@ const saveCategory = async () => {
         loading.value = false;
     }
 };
+
+// Watch for type changes to reload parent categories
+watch(() => form.value.type, async () => {
+    if (form.value.type) {
+        await loadParentCategories();
+        // Reset parent_id when type changes
+        if (form.value.parent_id) {
+            const parentExists = parentCategories.value.find(c => c.id === form.value.parent_id);
+            if (!parentExists) {
+                form.value.parent_id = null;
+            }
+        }
+    }
+});
 
 onMounted(async () => {
     if (isEdit.value) {
