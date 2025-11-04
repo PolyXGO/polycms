@@ -1,49 +1,118 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V1;
 
-use App\Http\Controllers\Controller;
+use App\Http\Resources\Api\V1\TagResource;
+use App\Models\Tag;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class TagController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of tags
      */
-    public function index()
+    public function index(Request $request): JsonResponse
     {
-        //
+        $query = Tag::query();
+
+        // Type filter
+        if ($request->has('type')) {
+            $query->where('type', $request->type);
+        }
+
+        // Search
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        // Sort
+        $query->orderBy('name');
+
+        // Paginate if needed
+        if ($request->has('per_page')) {
+            $perPage = min($request->get('per_page', 15), 100);
+            $tags = $query->paginate($perPage);
+            $response = $this->successResponse(TagResource::collection($tags->items()));
+            $response->getData()->meta = [
+                'pagination' => [
+                    'total' => $tags->total(),
+                    'per_page' => $tags->perPage(),
+                    'current_page' => $tags->currentPage(),
+                    'last_page' => $tags->lastPage(),
+                ],
+            ];
+            return $response;
+        }
+
+        $tags = $query->get();
+
+        return $this->successResponse(TagResource::collection($tags));
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created tag
      */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
-        //
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'slug' => ['required', 'string', 'max:255', 'unique:tags,slug'],
+            'description' => ['nullable', 'string'],
+            'type' => ['required', 'string', 'max:50'],
+        ]);
+
+        $tag = Tag::create($validated);
+
+        return $this->successResponse(
+            new TagResource($tag),
+            'Tag created successfully',
+            201
+        );
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified tag
      */
-    public function show(string $id)
+    public function show(Tag $tag): JsonResponse
     {
-        //
+        return $this->successResponse(new TagResource($tag));
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified tag
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Tag $tag): JsonResponse
     {
-        //
+        $validated = $request->validate([
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'slug' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('tags', 'slug')->ignore($tag->id)],
+            'description' => ['nullable', 'string'],
+            'type' => ['sometimes', 'required', 'string', 'max:50'],
+        ]);
+
+        $tag->update($validated);
+
+        return $this->successResponse(
+            new TagResource($tag),
+            'Tag updated successfully'
+        );
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified tag
      */
-    public function destroy(string $id)
+    public function destroy(Tag $tag): JsonResponse
     {
-        //
+        $tag->delete();
+
+        return $this->successResponse(null, 'Tag deleted successfully', 204);
     }
 }
