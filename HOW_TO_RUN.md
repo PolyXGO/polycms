@@ -52,10 +52,12 @@ Vite sẽ chạy tại: http://localhost:5173
 ## 🔐 Bước 3: Truy cập Admin Panel
 
 1. Mở browser: http://localhost:8000/admin
-2. Đăng nhập với tài khoản đã seed:
+2. Đăng nhập với tài khoản đã seed (password mặc định: `password`):
    - **Admin:** admin@example.com / password
    - **Editor:** editor@example.com / password
    - **Author:** author@example.com / password
+
+   > **Lưu ý:** Sau khi chạy `php artisan migrate --seed`, các tài khoản này sẽ được tạo tự động với password: `password`
 
 ## ✅ Bước 4: Test các tính năng
 

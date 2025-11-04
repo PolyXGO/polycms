@@ -9,51 +9,51 @@
             </div>
 
             <nav>
-                <router-link 
-                    :to="{ name: 'admin.dashboard' }" 
+                <router-link
+                    :to="{ name: 'admin.dashboard' }"
                     class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-white"
                 >
                     Dashboard
                 </router-link>
-                <router-link 
-                    :to="{ name: 'admin.posts.index' }" 
+                <router-link
+                    :to="{ name: 'admin.posts.index' }"
                     class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-white"
                 >
                     Posts
                 </router-link>
-                <router-link 
-                    :to="{ name: 'admin.products.index' }" 
+                <router-link
+                    :to="{ name: 'admin.products.index' }"
                     class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-white"
                 >
                     Products
                 </router-link>
-                <router-link 
-                    :to="{ name: 'admin.categories.index' }" 
+                <router-link
+                    :to="{ name: 'admin.categories.index' }"
                     class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-white"
                 >
                     Categories
                 </router-link>
-                <router-link 
-                    :to="{ name: 'admin.tags.index' }" 
+                <router-link
+                    :to="{ name: 'admin.tags.index' }"
                     class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-white"
                 >
                     Tags
                 </router-link>
-                <router-link 
-                    :to="{ name: 'admin.media.index' }" 
+                <router-link
+                    :to="{ name: 'admin.media.index' }"
                     class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-white"
                 >
                     Media
                 </router-link>
-                <router-link 
-                    :to="{ name: 'admin.widgets.index' }" 
+                <router-link
+                    :to="{ name: 'admin.widgets.index' }"
                     class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-white"
                 >
                     Widgets
                 </router-link>
-                <a 
-                    href="#" 
-                    @click.prevent="authStore.logout()" 
+                <a
+                    href="#"
+                    @click.prevent="authStore.logout()"
                     class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-white"
                 >
                     Logout
