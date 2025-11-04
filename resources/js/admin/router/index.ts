@@ -90,8 +90,16 @@ const router = createRouter({
     routes,
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
     const authStore = useAuthStore();
+    
+    // Check if there's a token in localStorage but auth state hasn't been initialized
+    const token = localStorage.getItem('auth_token');
+    if (token && !authStore.isAuthenticated && !authStore.user) {
+        // Wait for auth check to complete
+        await authStore.checkAuth();
+    }
+    
     if (to.meta.requiresAuth && !authStore.isAuthenticated) {
         next({ name: 'admin.login' });
     } else if (to.meta.guestOnly && authStore.isAuthenticated) {
