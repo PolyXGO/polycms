@@ -116,7 +116,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
-import BlockEditor from '@/admin/blocks/BlockEditor.vue';
+import BlockEditor from '../../blocks/BlockEditor.vue';
 
 const router = useRouter();
 const route = useRoute();
