@@ -7,6 +7,7 @@ import PostEditor from '../views/posts/PostEditor.vue';
 import ProductList from '../views/products/ProductList.vue';
 import ProductEditor from '../views/products/ProductEditor.vue';
 import CategoryList from '../views/categories/CategoryList.vue';
+import CategoryEditor from '../views/categories/CategoryEditor.vue';
 import TagList from '../views/tags/TagList.vue';
 import MediaLibrary from '../views/media/MediaLibrary.vue';
 import WidgetManager from '../views/widgets/WidgetManager.vue';
@@ -67,6 +68,17 @@ const routes: Array<RouteRecordRaw> = [
                 component: CategoryList,
             },
             {
+                path: 'categories/create',
+                name: 'admin.categories.create',
+                component: CategoryEditor,
+            },
+            {
+                path: 'categories/:id/edit',
+                name: 'admin.categories.edit',
+                component: CategoryEditor,
+                props: true,
+            },
+            {
                 path: 'tags',
                 name: 'admin.tags.index',
                 component: TagList,
@@ -92,14 +104,14 @@ const router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
     const authStore = useAuthStore();
-    
+
     // Check if there's a token in localStorage but auth state hasn't been initialized
     const token = localStorage.getItem('auth_token');
     if (token && !authStore.isAuthenticated && !authStore.user) {
         // Wait for auth check to complete
         await authStore.checkAuth();
     }
-    
+
     if (to.meta.requiresAuth && !authStore.isAuthenticated) {
         next({ name: 'admin.login' });
     } else if (to.meta.guestOnly && authStore.isAuthenticated) {

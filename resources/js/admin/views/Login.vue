@@ -88,8 +88,8 @@ const authStore = useAuthStore();
 const loading = ref(false);
 const error = ref('');
 const form = ref({
-    email: '',
-    password: '',
+    email: 'admin@example.com', // Pre-filled for testing
+    password: 'password', // Pre-filled for testing
     remember: false,
 });
 

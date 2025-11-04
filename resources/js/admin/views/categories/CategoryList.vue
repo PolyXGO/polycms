@@ -1,14 +1,14 @@
 <template>
     <div>
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold text-gray-900">Categories</h1>
-            <button
-                @click="createCategory"
-                class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-            >
-                + New Category
-            </button>
-        </div>
+                        <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-2xl font-bold text-gray-900">Categories</h1>
+                    <router-link
+                        :to="{ name: 'admin.categories.create' }"
+                        class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                    >
+                        + New Category
+                    </router-link>
+                </div>
 
         <!-- Filters -->
         <div class="bg-white rounded-lg shadow p-4 mb-6">
@@ -65,20 +65,20 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {{ category.usage_count || 0 }}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button
-                                @click="editCategory(category.id)"
-                                class="text-indigo-600 hover:text-indigo-900 mr-4"
-                            >
-                                Edit
-                            </button>
-                            <button
-                                @click="deleteCategory(category.id)"
-                                class="text-red-600 hover:text-red-900"
-                            >
-                                Delete
-                            </button>
-                        </td>
+                                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <router-link
+                                        :to="{ name: 'admin.categories.edit', params: { id: category.id } }"
+                                        class="text-indigo-600 hover:text-indigo-900 mr-4"
+                                    >
+                                        Edit
+                                    </router-link>
+                                    <button
+                                        @click="deleteCategory(category.id)"
+                                        class="text-red-600 hover:text-red-900"
+                                    >
+                                        Delete
+                                    </button>
+                                </td>
                     </tr>
                     <tr v-if="categories.length === 0">
                         <td colspan="6" class="px-6 py-4 text-center text-gray-500">
@@ -167,56 +167,7 @@ const changePage = (page: number) => {
     loadCategories();
 };
 
-const createCategory = () => {
-    const name = prompt('Enter category name:');
-    if (!name) return;
 
-    const type = prompt('Enter category type (post/product):', 'post');
-    if (!type) return;
-
-    const parentId = prompt('Enter parent category ID (or leave empty for root):', '');
-    
-    const category: any = {
-        name,
-        type,
-        slug: name.toLowerCase().replace(/\s+/g, '-'),
-    };
-    
-    if (parentId) {
-        category.parent_id = parseInt(parentId);
-    }
-    
-    saveCategory(category);
-};
-
-const editCategory = (id: number) => {
-    const category = categories.value.find(c => c.id === id);
-    if (!category) return;
-
-    const name = prompt('Enter category name:', category.name);
-    if (!name) return;
-
-    const updatedCategory = {
-        ...category,
-        name,
-        slug: name.toLowerCase().replace(/\s+/g, '-'),
-    };
-    saveCategory(updatedCategory, id);
-};
-
-const saveCategory = async (category: any, id?: number) => {
-    try {
-        if (id) {
-            await axios.put(`/api/v1/categories/${id}`, category);
-        } else {
-            await axios.post('/api/v1/categories', category);
-        }
-        loadCategories();
-    } catch (error) {
-        console.error('Error saving category:', error);
-        alert('Failed to save category');
-    }
-};
 
 const deleteCategory = async (id: number) => {
     if (!confirm('Are you sure you want to delete this category?')) return;
