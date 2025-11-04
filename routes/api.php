@@ -6,6 +6,9 @@ use App\Http\Controllers\Api\V1\MediaController;
 use App\Http\Controllers\Api\V1\PostController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\TagController;
+use App\Http\Controllers\Api\V1\WidgetAreaController;
+use App\Http\Controllers\Api\V1\WidgetController;
+use App\Http\Controllers\Api\V1\WidgetInstanceController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -58,7 +61,13 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('tags', TagController::class)->except(['index', 'show']);
 
         // Media management
-        Route::apiResource('media', MediaController::class);
-        Route::post('/media/upload', [MediaController::class, 'upload'])->name('api.v1.media.upload');
-    });
+                    Route::apiResource('media', MediaController::class);
+            Route::post('/media/upload', [MediaController::class, 'upload'])->name('api.v1.media.upload');
+
+            // Widget routes
+            Route::get('/widgets/types', [WidgetController::class, 'types'])->name('api.v1.widgets.types');
+            Route::get('/widgets/types/{type}', [WidgetController::class, 'show'])->name('api.v1.widgets.type');
+            Route::apiResource('widget-areas', WidgetAreaController::class);
+            Route::apiResource('widget-instances', WidgetInstanceController::class);
+        });
 });
