@@ -73,4 +73,20 @@ class User extends Authenticatable
     {
         return $this->hasMany(Media::class);
     }
+
+    /**
+     * Get role names for GraphQL
+     */
+    public function getRoleNames(): array
+    {
+        return $this->getRoleNames()->toArray();
+    }
+
+    /**
+     * Get all permission names for GraphQL
+     */
+    public function getAllPermissions(): array
+    {
+        return $this->getAllPermissions()->pluck('name')->toArray();
+    }
 }

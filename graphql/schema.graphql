@@ -1,7 +1,6 @@
 "A datetime string with format `Y-m-d H:i:s`, e.g. `2018-05-23 13:43:32`."
 scalar DateTime @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\DateTime")
 
-"Indicates what fields are available at the top level of a query operation."
 type Query {
     "Find a single user by an identifying attribute."
     user(
@@ -10,13 +9,143 @@ type Query {
 
       "Search by email address."
       email: String @eq @rules(apply: ["prohibits:id", "required_without:id", "email"])
-    ): User @find
+    ): User @find @can(ability: "view", find: "id")
 
     "List multiple users."
     users(
       "Filters by name. Accepts SQL LIKE wildcards `%` and `_`."
       name: String @where(operator: "like")
-    ): [User!]! @paginate(defaultCount: 10)
+    ): [User!]! @paginate(defaultCount: 10) @can(ability: "viewAny", model: "App\\Models\\User")
+
+    "Get authenticated user."
+    me: User @auth
+
+    "Find a single post."
+    post(id: ID! @eq, slug: String @eq): Post @find
+
+    "List multiple posts."
+    posts(
+      status: String @where(operator: "=")
+      type: String @where(operator: "=")
+      category_id: ID @whereHas(relation: "categories", column: "id")
+      search: String @builder(method: "App\\GraphQL\\Queries\\PostQuery@search")
+    ): [Post!]! @paginate(defaultCount: 15) @orderBy(columns: ["created_at", "published_at", "title"])
+
+    "Find a single product."
+    product(id: ID! @eq, slug: String @eq): Product @find
+
+    "List multiple products."
+    products(
+      status: String @where(operator: "=")
+      featured: Boolean @where
+      stock_status: String @where(operator: "=")
+      category_id: ID @whereHas(relation: "categories", column: "id")
+      min_price: Float @where(operator: ">=", column: "price")
+      max_price: Float @where(operator: "<=", column: "price")
+      search: String @builder(method: "App\\GraphQL\\Queries\\ProductQuery@search")
+    ): [Product!]! @paginate(defaultCount: 15) @orderBy(columns: ["created_at", "price", "name"])
+
+    "Find a single category."
+    category(id: ID! @eq, slug: String @eq): Category @find
+
+    "List multiple categories."
+    categories(
+      type: String @where(operator: "=")
+      parent_id: ID @where
+      root_only: Boolean @builder(method: "App\\GraphQL\\Queries\\CategoryQuery@rootOnly")
+    ): [Category!]! @all @orderBy(columns: ["order", "name"])
+
+    "Find a single tag."
+    tag(id: ID! @eq, slug: String @eq): Tag @find
+
+    "List multiple tags."
+    tags(
+      type: String @where(operator: "=")
+      search: String @where(operator: "like", key: "name")
+    ): [Tag!]! @all @orderBy(column: "name")
+
+    "Find a single media."
+    media(id: ID! @eq): Media @find @can(ability: "view", find: "id")
+
+    "List multiple media."
+    mediaList(
+      type: String @where(operator: "=")
+      search: String @where(operator: "like", key: "name")
+    ): [Media!]! @paginate(defaultCount: 15) @can(ability: "viewAny", model: "App\\Models\\Media") @orderBy(columns: ["created_at", "name"])
+}
+
+type Mutation {
+    "Create a new post."
+    createPost(input: CreatePostInput! @spread): Post!
+        @field(resolver: "App\\GraphQL\\Mutations\\CreatePostMutation")
+        @can(ability: "create", model: "App\\Models\\Post")
+        @guard
+
+    "Update an existing post."
+    updatePost(id: ID!, input: UpdatePostInput! @spread): Post!
+        @field(resolver: "App\\GraphQL\\Mutations\\UpdatePostMutation")
+        @can(ability: "update", find: "id")
+        @guard
+
+    "Delete a post."
+    deletePost(id: ID!): Post!
+        @delete
+        @can(ability: "delete", find: "id")
+        @guard
+
+    "Create a new product."
+    createProduct(input: CreateProductInput! @spread): Product!
+        @create
+        @can(ability: "create", model: "App\\Models\\Product")
+        @guard
+
+    "Update an existing product."
+    updateProduct(id: ID!, input: UpdateProductInput! @spread): Product!
+        @update
+        @can(ability: "update", find: "id")
+        @guard
+
+    "Delete a product."
+    deleteProduct(id: ID!): Product!
+        @delete
+        @can(ability: "delete", find: "id")
+        @guard
+
+    "Create a new category."
+    createCategory(input: CreateCategoryInput! @spread): Category!
+        @create
+        @can(ability: "create", model: "App\\Models\\Category")
+        @guard
+
+    "Update an existing category."
+    updateCategory(id: ID!, input: UpdateCategoryInput! @spread): Category!
+        @update
+        @can(ability: "update", find: "id")
+        @guard
+
+    "Delete a category."
+    deleteCategory(id: ID!): Category!
+        @delete
+        @can(ability: "delete", find: "id")
+        @guard
+
+    "Create a new tag."
+    createTag(input: CreateTagInput! @spread): Tag!
+        @create
+        @can(ability: "create", model: "App\\Models\\Tag")
+        @guard
+
+    "Update an existing tag."
+    updateTag(id: ID!, input: UpdateTagInput! @spread): Tag!
+        @update
+        @can(ability: "update", find: "id")
+        @guard
+
+    "Delete a tag."
+    deleteTag(id: ID!): Tag!
+        @delete
+        @can(ability: "delete", find: "id")
+        @guard
 }
 
 "Account of a person who uses this application."
@@ -33,9 +162,296 @@ type User {
     "When the email was verified."
     email_verified_at: DateTime
 
+    "User roles."
+    roles: [String!]! @method(name: "getRoleNames")
+
+    "User permissions."
+    permissions: [String!]! @method(name: "getAllPermissions")
+
     "When the account was created."
     created_at: DateTime!
 
     "When the account was last updated."
     updated_at: DateTime!
+
+    "Posts created by this user."
+    posts: [Post!]! @hasMany
+}
+
+"Post type for blog posts, pages, and news."
+type Post {
+    id: ID!
+    title: String!
+    slug: String!
+    type: String!
+    status: String!
+    excerpt: String
+    content_raw: JSON
+    content_html: String
+    published_at: DateTime
+    scheduled_at: DateTime
+    meta_title: String
+    meta_description: String
+    meta_keywords: String
+    og_image: String
+    featured_image: String
+    views: Int!
+    order: Int!
+    created_at: DateTime!
+    updated_at: DateTime!
+
+    "Author of the post."
+    user: User! @belongsTo
+
+    "Categories assigned to this post."
+    categories: [Category!]! @belongsToMany
+
+    "Tags assigned to this post."
+    tags: [Tag!]! @belongsToMany
+}
+
+"Product type for e-commerce catalog."
+type Product {
+    id: ID!
+    name: String!
+    slug: String!
+    sku: String
+    short_description: String
+    description_blocks: JSON
+    description_html: String
+    price: Float!
+    sale_price: Float
+    cost_price: Float
+    stock_status: String!
+    stock_quantity: Int!
+    manage_stock: Boolean!
+    stock_low_threshold: Int!
+    status: String!
+    featured: Boolean!
+    order: Int!
+    meta_title: String
+    meta_description: String
+    meta_keywords: String
+    weight: Float
+    length: Float
+    width: Float
+    height: Float
+    views: Int!
+    created_at: DateTime!
+    updated_at: DateTime!
+
+    "Author of the product."
+    user: User! @belongsTo
+
+    "Categories assigned to this product."
+    categories: [Category!]! @belongsToMany
+
+    "Tags assigned to this product."
+    tags: [Tag!]! @belongsToMany
+
+    "Media/images for this product."
+    media: [Media!]! @belongsToMany
+}
+
+"Category type for taxonomy."
+type Category {
+    id: ID!
+    name: String!
+    slug: String!
+    description: String
+    type: String!
+    parent_id: ID
+    order: Int!
+    image: String
+    created_at: DateTime!
+    updated_at: DateTime!
+
+    "Parent category."
+    parent: Category @belongsTo
+
+    "Child categories."
+    children: [Category!]! @hasMany
+}
+
+"Tag type for taxonomy."
+type Tag {
+    id: ID!
+    name: String!
+    slug: String!
+    description: String
+    type: String!
+    created_at: DateTime!
+    updated_at: DateTime!
+}
+
+"Media type for media library."
+type Media {
+    id: ID!
+    name: String!
+    file_name: String!
+    mime_type: String!
+    disk: String!
+    path: String!
+    url: String! @method(name: "getUrlAttribute")
+    size: Int!
+    type: String!
+    alt_text: String
+    caption: String
+    description: String
+    metadata: JSON
+    width: Int
+    height: Int
+    created_at: DateTime!
+    updated_at: DateTime!
+
+    "User who uploaded this media."
+    user: User @belongsTo
+}
+
+# Input Types for Mutations
+
+input CreatePostInput {
+    title: String! @rules(apply: ["required", "string", "max:255"])
+    slug: String! @rules(apply: ["required", "string", "max:255", "unique:posts,slug"])
+    type: String! @rules(apply: ["required", "in:post,page,news"])
+    status: String! @rules(apply: ["required", "in:draft,published,archived"])
+    excerpt: String @rules(apply: ["nullable", "string", "max:1000"])
+    content_raw: JSON
+    published_at: DateTime
+    scheduled_at: DateTime
+    meta_title: String @rules(apply: ["nullable", "string", "max:255"])
+    meta_description: String @rules(apply: ["nullable", "string", "max:500"])
+    meta_keywords: String @rules(apply: ["nullable", "string", "max:255"])
+    og_image: String
+    featured_image: String
+    categories: SyncCategoriesInput
+    tags: SyncTagsInput
+    order: Int
+}
+
+input UpdatePostInput {
+    title: String @rules(apply: ["sometimes", "required", "string", "max:255"])
+    slug: String @rules(apply: ["sometimes", "required", "string", "max:255"])
+    type: String @rules(apply: ["sometimes", "required", "in:post,page,news"])
+    status: String @rules(apply: ["sometimes", "required", "in:draft,published,archived"])
+    excerpt: String @rules(apply: ["nullable", "string", "max:1000"])
+    content_raw: JSON
+    published_at: DateTime
+    scheduled_at: DateTime
+    meta_title: String @rules(apply: ["nullable", "string", "max:255"])
+    meta_description: String @rules(apply: ["nullable", "string", "max:500"])
+    meta_keywords: String @rules(apply: ["nullable", "string", "max:255"])
+    og_image: String
+    featured_image: String
+    categories: SyncCategoriesInput
+    tags: SyncTagsInput
+    order: Int
+}
+
+input CreateProductInput {
+    name: String! @rules(apply: ["required", "string", "max:255"])
+    slug: String! @rules(apply: ["required", "string", "max:255", "unique:products,slug"])
+    sku: String @rules(apply: ["nullable", "string", "max:255", "unique:products,sku"])
+    short_description: String @rules(apply: ["nullable", "string", "max:1000"])
+    description_blocks: JSON
+    price: Float! @rules(apply: ["required", "numeric", "min:0"])
+    sale_price: Float @rules(apply: ["nullable", "numeric", "min:0"])
+    cost_price: Float @rules(apply: ["nullable", "numeric", "min:0"])
+    stock_status: String! @rules(apply: ["required", "in:in_stock,out_of_stock,on_backorder"])
+    stock_quantity: Int @rules(apply: ["nullable", "integer", "min:0"])
+    manage_stock: Boolean
+    stock_low_threshold: Int
+    status: String! @rules(apply: ["required", "in:draft,published,archived"])
+    featured: Boolean
+    meta_title: String @rules(apply: ["nullable", "string", "max:255"])
+    meta_description: String @rules(apply: ["nullable", "string", "max:500"])
+    meta_keywords: String @rules(apply: ["nullable", "string", "max:255"])
+    weight: Float
+    length: Float
+    width: Float
+    height: Float
+    categories: SyncCategoriesInput
+    tags: SyncTagsInput
+    media: SyncMediaInput
+    order: Int
+}
+
+input UpdateProductInput {
+    name: String @rules(apply: ["sometimes", "required", "string", "max:255"])
+    slug: String @rules(apply: ["sometimes", "required", "string", "max:255"])
+    sku: String @rules(apply: ["nullable", "string", "max:255"])
+    short_description: String @rules(apply: ["nullable", "string", "max:1000"])
+    description_blocks: JSON
+    price: Float @rules(apply: ["sometimes", "required", "numeric", "min:0"])
+    sale_price: Float @rules(apply: ["nullable", "numeric", "min:0"])
+    cost_price: Float @rules(apply: ["nullable", "numeric", "min:0"])
+    stock_status: String @rules(apply: ["sometimes", "required", "in:in_stock,out_of_stock,on_backorder"])
+    stock_quantity: Int @rules(apply: ["nullable", "integer", "min:0"])
+    manage_stock: Boolean
+    stock_low_threshold: Int
+    status: String @rules(apply: ["sometimes", "required", "in:draft,published,archived"])
+    featured: Boolean
+    meta_title: String @rules(apply: ["nullable", "string", "max:255"])
+    meta_description: String @rules(apply: ["nullable", "string", "max:500"])
+    meta_keywords: String @rules(apply: ["nullable", "string", "max:255"])
+    weight: Float
+    length: Float
+    width: Float
+    height: Float
+    categories: SyncCategoriesInput
+    tags: SyncTagsInput
+    media: SyncMediaInput
+    order: Int
+}
+
+input CreateCategoryInput {
+    name: String! @rules(apply: ["required", "string", "max:255"])
+    slug: String! @rules(apply: ["required", "string", "max:255", "unique:categories,slug"])
+    description: String
+    type: String! @rules(apply: ["required", "string", "max:50"])
+    parent_id: ID @rules(apply: ["nullable", "exists:categories,id"])
+    image: String
+    order: Int
+}
+
+input UpdateCategoryInput {
+    name: String @rules(apply: ["sometimes", "required", "string", "max:255"])
+    slug: String @rules(apply: ["sometimes", "required", "string", "max:255"])
+    description: String
+    type: String @rules(apply: ["sometimes", "required", "string", "max:50"])
+    parent_id: ID @rules(apply: ["nullable", "exists:categories,id"])
+    image: String
+    order: Int
+}
+
+input CreateTagInput {
+    name: String! @rules(apply: ["required", "string", "max:255"])
+    slug: String! @rules(apply: ["required", "string", "max:255", "unique:tags,slug"])
+    description: String
+    type: String! @rules(apply: ["required", "string", "max:50"])
+}
+
+input UpdateTagInput {
+    name: String @rules(apply: ["sometimes", "required", "string", "max:255"])
+    slug: String @rules(apply: ["sometimes", "required", "string", "max:255"])
+    description: String
+    type: String @rules(apply: ["sometimes", "required", "string", "max:50"])
+}
+
+input SyncCategoriesInput {
+    sync: [ID!]
+    connect: [ID!]
+    disconnect: [ID!]
+}
+
+input SyncTagsInput {
+    sync: [ID!]
+    connect: [ID!]
+    disconnect: [ID!]
+}
+
+input SyncMediaInput {
+    sync: [ID!]
+    connect: [ID!]
+    disconnect: [ID!]
 }
