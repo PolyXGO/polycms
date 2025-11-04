@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Services\HookManager;
 use App\Services\ModuleManager;
+use App\Services\WidgetManager;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -26,6 +27,14 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(ModuleManager::class, function ($app) {
             return new ModuleManager();
         });
+
+        // Register Widget Manager as singleton
+        $this->app->singleton('widget', function ($app) {
+            return new WidgetManager();
+        });
+
+        // Register alias for Widget facade
+        $this->app->alias('widget', WidgetManager::class);
     }
 
     /**
@@ -41,5 +50,47 @@ class AppServiceProvider extends ServiceProvider
 
         // Then register module service providers
         $moduleManager->registerModules();
+
+        // Register core widgets
+        $this->registerCoreWidgets();
+    }
+
+    /**
+     * Register core widget types
+     */
+    protected function registerCoreWidgets(): void
+    {
+        $widgetManager = app('widget');
+
+        // Recent Posts Widget
+        $widgetManager->register('recent_posts', \App\Widgets\RecentPostsWidget::class, [
+            'label' => 'Recent Posts',
+            'description' => 'Display a list of recent posts',
+            'category' => 'content',
+            'config_schema' => [
+                'limit' => [
+                    'type' => 'number',
+                    'label' => 'Number of posts',
+                    'default' => 5,
+                    'min' => 1,
+                    'max' => 20,
+                ],
+            ],
+        ]);
+
+        // HTML Block Widget
+        $widgetManager->register('html_block', \App\Widgets\HtmlBlockWidget::class, [
+            'label' => 'HTML Block',
+            'description' => 'Add custom HTML content',
+            'category' => 'content',
+            'config_schema' => [
+                'content' => [
+                    'type' => 'textarea',
+                    'label' => 'HTML Content',
+                    'default' => '',
+                    'rows' => 10,
+                ],
+            ],
+        ]);
     }
 }
