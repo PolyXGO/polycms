@@ -23,21 +23,24 @@ class DatabaseSeeder extends Seeder
         // Create admin user
         $admin = User::factory()->create([
             'name' => 'Admin User',
-            'email' => 'admin@polycms.test',
+            'email' => 'admin@example.com',
+            'password' => bcrypt('password'),
         ]);
         $admin->assignRole('admin');
 
         // Create editor user
         $editor = User::factory()->create([
             'name' => 'Editor User',
-            'email' => 'editor@polycms.test',
+            'email' => 'editor@example.com',
+            'password' => bcrypt('password'),
         ]);
         $editor->assignRole('editor');
 
         // Create author user
         $author = User::factory()->create([
             'name' => 'Author User',
-            'email' => 'author@polycms.test',
+            'email' => 'author@example.com',
+            'password' => bcrypt('password'),
         ]);
         $author->assignRole('author');
     }
