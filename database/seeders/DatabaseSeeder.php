@@ -15,11 +15,30 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        // Seed roles and permissions first
+        $this->call([
+            RolesAndPermissionsSeeder::class,
         ]);
+
+        // Create admin user
+        $admin = User::factory()->create([
+            'name' => 'Admin User',
+            'email' => 'admin@polycms.test',
+        ]);
+        $admin->assignRole('admin');
+
+        // Create editor user
+        $editor = User::factory()->create([
+            'name' => 'Editor User',
+            'email' => 'editor@polycms.test',
+        ]);
+        $editor->assignRole('editor');
+
+        // Create author user
+        $author = User::factory()->create([
+            'name' => 'Author User',
+            'email' => 'author@polycms.test',
+        ]);
+        $author->assignRole('author');
     }
 }
