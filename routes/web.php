@@ -26,8 +26,9 @@ Route::middleware('auth')->group(function () {
 
 require __DIR__.'/auth.php';
 
+// Admin SPA routes - Vue Router handles all routing
 Route::middleware(['web', 'auth'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/', function () {
+    Route::get('/{any?}', function () {
         return view('admin.app');
-    })->name('dashboard');
+    })->where('any', '.*')->name('dashboard');
 });
