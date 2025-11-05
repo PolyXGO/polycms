@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\V1\WidgetAreaController;
 use App\Http\Controllers\Api\V1\WidgetController;
 use App\Http\Controllers\Api\V1\WidgetInstanceController;
 use App\Http\Controllers\Api\V1\SettingsController;
+use App\Http\Controllers\Api\V1\ThemeController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -101,5 +102,13 @@ Route::prefix('v1')->group(function () {
             Route::put('/settings', [SettingsController::class, 'update'])->name('api.v1.settings.update');
             Route::put('/settings/group/{group}', [SettingsController::class, 'update'])->name('api.v1.settings.update.group');
             Route::post('/settings/initialize', [SettingsController::class, 'initialize'])->name('api.v1.settings.initialize');
+
+            // Theme routes
+            Route::get('/themes', [ThemeController::class, 'index'])->name('api.v1.themes.index');
+            Route::get('/themes/{slug}', [ThemeController::class, 'show'])->name('api.v1.themes.show');
+            Route::post('/themes/sync', [ThemeController::class, 'sync'])->name('api.v1.themes.sync');
+            Route::post('/themes/upload', [ThemeController::class, 'upload'])->name('api.v1.themes.upload');
+            Route::post('/themes/{slug}/activate', [ThemeController::class, 'activate'])->name('api.v1.themes.activate');
+            Route::delete('/themes/{slug}', [ThemeController::class, 'destroy'])->name('api.v1.themes.destroy');
         });
 });

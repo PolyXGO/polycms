@@ -1,0 +1,92 @@
+<?php
+
+namespace App\Providers;
+
+use App\Services\ThemeManager;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\ServiceProvider;
+
+class ThemeServiceProvider extends ServiceProvider
+{
+    /**
+     * Register services.
+     */
+    public function register(): void
+    {
+        // Register Theme Manager as singleton
+        $this->app->singleton(ThemeManager::class, function ($app) {
+            return new ThemeManager();
+        });
+    }
+
+    /**
+     * Bootstrap services.
+     */
+    public function boot(): void
+    {
+        $themeManager = app(ThemeManager::class);
+
+        // Register view paths for active theme
+        $this->registerThemeViews($themeManager);
+
+        // Register theme asset helper
+        $this->registerThemeAssets($themeManager);
+    }
+
+    /**
+     * Register theme view paths
+     */
+    protected function registerThemeViews(ThemeManager $themeManager): void
+    {
+        try {
+            // Check if themes table exists (might not exist during initial setup)
+            if (!\Illuminate\Support\Facades\Schema::hasTable('themes')) {
+                return;
+            }
+
+            // Get view paths for frontend theme
+            $viewPaths = $themeManager->getViewPaths('frontend');
+
+            // Register view namespace for theme
+            // Views can be accessed as 'theme::view-name' or just 'view-name' (Laravel will check theme first)
+            if (!empty($viewPaths)) {
+                // Add theme views as additional paths (Laravel will check them in order)
+                View::getFinder()->prependLocation($viewPaths[0]);
+
+                // Also register as namespace for explicit theme view access
+                View::addNamespace('theme', $viewPaths);
+            }
+
+            // Trigger hook for theme activation
+            $activeTheme = $themeManager->getActiveTheme('frontend');
+            if ($activeTheme) {
+                \App\Facades\Hook::doAction('theme.activated', $activeTheme);
+            }
+        } catch (\Exception $e) {
+            // Silently fail if themes table doesn't exist yet
+            // This can happen during initial setup or migrations
+        }
+    }
+
+    /**
+     * Register theme asset helper
+     */
+    protected function registerThemeAssets(ThemeManager $themeManager): void
+    {
+        // Make theme asset helper available globally
+        if (!function_exists('theme_asset')) {
+            /**
+             * Get the URL to a theme asset
+             *
+             * @param string $path
+             * @param string $type
+             * @return string
+             */
+            function theme_asset(string $path, string $type = 'frontend'): string
+            {
+                $themeManager = app(ThemeManager::class);
+                return $themeManager->assetUrl($path, $type);
+            }
+        }
+    }
+}

@@ -43,6 +43,11 @@ class AppServiceProvider extends ServiceProvider
 
         // Register Core Menu Service
         $this->app->singleton(\App\Services\CoreMenuService::class);
+
+        // Register Theme Manager as singleton
+        $this->app->singleton(\App\Services\ThemeManager::class, function ($app) {
+            return new \App\Services\ThemeManager();
+        });
     }
 
     /**

@@ -18,6 +18,7 @@ import WidgetManager from '../views/widgets/WidgetManager.vue';
 import ModuleList from '../views/modules/ModuleList.vue';
 import SampleModuleSettings from '../views/modules/SampleModuleSettings.vue';
 import Settings from '../views/settings/Settings.vue';
+import ThemeList from '../views/themes/ThemeList.vue';
 import { useAuthStore } from '../stores/auth';
 
 const routes: Array<RouteRecordRaw> = [
@@ -146,6 +147,11 @@ const routes: Array<RouteRecordRaw> = [
                 path: 'options-general',
                 name: 'admin.options-general',
                 component: Settings,
+            },
+            {
+                path: 'themes',
+                name: 'admin.themes.index',
+                component: ThemeList,
             },
         ],
     },
