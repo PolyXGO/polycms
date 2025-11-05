@@ -51,6 +51,12 @@
                 >
                     Widgets
                 </router-link>
+                <router-link
+                    :to="{ name: 'admin.modules.index' }"
+                    class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-white"
+                >
+                    Modules
+                </router-link>
                 <a
                     href="#"
                     @click.prevent="authStore.logout()"

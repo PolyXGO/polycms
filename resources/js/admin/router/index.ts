@@ -11,6 +11,7 @@ import CategoryEditor from '../views/categories/CategoryEditor.vue';
 import TagList from '../views/tags/TagList.vue';
 import MediaLibrary from '../views/media/MediaLibrary.vue';
 import WidgetManager from '../views/widgets/WidgetManager.vue';
+import ModuleList from '../views/modules/ModuleList.vue';
 import { useAuthStore } from '../stores/auth';
 
 const routes: Array<RouteRecordRaw> = [
@@ -92,6 +93,11 @@ const routes: Array<RouteRecordRaw> = [
                 path: 'widgets',
                 name: 'admin.widgets.index',
                 component: WidgetManager,
+            },
+            {
+                path: 'modules',
+                name: 'admin.modules.index',
+                component: ModuleList,
             },
         ],
     },
