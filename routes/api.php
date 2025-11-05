@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\ModuleController;
 use App\Http\Controllers\Api\V1\WidgetAreaController;
 use App\Http\Controllers\Api\V1\WidgetController;
 use App\Http\Controllers\Api\V1\WidgetInstanceController;
+use App\Http\Controllers\Api\V1\SettingsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -92,5 +93,13 @@ Route::prefix('v1')->group(function () {
 
             // Admin menu routes
             Route::get('/admin/menu', [AdminMenuController::class, 'index'])->name('api.v1.admin.menu.index');
+
+            // Settings routes
+            Route::get('/settings', [SettingsController::class, 'index'])->name('api.v1.settings.index');
+            Route::get('/settings/group/{group}', [SettingsController::class, 'getGroup'])->name('api.v1.settings.group');
+            Route::get('/settings/{key}', [SettingsController::class, 'show'])->name('api.v1.settings.show');
+            Route::put('/settings', [SettingsController::class, 'update'])->name('api.v1.settings.update');
+            Route::put('/settings/group/{group}', [SettingsController::class, 'update'])->name('api.v1.settings.update.group');
+            Route::post('/settings/initialize', [SettingsController::class, 'initialize'])->name('api.v1.settings.initialize');
         });
 });

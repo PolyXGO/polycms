@@ -17,6 +17,7 @@ import MediaLibrary from '../views/media/MediaLibrary.vue';
 import WidgetManager from '../views/widgets/WidgetManager.vue';
 import ModuleList from '../views/modules/ModuleList.vue';
 import SampleModuleSettings from '../views/modules/SampleModuleSettings.vue';
+import Settings from '../views/settings/Settings.vue';
 import { useAuthStore } from '../stores/auth';
 
 const routes: Array<RouteRecordRaw> = [
@@ -140,6 +141,11 @@ const routes: Array<RouteRecordRaw> = [
                 path: 'sample-module/settings',
                 name: 'admin.sample-module.settings',
                 component: SampleModuleSettings,
+            },
+            {
+                path: 'options-general',
+                name: 'admin.options-general',
+                component: Settings,
             },
         ],
     },

@@ -1,0 +1,110 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers\Api\V1;
+
+use App\Http\Controllers\Controller;
+use App\Services\SettingsService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class SettingsController extends Controller
+{
+    public function __construct(
+        protected SettingsService $settingsService
+    ) {}
+
+    /**
+     * Get all settings grouped by group
+     */
+    public function index(): JsonResponse
+    {
+        $settings = $this->settingsService->getAllSettings();
+
+        return response()->json([
+            'success' => true,
+            'data' => $settings,
+        ]);
+    }
+
+    /**
+     * Get settings by group
+     */
+    public function getGroup(string $group): JsonResponse
+    {
+        $settings = $this->settingsService->getGroupSettings($group);
+
+        return response()->json([
+            'success' => true,
+            'data' => $settings,
+        ]);
+    }
+
+    /**
+     * Get a single setting
+     */
+    public function show(string $key): JsonResponse
+    {
+        $value = $this->settingsService->get($key);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'key' => $key,
+                'value' => $value,
+            ],
+        ]);
+    }
+
+    /**
+     * Update settings (can update single or multiple)
+     */
+    public function update(Request $request, ?string $group = null): JsonResponse
+    {
+        $validated = $request->validate([
+            // Single setting update
+            'key' => ['sometimes', 'required_without:settings', 'string'],
+            'value' => ['sometimes', 'required_with:key'],
+            
+            // Multiple settings update
+            'settings' => ['sometimes', 'required_without:key', 'array'],
+        ]);
+
+        $targetGroup = $group ?? 'general';
+
+        if (isset($validated['key'])) {
+            // Single setting update
+            $this->settingsService->set(
+                $validated['key'],
+                $validated['value'],
+                $targetGroup
+            );
+        } else {
+            // Multiple settings update
+            $this->settingsService->setMultiple(
+                $validated['settings'],
+                $targetGroup
+            );
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Settings updated successfully',
+            'data' => $this->settingsService->getGroupSettings($targetGroup),
+        ]);
+    }
+
+    /**
+     * Initialize default settings
+     */
+    public function initialize(): JsonResponse
+    {
+        $this->settingsService->initializeDefaults();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Default settings initialized successfully',
+        ]);
+    }
+}
