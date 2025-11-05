@@ -36,6 +36,7 @@
                             required
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg"
                             placeholder="category-slug"
+                            @input="onSlugInput"
                         />
                     </div>
                     <div v-if="!isTypeFixed">
@@ -147,9 +148,11 @@
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
+import { useSlugify } from '../../composables/useSlugify';
 
 const router = useRouter();
 const route = useRoute();
+const { slugify } = useSlugify();
 
 const isEdit = computed(() => !!route.params.id);
 
@@ -157,6 +160,7 @@ const loading = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
 const imagePreview = ref<string | null>(null);
 const parentCategories = ref<any[]>([]);
+const slugManuallyEdited = ref(false);
 
 // Get type from query params or default to 'post'
 const defaultType = computed(() => {
@@ -182,12 +186,15 @@ const form = ref({
 });
 
 const generateSlug = () => {
-    if (!isEdit.value) {
-        form.value.slug = form.value.name
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/(^-|-$)/g, '');
+    // Only auto-generate if slug is empty or hasn't been manually edited
+    if (!slugManuallyEdited.value && form.value.name) {
+        form.value.slug = slugify(form.value.name);
     }
+};
+
+const onSlugInput = () => {
+    // Mark slug as manually edited when user types in slug field
+    slugManuallyEdited.value = true;
 };
 
 const handleImageUpload = (event: Event) => {
