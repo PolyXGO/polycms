@@ -650,25 +650,64 @@ const loadModules = async () => {
 };
 
 const toggleModule = async (module: Module) => {
-    if (toggleLoading.value) return;
+    // Prevent multiple clicks on the same module
+    if (toggleLoading.value === module.key) return;
 
+    // Find the module in the array to ensure we're working with the reactive reference
+    const moduleIndex = modules.value.findIndex(m => m.key === module.key);
+    if (moduleIndex === -1) {
+        console.error('Module not found in array');
+        return;
+    }
+
+    // Get current state before making API call - use the value from the array
+    const currentEnabledState = modules.value[moduleIndex].enabled;
+    const targetState = !currentEnabledState;
+
+    // Set loading state before making the request
     toggleLoading.value = module.key;
 
     try {
-        if (module.enabled) {
-            await axios.post(`/api/v1/modules/${encodeURIComponent(module.key)}/disable`);
-            module.enabled = false;
-        } else {
-            await axios.post(`/api/v1/modules/${encodeURIComponent(module.key)}/enable`);
-            module.enabled = true;
+        // Make API call to toggle module state based on current state
+        const endpoint = currentEnabledState 
+            ? `/api/v1/modules/${encodeURIComponent(module.key)}/disable`
+            : `/api/v1/modules/${encodeURIComponent(module.key)}/enable`;
+        
+        await axios.post(endpoint);
+        
+        // Update local state optimistically for immediate UI feedback
+        modules.value[moduleIndex].enabled = targetState;
+        
+        // Wait a bit to ensure backend has processed the change
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Reload modules from API to verify and get the latest state from server
+        await loadModules();
+        
+        // Find the module again after reload to verify state
+        const reloadedModule = modules.value.find(m => m.key === module.key);
+        if (reloadedModule && reloadedModule.enabled !== targetState) {
+            console.warn('State mismatch detected, forcing reload...');
+            // If state doesn't match, reload page to force refresh
+            window.location.reload();
+            return;
         }
         
         // Reload page after successful toggle to refresh sidebar menu
-        window.location.reload();
+        // Small delay to ensure UI update is visible
+        setTimeout(() => {
+            window.location.reload();
+        }, 200);
     } catch (error: any) {
         console.error('Error toggling module:', error);
+        
+        // Revert optimistic update on error
+        modules.value[moduleIndex].enabled = currentEnabledState;
+        
         const message = error.response?.data?.message || 'Failed to toggle module';
         dialog.error(message);
+        
+        // Reload modules to get correct state from server
         await loadModules();
         toggleLoading.value = null;
     }

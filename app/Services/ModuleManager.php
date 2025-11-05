@@ -184,6 +184,20 @@ class ModuleManager
         $config = "<?php\n\nreturn [\n    'enabled' => " . var_export($modules, true) . ",\n];\n";
 
         File::put($configPath, $config);
+        
+        // Invalidate opcache for this specific file to ensure changes are picked up
+        if (function_exists('opcache_invalidate') && ini_get('opcache.enable')) {
+            opcache_invalidate($configPath, true);
+        }
+        
+        // Clear Laravel's config cache if it exists
+        if (app()->configurationIsCached()) {
+            try {
+                \Illuminate\Support\Facades\Artisan::call('config:clear');
+            } catch (\Exception $e) {
+                // Ignore if config cache clearing fails
+            }
+        }
     }
 
     /**
