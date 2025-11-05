@@ -57,9 +57,15 @@ class ThemeServiceProvider extends ServiceProvider
                 View::addNamespace('theme', $viewPaths);
             }
 
-            // Trigger hook for theme activation
+            // Load theme functions.php if exists
             $activeTheme = $themeManager->getActiveTheme('frontend');
             if ($activeTheme) {
+                $functionsPath = $activeTheme->full_path . '/functions.php';
+                if (file_exists($functionsPath)) {
+                    require_once $functionsPath;
+                }
+                
+                // Trigger hook for theme activation
                 \App\Facades\Hook::doAction('theme.activated', $activeTheme);
             }
         } catch (\Exception $e) {
@@ -85,7 +91,18 @@ class ThemeServiceProvider extends ServiceProvider
             function theme_asset(string $path, string $type = 'frontend'): string
             {
                 $themeManager = app(ThemeManager::class);
-                return $themeManager->assetUrl($path, $type);
+                $activeTheme = $themeManager->getActiveTheme($type);
+                
+                if (!$activeTheme) {
+                    // Fallback to default assets
+                    return asset($path);
+                }
+                
+                // Remove leading slash if present
+                $path = ltrim($path, '/');
+                
+                // Return theme asset URL using route
+                return route('theme.asset', ['themeSlug' => $activeTheme->slug, 'path' => $path]);
             }
         }
     }

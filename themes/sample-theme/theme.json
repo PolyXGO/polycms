@@ -1,0 +1,11 @@
+{
+    "name": "Sample Theme",
+    "slug": "sample-theme",
+    "version": "1.0.0",
+    "author": "PolyCMS Team",
+    "description": "A sample theme demonstrating PolyCMS theme structure and best practices. Use this as a starting point for your own themes.",
+    "type": "frontend",
+    "requires": {
+        "polycms": ">=1.0.0"
+    }
+}
