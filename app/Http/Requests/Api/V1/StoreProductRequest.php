@@ -49,7 +49,7 @@ class StoreProductRequest extends FormRequest
             'categories' => ['nullable', 'array'],
             'categories.*' => ['exists:categories,id'],
             'tags' => ['nullable', 'array'],
-            'tags.*' => ['exists:tags,id'],
+            'tags.*' => ['exists:product_tags,id'],
             'media_ids' => ['nullable', 'array'],
             'media_ids.*' => ['exists:media,id'],
             'order' => ['nullable', 'integer', 'min:0'],

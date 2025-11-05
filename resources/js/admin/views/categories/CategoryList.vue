@@ -3,7 +3,10 @@
                         <div class="flex justify-between items-center mb-6">
                     <h1 class="text-2xl font-bold text-gray-900">Categories</h1>
                     <router-link
-                        :to="{ name: 'admin.categories.create' }"
+                        :to="{ 
+                            name: 'admin.categories.create',
+                            query: filters.type ? { type: filters.type } : {}
+                        }"
                         class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
                     >
                         + New Category
@@ -115,11 +118,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import axios from 'axios';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 
 const router = useRouter();
+const route = useRoute();
 
 const categories = ref<any[]>([]);
 const filters = ref({
@@ -135,6 +139,11 @@ const pagination = ref({
     from: 0,
     to: 0,
 });
+
+// Initialize type filter from query params
+if (route.query.type && typeof route.query.type === 'string') {
+    filters.value.type = route.query.type;
+}
 
 const loadCategories = async () => {
     try {
@@ -166,6 +175,14 @@ const changePage = (page: number) => {
     pagination.value.current_page = page;
     loadCategories();
 };
+
+// Watch for query param changes
+watch(() => route.query.type, (newType) => {
+    if (newType && typeof newType === 'string') {
+        filters.value.type = newType;
+        loadCategories();
+    }
+}, { immediate: false });
 
 
 

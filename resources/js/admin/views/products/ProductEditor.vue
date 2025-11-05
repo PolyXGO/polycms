@@ -24,6 +24,7 @@
                             type="text"
                             required
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            @input="generateSlug"
                         />
                     </div>
                     <div>
@@ -33,6 +34,7 @@
                             type="text"
                             required
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            @input="onSlugInput"
                         />
                     </div>
                     <div>
@@ -144,13 +146,16 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
+import { useSlugify } from '../../composables/useSlugify';
 
 const router = useRouter();
 const route = useRoute();
+const { slugify } = useSlugify();
 
 const isEdit = computed(() => !!route.params.id);
 
 const loading = ref(false);
+const slugManuallyEdited = ref(false);
 const form = ref({
     name: '',
     slug: '',
@@ -164,6 +169,18 @@ const form = ref({
     meta_description: '',
     meta_keywords: '',
 });
+
+const generateSlug = () => {
+    // Only auto-generate if slug is empty or hasn't been manually edited
+    if (!slugManuallyEdited.value && form.value.name) {
+        form.value.slug = slugify(form.value.name);
+    }
+};
+
+const onSlugInput = () => {
+    // Mark slug as manually edited when user types in slug field
+    slugManuallyEdited.value = true;
+};
 
 const loadProduct = async () => {
     if (!isEdit.value) return;

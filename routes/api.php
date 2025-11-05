@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\V1\MediaController;
 use App\Http\Controllers\Api\V1\PostController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\TagController;
+use App\Http\Controllers\Api\V1\PostTagController;
+use App\Http\Controllers\Api\V1\ProductTagController;
 use App\Http\Controllers\Api\V1\AdminMenuController;
 use App\Http\Controllers\Api\V1\ModuleController;
 use App\Http\Controllers\Api\V1\WidgetAreaController;
@@ -34,6 +36,10 @@ Route::prefix('v1')->group(function () {
     Route::get('/categories/{category}', [CategoryController::class, 'show'])->name('api.v1.categories.show');
     Route::get('/tags', [TagController::class, 'index'])->name('api.v1.tags.index');
     Route::get('/tags/{tag}', [TagController::class, 'show'])->name('api.v1.tags.show');
+    Route::get('/post-tags', [PostTagController::class, 'index'])->name('api.v1.post-tags.index');
+    Route::get('/post-tags/{postTag}', [PostTagController::class, 'show'])->name('api.v1.post-tags.show');
+    Route::get('/product-tags', [ProductTagController::class, 'index'])->name('api.v1.product-tags.index');
+    Route::get('/product-tags/{productTag}', [ProductTagController::class, 'show'])->name('api.v1.product-tags.show');
 
     // Authentication endpoints
     Route::prefix('auth')->group(function () {
@@ -59,8 +65,14 @@ Route::prefix('v1')->group(function () {
         // Categories CRUD
         Route::apiResource('categories', CategoryController::class)->except(['index', 'show']);
 
-        // Tags CRUD
+        // Tags CRUD (deprecated - use post-tags and product-tags instead)
         Route::apiResource('tags', TagController::class)->except(['index', 'show']);
+
+        // Post Tags CRUD
+        Route::apiResource('post-tags', PostTagController::class)->except(['index', 'show']);
+
+        // Product Tags CRUD
+        Route::apiResource('product-tags', ProductTagController::class)->except(['index', 'show']);
 
         // Media management
                     Route::apiResource('media', MediaController::class);

@@ -41,7 +41,7 @@ class StorePostRequest extends FormRequest
             'categories' => ['nullable', 'array'],
             'categories.*' => ['exists:categories,id'],
             'tags' => ['nullable', 'array'],
-            'tags.*' => ['exists:tags,id'],
+            'tags.*' => ['exists:post_tags,id'],
             'order' => ['nullable', 'integer', 'min:0'],
         ];
     }

@@ -76,10 +76,10 @@
                             Categories
                         </router-link>
                         <router-link
-                            :to="{ name: 'admin.tags.index', query: { type: 'post' } }"
+                            :to="{ name: 'admin.post-tags.index' }"
                             :class="[
                                 'block px-4 py-2 rounded transition duration-200',
-                                $route.name === 'admin.tags.index' && $route.query.type === 'post' ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                                $route.name?.toString().startsWith('admin.post-tags') ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                             ]"
                         >
                             Tags
@@ -141,10 +141,10 @@
                             Categories
                         </router-link>
                         <router-link
-                            :to="{ name: 'admin.tags.index', query: { type: 'product' } }"
+                            :to="{ name: 'admin.product-tags.index' }"
                             :class="[
                                 'block px-4 py-2 rounded transition duration-200',
-                                $route.name === 'admin.tags.index' && $route.query.type === 'product' ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                                $route.name?.toString().startsWith('admin.product-tags') ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                             ]"
                         >
                             Tags

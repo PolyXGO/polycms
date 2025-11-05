@@ -9,6 +9,10 @@ import ProductEditor from '../views/products/ProductEditor.vue';
 import CategoryList from '../views/categories/CategoryList.vue';
 import CategoryEditor from '../views/categories/CategoryEditor.vue';
 import TagList from '../views/tags/TagList.vue';
+import PostTagList from '../views/tags/post/PostTagList.vue';
+import PostTagEditor from '../views/tags/post/PostTagEditor.vue';
+import ProductTagList from '../views/tags/product/ProductTagList.vue';
+import ProductTagEditor from '../views/tags/product/ProductTagEditor.vue';
 import MediaLibrary from '../views/media/MediaLibrary.vue';
 import WidgetManager from '../views/widgets/WidgetManager.vue';
 import ModuleList from '../views/modules/ModuleList.vue';
@@ -84,6 +88,38 @@ const routes: Array<RouteRecordRaw> = [
                 path: 'tags',
                 name: 'admin.tags.index',
                 component: TagList,
+            },
+            {
+                path: 'post-tags',
+                name: 'admin.post-tags.index',
+                component: PostTagList,
+            },
+            {
+                path: 'post-tags/create',
+                name: 'admin.post-tags.create',
+                component: PostTagEditor,
+            },
+            {
+                path: 'post-tags/:id/edit',
+                name: 'admin.post-tags.edit',
+                component: PostTagEditor,
+                props: true,
+            },
+            {
+                path: 'product-tags',
+                name: 'admin.product-tags.index',
+                component: ProductTagList,
+            },
+            {
+                path: 'product-tags/create',
+                name: 'admin.product-tags.create',
+                component: ProductTagEditor,
+            },
+            {
+                path: 'product-tags/:id/edit',
+                name: 'admin.product-tags.edit',
+                component: ProductTagEditor,
+                props: true,
             },
             {
                 path: 'media',

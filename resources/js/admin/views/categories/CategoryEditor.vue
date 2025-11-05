@@ -38,13 +38,19 @@
                             placeholder="category-slug"
                         />
                     </div>
-                    <div>
+                    <div v-if="!isTypeFixed">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Type *</label>
                         <select v-model="form.type" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
                             <option value="">Select type</option>
                             <option value="post">Post</option>
                             <option value="product">Product</option>
                         </select>
+                    </div>
+                    <div v-else>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                        <div class="px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                            {{ form.type === 'post' ? 'Post' : 'Product' }}
+                        </div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Parent Category</label>
@@ -152,10 +158,23 @@ const fileInput = ref<HTMLInputElement | null>(null);
 const imagePreview = ref<string | null>(null);
 const parentCategories = ref<any[]>([]);
 
+// Get type from query params or default to 'post'
+const defaultType = computed(() => {
+    if (route.query.type && typeof route.query.type === 'string') {
+        return route.query.type;
+    }
+    return 'post';
+});
+
+// Check if type is fixed (from query params)
+const isTypeFixed = computed(() => {
+    return !isEdit.value && route.query.type && typeof route.query.type === 'string';
+});
+
 const form = ref({
     name: '',
     slug: '',
-    type: 'post',
+    type: defaultType.value,
     parent_id: null as number | null,
     description: '',
     summary: '',
