@@ -4,6 +4,7 @@ import router from './router';
 import App from './App.vue';
 // CSS is loaded via Vite in Blade template
 import axios from 'axios';
+import { t } from './composables/useTranslation';
 
 // Setup axios defaults
 axios.defaults.headers.common['Accept'] = 'application/json';
@@ -20,6 +21,9 @@ const pinia = createPinia();
 
 app.use(pinia);
 app.use(router);
+
+// Add global translation function
+app.config.globalProperties.$t = t;
 
 // Check auth on mount
 import { useAuthStore } from './stores/auth';

@@ -72,19 +72,19 @@
                                 :to="{ name: 'admin.products.edit', params: { id: product.id } }"
                                 class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 mr-4"
                             >
-                                Edit
+                                {{ $t('Edit') }}
                             </router-link>
                             <button
                                 @click="deleteProduct(product.id)"
                                 class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
                             >
-                                Delete
+                                {{ $t('Delete') }}
                             </button>
                         </td>
                     </tr>
                     <tr v-if="products.length === 0">
                         <td colspan="6" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                            No products found. <router-link :to="{ name: 'admin.products.create' }" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">Create one</router-link>
+                            {{ $t('No products found.') }} <router-link :to="{ name: 'admin.products.create' }" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">{{ $t('Create one') }}</router-link>
                         </td>
                     </tr>
                 </tbody>
@@ -94,7 +94,7 @@
         <!-- Pagination -->
         <div v-if="pagination.total > pagination.per_page" class="mt-6 flex items-center justify-between">
             <div class="text-sm text-gray-700 dark:text-gray-300">
-                Showing {{ pagination.from }} to {{ pagination.to }} of {{ pagination.total }} results
+                {{ $t('Showing') }} {{ pagination.from }} {{ $t('to') }} {{ pagination.to }} {{ $t('of') }} {{ pagination.total }} {{ $t('results') }}
             </div>
             <div class="flex space-x-2">
                 <button
@@ -102,14 +102,14 @@
                     :disabled="pagination.current_page === 1"
                     class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
                 >
-                    Previous
+                    {{ $t('Previous') }}
                 </button>
                 <button
                     @click="changePage(pagination.current_page + 1)"
                     :disabled="pagination.current_page === pagination.last_page"
                     class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
                 >
-                    Next
+                    {{ $t('Next') }}
                 </button>
             </div>
         </div>
@@ -117,10 +117,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, getCurrentInstance } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 import { useDialog } from '../../composables/useDialog';
+import { useTranslation } from '../../composables/useTranslation';
+
+const { t } = useTranslation();
+const instance = getCurrentInstance();
+const $t = instance?.appContext.config.globalProperties.$t || t;
 
 const router = useRouter();
 const dialog = useDialog();

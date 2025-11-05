@@ -1,6 +1,6 @@
 /**
  * PolyCMS Corporate Theme JavaScript
- * 
+ *
  * Professional business theme functionality
  */
 
@@ -14,7 +14,7 @@
     if (mobileMenuToggle && mobileMenu) {
         mobileMenuToggle.addEventListener('click', function() {
             mobileMenu.classList.toggle('active');
-            
+
             // Update icon
             const icon = mobileMenuToggle.querySelector('svg');
             if (mobileMenu.classList.contains('active')) {
@@ -31,13 +31,13 @@
         let lastScroll = 0;
         window.addEventListener('scroll', function() {
             const currentScroll = window.pageYOffset;
-            
+
             if (currentScroll > 50) {
                 header.classList.add('scrolled');
             } else {
                 header.classList.remove('scrolled');
             }
-            
+
             lastScroll = currentScroll;
         });
     }
@@ -58,7 +58,7 @@
                         top: offsetPosition,
                         behavior: 'smooth'
                     });
-                    
+
                     // Close mobile menu if open
                     if (mobileMenu && mobileMenu.classList.contains('active')) {
                         mobileMenu.classList.remove('active');
@@ -74,7 +74,7 @@
         card.addEventListener('mouseenter', function() {
             this.style.transform = 'translateY(-4px)';
         });
-        
+
         card.addEventListener('mouseleave', function() {
             this.style.transform = 'translateY(0)';
         });

@@ -13,7 +13,7 @@ class MenuRegistry
 
     /**
      * Register a menu item
-     * 
+     *
      * @param string $key Unique key for the menu item
      * @param array $item Menu item data
      * @return void
@@ -25,7 +25,7 @@ class MenuRegistry
 
     /**
      * Register multiple menu items
-     * 
+     *
      * @param array<string, array> $items
      * @return void
      */
@@ -38,7 +38,7 @@ class MenuRegistry
 
     /**
      * Get all registered menu items
-     * 
+     *
      * @return array<string, array>
      */
     public function all(): array
@@ -55,7 +55,7 @@ class MenuRegistry
 
     /**
      * Clear all menu items
-     * 
+     *
      * @return void
      */
     public function clear(): void

@@ -2,14 +2,14 @@
     <div>
         <div class="flex justify-between items-center mb-6">
             <div>
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Manage your site settings</p>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ $t('Settings') }}</h1>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ $t('Manage your site settings') }}</p>
             </div>
         </div>
 
         <div v-if="loading" class="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
             <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-            <p class="mt-2 text-gray-600 dark:text-gray-400">Loading settings...</p>
+            <p class="mt-2 text-gray-600 dark:text-gray-400">{{ $t('Loading settings...') }}</p>
         </div>
 
         <div v-else class="bg-white dark:bg-gray-800 rounded-lg shadow">
@@ -48,10 +48,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, getCurrentInstance } from 'vue';
 import axios from 'axios';
 import { useDialog } from '../../composables/useDialog';
+import { useTranslation } from '../../composables/useTranslation';
 import GeneralSettings from './tabs/GeneralSettings.vue';
+
+const { t } = useTranslation();
+const instance = getCurrentInstance();
+const $t = instance?.appContext.config.globalProperties.$t || t;
 
 interface Setting {
     key: string;
@@ -81,10 +86,10 @@ const activeTab = ref<string>('general');
 const settings = ref<SettingsData>({});
 
 // Tabs configuration - can be extended
-const tabs: Tab[] = [
+const tabs = computed<Tab[]>(() => [
     {
         id: 'general',
-        label: 'General',
+        label: $t('General'),
     },
     // Add more tabs here in the future
     // {
@@ -95,7 +100,7 @@ const tabs: Tab[] = [
     //     id: 'writing',
     //     label: 'Writing',
     // },
-];
+]);
 
 const loadSettings = async () => {
     loading.value = true;
@@ -109,7 +114,7 @@ const loadSettings = async () => {
         }
     } catch (error: any) {
         console.error('Error loading settings:', error);
-        dialog.error('Failed to load settings');
+        dialog.error($t('Failed to load settings'));
     } finally {
         loading.value = false;
     }
@@ -150,11 +155,11 @@ const saveSettings = async () => {
             settings: settingsData,
         });
 
-        dialog.success('Settings saved successfully');
+        dialog.success($t('Settings saved successfully'));
         await loadSettings();
     } catch (error: any) {
         console.error('Error saving settings:', error);
-        const message = error.response?.data?.message || 'Failed to save settings';
+        const message = error.response?.data?.message || $t('Failed to save settings');
         dialog.error(message);
     } finally {
         saving.value = false;

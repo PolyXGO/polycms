@@ -15,6 +15,8 @@ use App\Http\Controllers\Api\V1\WidgetController;
 use App\Http\Controllers\Api\V1\WidgetInstanceController;
 use App\Http\Controllers\Api\V1\SettingsController;
 use App\Http\Controllers\Api\V1\ThemeController;
+use App\Http\Controllers\Api\V1\TopbarMenuController;
+use App\Http\Controllers\Api\V1\TranslationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -94,6 +96,12 @@ Route::prefix('v1')->group(function () {
 
             // Admin menu routes
             Route::get('/admin/menu', [AdminMenuController::class, 'index'])->name('api.v1.admin.menu.index');
+            
+            // Topbar menu routes
+            Route::get('/topbar/menu', [TopbarMenuController::class, 'index'])->name('api.v1.topbar.menu.index');
+
+            // Translation routes
+            Route::get('/translations', [TranslationController::class, 'index'])->name('api.v1.translations.index');
 
             // Settings routes
             Route::get('/settings', [SettingsController::class, 'index'])->name('api.v1.settings.index');

@@ -1,14 +1,14 @@
 @extends('layouts.app')
 
-@section('title', 'Blog Posts')
+@section('title', _l('Blog Posts'))
 
 @section('content')
 <div class="container mx-auto px-4 py-8">
     <div class="max-w-4xl mx-auto">
         {{-- Page Header --}}
         <header class="mb-8">
-            <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">Blog Posts</h1>
-            <p class="text-gray-600 dark:text-gray-400">Latest articles and updates</p>
+            <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">{{ _l('Blog Posts') }}</h1>
+            <p class="text-gray-600 dark:text-gray-400">{{ _l('Latest articles and updates') }}</p>
         </header>
         
         {{-- Posts Grid --}}
@@ -50,7 +50,7 @@
                         
                         {{-- Read More --}}
                         <a href="{{ url('/posts/' . $post->slug) }}" class="inline-flex items-center text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium">
-                            Read More
+                            {{ _l('Read More') }}
                             <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                             </svg>
@@ -59,7 +59,7 @@
                 </article>
             @empty
                 <div class="col-span-full text-center py-12">
-                    <p class="text-gray-500 dark:text-gray-400">No posts found.</p>
+                    <p class="text-gray-500 dark:text-gray-400">{{ _l('No posts found.') }}</p>
                 </div>
             @endforelse
         </div>

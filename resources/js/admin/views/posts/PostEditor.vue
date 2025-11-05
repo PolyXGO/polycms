@@ -100,14 +100,14 @@
                     @click="router.back()"
                     class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                 >
-                    Cancel
+                    {{ $t('Cancel') }}
                 </button>
                 <button
                     type="submit"
                     :disabled="loading"
                     class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                 >
-                    {{ loading ? 'Saving...' : 'Save Post' }}
+                    {{ loading ? $t('Saving') : $t('Save Post') }}
                 </button>
             </div>
         </form>
@@ -115,12 +115,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, getCurrentInstance } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
 import BlockEditor from '../../blocks/BlockEditor.vue';
 import { useSlugify } from '../../composables/useSlugify';
 import { useDialog } from '../../composables/useDialog';
+import { useTranslation } from '../../composables/useTranslation';
+
+const { t } = useTranslation();
+const instance = getCurrentInstance();
+const $t = instance?.appContext.config.globalProperties.$t || t;
 
 const router = useRouter();
 const route = useRoute();

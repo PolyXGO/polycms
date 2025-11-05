@@ -50,10 +50,10 @@
                     {!! $post->content_html ?? '' !!}
                 </div>
                 
-                {{-- Post Tags --}}
+                    {{-- Post Tags --}}
                 @if($post->tags && $post->tags->count() > 0)
                     <div class="flex flex-wrap gap-2 mb-6">
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Tags:</span>
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ _l('Tags:') }}</span>
                         @foreach($post->tags as $tag)
                             <a href="{{ url('/tags/' . $tag->slug) }}" class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">
                                 {{ $tag->name }}
@@ -66,7 +66,7 @@
                 <footer class="border-t border-gray-200 dark:border-gray-700 pt-6">
                     <div class="flex items-center justify-between">
                         <div class="text-sm text-gray-500 dark:text-gray-400">
-                            <span>Published on {{ format_post_date($post->published_at ?? $post->created_at, 'F j, Y') }}</span>
+                            <span>{{ _l('Published on') }} {{ format_post_date($post->published_at ?? $post->created_at, 'F j, Y') }}</span>
                         </div>
                         {{-- Social Share buttons can go here --}}
                     </div>
@@ -78,7 +78,7 @@
         @if(is_active_sidebar('sidebar'))
             <aside class="mt-8">
                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Sidebar</h3>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ _l('Sidebar') }}</h3>
                     {{-- Render sidebar widgets here --}}
                     {!! \App\Facades\Widget::renderArea('sidebar') !!}
                 </div>

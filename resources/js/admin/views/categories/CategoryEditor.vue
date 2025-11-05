@@ -130,14 +130,14 @@
                     @click="router.back()"
                     class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                 >
-                    Cancel
+                    {{ $t('Cancel') }}
                 </button>
                 <button
                     type="submit"
                     :disabled="loading"
                     class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                 >
-                    {{ loading ? 'Saving...' : (isEdit ? 'Update Category' : 'Create Category') }}
+                    {{ loading ? $t('Saving') : (isEdit ? $t('Update Category') : $t('Create Category')) }}
                 </button>
             </div>
         </form>
@@ -145,10 +145,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch, getCurrentInstance } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
 import { useSlugify } from '../../composables/useSlugify';
+import { useTranslation } from '../../composables/useTranslation';
+
+const { t } = useTranslation();
+const instance = getCurrentInstance();
+const $t = instance?.appContext.config.globalProperties.$t || t;
 
 const router = useRouter();
 const route = useRoute();

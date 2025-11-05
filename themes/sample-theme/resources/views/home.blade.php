@@ -8,7 +8,7 @@
         <div class="container">
             <div class="hero-content">
                 <h1 class="hero-title">
-                    {{ $site_title ?? 'Welcome to PolyCMS' }}
+                    {{ $site_title ?? _l('Welcome to PolyCMS') }}
                 </h1>
                 @if(!empty($tagline))
                     <p class="hero-subtitle">
@@ -16,11 +16,11 @@
                     </p>
                 @endif
                 <p class="hero-tagline">
-                    Building the future, one solution at a time
+                    {{ _l('Building the future, one solution at a time') }}
                 </p>
                 <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                    <a href="{{ url('/#about') }}" class="btn btn-outline btn-lg">Learn More</a>
-                    <a href="{{ url('/#contact') }}" class="btn btn-primary btn-lg">Get Started</a>
+                    <a href="{{ url('/#about') }}" class="btn btn-outline btn-lg">{{ _l('Learn More') }}</a>
+                    <a href="{{ url('/#contact') }}" class="btn btn-primary btn-lg">{{ _l('Get Started') }}</a>
                 </div>
             </div>
         </div>
@@ -29,25 +29,25 @@
     {{-- About Section --}}
     <section class="section about-section" id="about">
         <div class="container">
-            <h2 class="section-title">About Us</h2>
+            <h2 class="section-title">{{ _l('About Us') }}</h2>
             <p class="section-subtitle">
-                We are a dedicated team committed to delivering excellence and innovation in everything we do.
+                {{ _l('We are a dedicated team committed to delivering excellence and innovation in everything we do.') }}
             </p>
             <div class="grid grid-cols-3">
                 <div class="feature-box">
                     <div class="feature-icon">🚀</div>
-                    <h3 class="feature-title">Innovation</h3>
-                    <p class="feature-text">Cutting-edge solutions that drive your business forward</p>
+                    <h3 class="feature-title">{{ _l('Innovation') }}</h3>
+                    <p class="feature-text">{{ _l('Cutting-edge solutions that drive your business forward') }}</p>
                 </div>
                 <div class="feature-box">
                     <div class="feature-icon">💎</div>
-                    <h3 class="feature-title">Quality</h3>
-                    <p class="feature-text">Uncompromising standards in every project we deliver</p>
+                    <h3 class="feature-title">{{ _l('Quality') }}</h3>
+                    <p class="feature-text">{{ _l('Uncompromising standards in every project we deliver') }}</p>
                 </div>
                 <div class="feature-box">
                     <div class="feature-icon">🤝</div>
-                    <h3 class="feature-title">Partnership</h3>
-                    <p class="feature-text">Building lasting relationships with our clients</p>
+                    <h3 class="feature-title">{{ _l('Partnership') }}</h3>
+                    <p class="feature-text">{{ _l('Building lasting relationships with our clients') }}</p>
                 </div>
             </div>
         </div>
@@ -58,8 +58,8 @@
     {{-- Recent Posts Section --}}
     @if(isset($posts) && $posts->count() > 0)
         <section class="section">
-            <h2 class="section-title">Latest News</h2>
-            <p class="section-subtitle">Stay updated with our latest articles and insights</p>
+            <h2 class="section-title">{{ _l('Latest News') }}</h2>
+            <p class="section-subtitle">{{ _l('Stay updated with our latest articles and insights') }}</p>
             <div class="grid grid-cols-3">
                 @foreach($posts->take(6) as $post)
                     <article class="card">
@@ -85,7 +85,7 @@
                             </p>
                             
                             <a href="{{ url('/posts/' . $post->slug) }}" class="btn btn-primary btn-sm">
-                                Read More
+                                {{ _l('Read More') }}
                             </a>
                         </div>
                     </article>
@@ -94,7 +94,7 @@
             
             <div class="text-center mt-xl">
                 <a href="{{ url('/posts') }}" class="btn btn-primary btn-lg">
-                    View All Posts
+                    {{ _l('View All Posts') }}
                 </a>
             </div>
         </section>
@@ -103,8 +103,8 @@
     {{-- Featured Products Section --}}
     @if(isset($products) && $products->count() > 0)
         <section class="section about-section">
-            <h2 class="section-title">Featured Products</h2>
-            <p class="section-subtitle">Discover our premium selection of products</p>
+            <h2 class="section-title">{{ _l('Featured Products') }}</h2>
+            <p class="section-subtitle">{{ _l('Discover our premium selection of products') }}</p>
             <div class="grid grid-cols-3">
                 @foreach($products->take(6) as $product)
                     <div class="card">
@@ -124,7 +124,7 @@
                             </div>
                             
                             <a href="{{ url('/products/' . $product->slug) }}" class="btn btn-primary" style="width: 100%;">
-                                View Product
+                                {{ _l('View Product') }}
                             </a>
                         </div>
                     </div>
@@ -133,7 +133,7 @@
             
             <div class="text-center mt-xl">
                 <a href="{{ url('/products') }}" class="btn btn-primary btn-lg">
-                    View All Products
+                    {{ _l('View All Products') }}
                 </a>
             </div>
         </section>
@@ -142,13 +142,13 @@
     {{-- Contact Section --}}
     <section class="section" id="contact">
         <div class="container">
-            <h2 class="section-title">Get In Touch</h2>
+            <h2 class="section-title">{{ _l('Get In Touch') }}</h2>
             <p class="section-subtitle">
-                Have a question or want to work with us? We'd love to hear from you.
+                {{ _l('Have a question or want to work with us? We\'d love to hear from you.') }}
             </p>
             <div class="text-center">
                 <a href="mailto:contact@example.com" class="btn btn-primary btn-lg">
-                    Contact Us
+                    {{ _l('Contact Us') }}
                 </a>
             </div>
         </div>

@@ -2,13 +2,13 @@
     <div>
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-                {{ isEdit ? 'Edit Product' : 'Create New Product' }}
+                {{ isEdit ? $t('Edit Product') || 'Edit Product' : $t('Create Product') || 'Create New Product' }}
             </h1>
             <button
                 @click="router.back()"
                 class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
             >
-                Cancel
+                {{ $t('Cancel') }}
             </button>
         </div>
 
@@ -128,14 +128,14 @@
                     @click="router.back()"
                     class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                 >
-                    Cancel
+                    {{ $t('Cancel') }}
                 </button>
                 <button
                     type="submit"
                     :disabled="loading"
                     class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                 >
-                    {{ loading ? 'Saving...' : 'Save Product' }}
+                    {{ loading ? $t('Saving') : $t('Save Product') }}
                 </button>
             </div>
         </form>

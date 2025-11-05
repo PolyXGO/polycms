@@ -1,9 +1,12 @@
 <template>
     <div class="min-h-screen bg-gray-100 dark:bg-gray-900 flex">
+        <!-- Topbar Menu -->
+        <TopbarMenu />
+        
         <!-- Sidebar -->
-        <aside class="bg-gray-800 dark:bg-gray-800 text-white w-64 space-y-6 py-7 px-2 fixed inset-y-0 left-0 transform md:relative md:translate-x-0 transition duration-200 ease-in-out overflow-y-auto">
-            <div class="flex items-center justify-between px-4">
-                <router-link :to="{ name: 'admin.dashboard' }" class="text-white text-2xl font-semibold uppercase">
+        <aside class="bg-gray-800 dark:bg-gray-800 text-white w-64 space-y-6 py-6 px-2 fixed left-0 bottom-0 transform md:relative md:translate-x-0 transition duration-200 ease-in-out overflow-y-auto" style="top: 32px;">
+            <div class="flex items-center justify-between px-4 pt-2">
+                <router-link :to="{ name: 'admin.dashboard' }" class="text-white text-xl font-semibold uppercase tracking-wide">
                     PolyCMS
                 </router-link>
             </div>
@@ -34,55 +37,55 @@
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
-                    Logout
+                    {{ $t('Logout') }}
                 </a>
             </div>
         </aside>
 
         <!-- Main content -->
-        <div class="flex-1 flex flex-col md:ml-0">
-            <!-- Header -->
-            <header class="w-full bg-white dark:bg-gray-800 shadow-sm p-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
-                <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Admin Panel</h1>
-                <div class="flex items-center space-x-4">
-                    <!-- Theme Toggle Button -->
-                    <button
-                        @click="themeStore.toggle()"
-                        class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                        :title="themeStore.isDark ? 'Switch to light mode' : 'Switch to dark mode'"
-                    >
-                        <!-- Sun icon (light mode) -->
-                        <svg
-                            v-if="themeStore.isDark"
-                            class="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+        <div class="flex-1 flex flex-col md:ml-0" style="padding-top: 32px;">
+            <!-- Header with Theme Toggle -->
+            <header class="w-full bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                <div class="px-6 py-3 flex items-center justify-end">
+                    <div class="flex items-center space-x-3">
+                        <!-- Theme Toggle Button -->
+                        <button
+                            @click="themeStore.toggle()"
+                            class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            :title="$t(themeStore.isDark ? 'Switch to light mode' : 'Switch to dark mode')"
                         >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-                            />
-                        </svg>
-                        <!-- Moon icon (dark mode) -->
-                        <svg
-                            v-else
-                            class="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-                            />
-                        </svg>
-                    </button>
-                    <span class="text-gray-700 dark:text-gray-300">{{ authStore.user?.name }}</span>
+                            <!-- Sun icon (light mode) -->
+                            <svg
+                                v-if="themeStore.isDark"
+                                class="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                                />
+                            </svg>
+                            <!-- Moon icon (dark mode) -->
+                            <svg
+                                v-else
+                                class="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                                />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </header>
 
@@ -95,12 +98,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, getCurrentInstance } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useThemeStore } from '../stores/theme';
+import { useTranslation } from '../composables/useTranslation';
 import axios from 'axios';
 import MenuItem from './MenuItem.vue';
+import TopbarMenu from '../components/TopbarMenu.vue';
+
+const { t } = useTranslation();
+const instance = getCurrentInstance();
+const $t = instance?.appContext.config.globalProperties.$t || t;
 
 interface MenuChild {
     key: string;

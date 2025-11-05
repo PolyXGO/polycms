@@ -4,7 +4,7 @@
             <!-- Site Title -->
             <div>
                 <label for="site_title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Site Title
+                    {{ getSettingLabel('site_title') }}
                 </label>
                 <input
                     id="site_title"
@@ -21,7 +21,7 @@
             <!-- Tagline -->
             <div>
                 <label for="tagline" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Tagline
+                    {{ getSettingLabel('tagline') }}
                 </label>
                 <input
                     id="tagline"
@@ -35,10 +35,129 @@
                 </p>
             </div>
 
+            <!-- Brand Logo -->
+            <div>
+                <label for="brand_logo" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {{ getSettingLabel('brand_logo') }}
+                </label>
+                <div class="flex items-center gap-4">
+                    <input
+                        id="brand_logo"
+                        :value="getSettingValue('brand_logo')"
+                        @input="updateValue('brand_logo', ($event.target as HTMLInputElement).value)"
+                        type="text"
+                        class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder="URL or path to brand logo"
+                    />
+                    <button
+                        type="button"
+                        class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                        @click="openMediaPicker('brand_logo')"
+                    >
+                        {{ getSettingLabel('Select Logo') || 'Select Logo' }}
+                    </button>
+                </div>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {{ getSettingDescription('brand_logo') || 'Upload a logo for your brand. If no logo is set, the brand name will be displayed instead.' }}
+                </p>
+                <div v-if="getSettingValue('brand_logo')" class="mt-2">
+                    <img
+                        :src="getSettingValue('brand_logo')"
+                        alt="Brand Logo"
+                        class="h-16 object-contain border border-gray-300 dark:border-gray-600 rounded"
+                    />
+                </div>
+            </div>
+
+            <!-- Brand Name -->
+            <div>
+                <label for="brand_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {{ getSettingLabel('brand_name') }}
+                </label>
+                <input
+                    id="brand_name"
+                    :value="getSettingValue('brand_name')"
+                    @input="updateValue('brand_name', ($event.target as HTMLInputElement).value)"
+                    type="text"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="POLYCMS"
+                />
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {{ getSettingDescription('brand_name') || 'Custom brand name to display when no logo is available. Defaults to "POLYCMS" if empty.' }}
+                </p>
+            </div>
+
+            <!-- Admin Email -->
+            <div>
+                <label for="admin_email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {{ getSettingLabel('admin_email') }}
+                </label>
+                <input
+                    id="admin_email"
+                    :value="getSettingValue('admin_email')"
+                    @input="updateValue('admin_email', ($event.target as HTMLInputElement).value)"
+                    type="email"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="admin@example.com"
+                />
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {{ getSettingDescription('admin_email') || 'Email address for the site administrator.' }}
+                </p>
+            </div>
+
+            <!-- Site Language -->
+            <div>
+                <label for="site_language" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {{ getSettingLabel('site_language') }}
+                </label>
+                <select
+                    id="site_language"
+                    :value="getSettingValue('site_language')"
+                    @change="updateValue('site_language', ($event.target as HTMLSelectElement).value)"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                    <option value="en">English</option>
+                    <option value="vi">Tiếng Việt</option>
+                    <option value="zh">中文</option>
+                    <option value="ja">日本語</option>
+                    <option value="ko">한국어</option>
+                    <option value="es">Español</option>
+                    <option value="fr">Français</option>
+                    <option value="de">Deutsch</option>
+                    <option value="it">Italiano</option>
+                    <option value="pt">Português</option>
+                    <option value="ru">Русский</option>
+                    <option value="ar">العربية</option>
+                    <option value="th">ไทย</option>
+                </select>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {{ getSettingDescription('site_language') || 'The default language for your site. Modules and themes can use this for localization.' }}
+                </p>
+            </div>
+
+            <!-- Front Site Language Direction -->
+            <div>
+                <label for="site_language_direction" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {{ getSettingLabel('site_language_direction') }}
+                </label>
+                <select
+                    id="site_language_direction"
+                    :value="getSettingValue('site_language_direction')"
+                    @change="updateValue('site_language_direction', ($event.target as HTMLSelectElement).value)"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                    <option value="ltr">Left to Right (LTR)</option>
+                    <option value="rtl">Right to Left (RTL)</option>
+                </select>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {{ getSettingDescription('site_language_direction') || 'Text direction for the frontend site. This will be applied to the CSS direction property.' }}
+                </p>
+            </div>
+
             <!-- Site Icon -->
             <div>
                 <label for="site_icon" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Site Icon
+                    {{ getSettingLabel('site_icon') }}
                 </label>
                 <div class="flex items-center gap-4">
                     <input
@@ -52,9 +171,9 @@
                     <button
                         type="button"
                         class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-                        @click="openMediaPicker"
+                        @click="openMediaPicker('site_icon')"
                     >
-                        Select Icon
+                        {{ getSettingLabel('Select Icon') || 'Select Icon' }}
                     </button>
                 </div>
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -72,7 +191,7 @@
             <!-- Timezone -->
             <div>
                 <label for="timezone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Timezone
+                    {{ getSettingLabel('timezone') }}
                 </label>
                 <select
                     id="timezone"
@@ -102,7 +221,7 @@
             <!-- Date Format -->
             <div>
                 <label for="date_format" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Date Format
+                    {{ getSettingLabel('date_format') }}
                 </label>
                 <div class="space-y-2">
                     <div class="flex gap-4">
@@ -170,7 +289,7 @@
                                 @change="showCustomDateFormat = true"
                                 class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600"
                             />
-                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Custom:</span>
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ getSettingLabel('Custom') || 'Custom' }}:</span>
                             <input
                                 v-if="showCustomDateFormat || !['Y-m-d', 'm/d/Y', 'd/m/Y', 'F j, Y'].includes(getSettingValue('date_format'))"
                                 :value="getSettingValue('date_format')"
@@ -190,7 +309,7 @@
             <!-- Time Format -->
             <div>
                 <label for="time_format" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Time Format
+                    {{ getSettingLabel('time_format') }}
                 </label>
                 <div class="space-y-2">
                     <div class="flex gap-4">
@@ -230,7 +349,7 @@
             <!-- Week Starts On -->
             <div>
                 <label for="week_starts_on" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Week Starts On
+                    {{ getSettingLabel('week_starts_on') }}
                 </label>
                 <select
                     id="week_starts_on"
@@ -260,9 +379,9 @@
                 >
                     <span v-if="saving" class="flex items-center">
                         <div class="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                        Saving...
+                        {{ getSettingLabel('Saving') || 'Saving...' }}
                     </span>
-                    <span v-else>Save Changes</span>
+                    <span v-else>{{ getSettingLabel('Save Changes') || 'Save Changes' }}</span>
                 </button>
             </div>
         </form>
@@ -300,6 +419,10 @@ const getSettingValue = (key: string): any => {
     return props.settings[key]?.value ?? '';
 };
 
+const getSettingLabel = (key: string): string => {
+    return props.settings[key]?.label ?? key;
+};
+
 const getSettingDescription = (key: string): string => {
     return props.settings[key]?.description ?? '';
 };
@@ -313,7 +436,7 @@ const formatDate = (date: Date, format: string): string => {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    
+
     return format
         .replace('Y', String(year))
         .replace('m', month)
@@ -326,7 +449,7 @@ const formatTime = (date: Date, format: string): string => {
     let hours = date.getHours();
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const ampm = hours >= 12 ? 'PM' : 'AM';
-    
+
     if (format === 'H:i') {
         return `${String(hours).padStart(2, '0')}:${minutes}`;
     } else {
@@ -336,8 +459,22 @@ const formatTime = (date: Date, format: string): string => {
     }
 };
 
-const openMediaPicker = () => {
+const openMediaPicker = (field: string = 'site_icon') => {
     // TODO: Implement media picker
-    console.log('Media picker not implemented yet');
+    console.log('Media picker not implemented yet for field:', field);
+    // For now, we can use a simple file input as fallback
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (file) {
+            // Create a temporary URL for preview
+            const url = URL.createObjectURL(file);
+            updateValue(field, url);
+            // In production, this should upload to server and get the URL
+        }
+    };
+    input.click();
 };
 </script>

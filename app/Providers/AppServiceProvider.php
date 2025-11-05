@@ -48,6 +48,12 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Services\ThemeManager::class, function ($app) {
             return new \App\Services\ThemeManager();
         });
+
+        // Register Topbar Menu Service as singleton
+        $this->app->singleton(\App\Services\TopbarMenuService::class);
+
+        // Register Settings Service as singleton
+        $this->app->singleton(\App\Services\SettingsService::class);
     }
 
     /**
@@ -56,6 +62,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
+
+        // Initialize Language Helper
+        \App\Helpers\LanguageHelper::init(app(\App\Services\SettingsService::class));
 
         // Register module autoloaders first
         $moduleManager = app(ModuleManager::class);
@@ -66,6 +75,9 @@ class AppServiceProvider extends ServiceProvider
 
         // Register core widgets
         $this->registerCoreWidgets();
+
+        // Share settings with views
+        $this->shareSettingsWithViews();
     }
 
     /**
@@ -105,5 +117,25 @@ class AppServiceProvider extends ServiceProvider
                 ],
             ],
         ]);
+    }
+
+    /**
+     * Share settings with views
+     */
+    protected function shareSettingsWithViews(): void
+    {
+        $settingsService = app(\App\Services\SettingsService::class);
+        
+        // Share common settings with all views
+        view()->composer('*', function ($view) use ($settingsService) {
+            $view->with([
+                'site_title' => $settingsService->get('site_title', config('app.name', 'PolyCMS')),
+                'tagline' => $settingsService->get('tagline', ''),
+                'brand_logo' => $settingsService->get('brand_logo'),
+                'brand_name' => $settingsService->get('brand_name', 'POLYCMS'),
+                'site_language' => $settingsService->get('site_language', 'en'),
+                'site_language_direction' => $settingsService->get('site_language_direction', 'ltr'),
+            ]);
+        });
     }
 }

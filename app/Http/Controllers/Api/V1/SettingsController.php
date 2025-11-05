@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Services\SettingsService;
+use App\Helpers\LanguageHelper;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -13,7 +14,28 @@ class SettingsController extends Controller
 {
     public function __construct(
         protected SettingsService $settingsService
-    ) {}
+    ) {
+        // Ensure LanguageHelper is initialized
+        LanguageHelper::init($this->settingsService);
+    }
+
+    /**
+     * Translate settings labels and descriptions
+     */
+    protected function translateSettings(array $settings): array
+    {
+        foreach ($settings as $group => &$groupSettings) {
+            foreach ($groupSettings as $key => &$setting) {
+                if (isset($setting['label'])) {
+                    $setting['label'] = _l($setting['label']);
+                }
+                if (isset($setting['description'])) {
+                    $setting['description'] = _l($setting['description']);
+                }
+            }
+        }
+        return $settings;
+    }
 
     /**
      * Get all settings grouped by group
@@ -21,6 +43,7 @@ class SettingsController extends Controller
     public function index(): JsonResponse
     {
         $settings = $this->settingsService->getAllSettings();
+        $settings = $this->translateSettings($settings);
 
         return response()->json([
             'success' => true,
@@ -34,6 +57,16 @@ class SettingsController extends Controller
     public function getGroup(string $group): JsonResponse
     {
         $settings = $this->settingsService->getGroupSettings($group);
+        
+        // Translate labels and descriptions
+        foreach ($settings as $key => &$setting) {
+            if (isset($setting['label'])) {
+                $setting['label'] = _l($setting['label']);
+            }
+            if (isset($setting['description'])) {
+                $setting['description'] = _l($setting['description']);
+            }
+        }
 
         return response()->json([
             'success' => true,
@@ -88,10 +121,22 @@ class SettingsController extends Controller
             );
         }
 
+        $settings = $this->settingsService->getGroupSettings($targetGroup);
+        
+        // Translate labels and descriptions
+        foreach ($settings as $key => &$setting) {
+            if (isset($setting['label'])) {
+                $setting['label'] = _l($setting['label']);
+            }
+            if (isset($setting['description'])) {
+                $setting['description'] = _l($setting['description']);
+            }
+        }
+
         return response()->json([
             'success' => true,
-            'message' => 'Settings updated successfully',
-            'data' => $this->settingsService->getGroupSettings($targetGroup),
+            'message' => _l('Settings updated successfully'),
+            'data' => $settings,
         ]);
     }
 

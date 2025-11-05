@@ -26,18 +26,24 @@ class SettingsService
         return Cache::remember($this->cacheKey, $this->cacheTtl, function () {
             $settings = Setting::all();
             $grouped = [];
+            
+            // Get default settings for labels/descriptions
+            $defaults = $this->getDefaultGeneralSettings();
 
             foreach ($settings as $setting) {
                 if (!isset($grouped[$setting->group])) {
                     $grouped[$setting->group] = [];
                 }
 
+                // Merge with defaults to ensure labels/descriptions are present
+                $default = $defaults[$setting->key] ?? null;
+
                 $grouped[$setting->group][$setting->key] = [
                     'key' => $setting->key,
                     'value' => $setting->value,
-                    'type' => $setting->type,
-                    'label' => $setting->label,
-                    'description' => $setting->description,
+                    'type' => $setting->type ?? $default['type'] ?? 'string',
+                    'label' => $setting->label ?? $default['label'] ?? $setting->key,
+                    'description' => $setting->description ?? $default['description'] ?? '',
                 ];
             }
 
@@ -186,6 +192,41 @@ class SettingsService
                 'type' => 'string',
                 'label' => 'Tagline',
                 'description' => 'In a few words, explain what this site is about.',
+            ],
+            'brand_logo' => [
+                'key' => 'brand_logo',
+                'value' => null,
+                'type' => 'string',
+                'label' => 'Brand Logo',
+                'description' => 'Upload a logo for your brand. If no logo is set, the brand name will be displayed instead.',
+            ],
+            'brand_name' => [
+                'key' => 'brand_name',
+                'value' => 'POLYCMS',
+                'type' => 'string',
+                'label' => 'Brand Name',
+                'description' => 'Custom brand name to display when no logo is available. Defaults to "POLYCMS" if empty.',
+            ],
+            'admin_email' => [
+                'key' => 'admin_email',
+                'value' => null,
+                'type' => 'string',
+                'label' => 'Admin Email',
+                'description' => 'Email address for the site administrator.',
+            ],
+            'site_language' => [
+                'key' => 'site_language',
+                'value' => 'en',
+                'type' => 'string',
+                'label' => 'Site Language',
+                'description' => 'The default language for your site. Modules and themes can use this for localization.',
+            ],
+            'site_language_direction' => [
+                'key' => 'site_language_direction',
+                'value' => 'ltr',
+                'type' => 'string',
+                'label' => 'Front Site Language Direction',
+                'description' => 'Text direction for the frontend site. This will be applied to the CSS direction property.',
             ],
             'site_icon' => [
                 'key' => 'site_icon',

@@ -8,7 +8,7 @@
         {{-- Category Header --}}
         <header class="mb-8">
             <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-                {{ $category->name ?? 'Category' }}
+                {{ $category->name ?? _l('Category') }}
             </h1>
             @if(!empty($category->description))
                 <p class="text-gray-600 dark:text-gray-400">
@@ -38,7 +38,7 @@
                                 {{ the_excerpt($post) }}
                             </p>
                             <a href="{{ url('/posts/' . $post->slug) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium">
-                                Read More →
+                                {{ _l('Read More →') }}
                             </a>
                         </div>
                     </article>
@@ -53,7 +53,7 @@
                                 <img src="{{ $product->media->first()->url ?? '' }}" alt="{{ $product->name }}" class="w-full h-48 object-cover">
                             @else
                                 <div class="w-full h-48 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                                    <span class="text-gray-400 dark:text-gray-500">No Image</span>
+                                    <span class="text-gray-400 dark:text-gray-500">{{ _l('No Image') }}</span>
                                 </div>
                             @endif
                         </a>
@@ -68,7 +68,7 @@
                                 ${{ number_format($product->price, 2) }}
                             </div>
                             <a href="{{ url('/products/' . $product->slug) }}" class="inline-block w-full text-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
-                                View Product
+                                {{ _l('View Product') }}
                             </a>
                         </div>
                     </div>
@@ -76,7 +76,7 @@
             </div>
         @else
             <div class="text-center py-12">
-                <p class="text-gray-500 dark:text-gray-400">No items found in this category.</p>
+                <p class="text-gray-500 dark:text-gray-400">{{ _l('No items found in this category.') }}</p>
             </div>
         @endif
         

@@ -1,0 +1,131 @@
+<?php
+
+/**
+ * Vietnamese Translation File
+ *
+ * This file contains translations for the core PolyCMS system.
+ * Modules and themes can have their own translation files.
+ */
+
+return [
+    // Common
+    'Home' => 'Trang chủ',
+    'About' => 'Giới thiệu',
+    'Contact' => 'Liên hệ',
+    'Blog' => 'Blog',
+    'Products' => 'Sản phẩm',
+    'Welcome' => 'Chào mừng',
+    'Dashboard' => 'Bảng điều khiển',
+    'Settings' => 'Cài đặt',
+    'Save' => 'Lưu',
+    'Save Changes' => 'Lưu thay đổi',
+    'Saving' => 'Đang lưu...',
+    'Cancel' => 'Hủy',
+    'Delete' => 'Xóa',
+    'Edit' => 'Sửa',
+    'View' => 'Xem',
+    'Create' => 'Tạo mới',
+    'Update' => 'Cập nhật',
+    'General' => 'Tổng quan',
+    'Loading' => 'Đang tải...',
+    'Failed to load settings' => 'Không thể tải cài đặt',
+    'Settings saved successfully' => 'Đã lưu cài đặt thành công',
+    'Failed to save settings' => 'Không thể lưu cài đặt',
+
+    // Admin Settings
+    'Site Title' => 'Tiêu đề trang',
+    'The name of your site' => 'Tên của trang web của bạn',
+    'Tagline' => 'Khẩu hiệu',
+    'In a few words, explain what this site is about.' => 'Trong vài từ, giải thích trang web này nói về cái gì.',
+    'Brand Logo' => 'Logo thương hiệu',
+    'Upload a logo for your brand. If no logo is set, the brand name will be displayed instead.' => 'Tải lên logo cho thương hiệu của bạn. Nếu không có logo, tên thương hiệu sẽ được hiển thị thay thế.',
+    'Select Logo' => 'Chọn Logo',
+    'Brand Name' => 'Tên thương hiệu',
+    'Custom brand name to display when no logo is available. Defaults to "POLYCMS" if empty.' => 'Tên thương hiệu tùy chỉnh để hiển thị khi không có logo. Mặc định là "POLYCMS" nếu để trống.',
+    'Admin Email' => 'Email quản trị viên',
+    'Email address for the site administrator.' => 'Địa chỉ email của quản trị viên trang web.',
+    'Site Language' => 'Ngôn ngữ trang',
+    'The default language for your site. Modules and themes can use this for localization.' => 'Ngôn ngữ mặc định cho trang web của bạn. Modules và themes có thể sử dụng điều này để địa phương hóa.',
+    'Front Site Language Direction' => 'Hướng ngôn ngữ trang frontend',
+    'Text direction for the frontend site. This will be applied to the CSS direction property.' => 'Hướng văn bản cho trang frontend. Điều này sẽ được áp dụng cho thuộc tính CSS direction.',
+    'Left to Right (LTR)' => 'Trái sang phải (LTR)',
+    'Right to Left (RTL)' => 'Phải sang trái (RTL)',
+    'Site Icon' => 'Biểu tượng trang',
+    'Select Icon' => 'Chọn biểu tượng',
+    'Timezone' => 'Múi giờ',
+    'Date Format' => 'Định dạng ngày',
+    'Time Format' => 'Định dạng giờ',
+    '24-hour format' => 'Định dạng 24 giờ',
+    '12-hour format' => 'Định dạng 12 giờ',
+    'Week Starts On' => 'Tuần bắt đầu từ',
+    'Sunday' => 'Chủ nhật',
+    'Monday' => 'Thứ hai',
+    'Tuesday' => 'Thứ ba',
+    'Wednesday' => 'Thứ tư',
+    'Thursday' => 'Thứ năm',
+    'Friday' => 'Thứ sáu',
+    'Saturday' => 'Thứ bảy',
+    'Custom' => 'Tùy chỉnh',
+
+    // Posts
+    'Posts' => 'Bài viết',
+    'Post' => 'Bài viết',
+    'Add New Post' => 'Thêm bài viết mới',
+    'All Posts' => 'Tất cả bài viết',
+
+    // Products
+    'Product' => 'Sản phẩm',
+    'Add New Product' => 'Thêm sản phẩm mới',
+    'All Products' => 'Tất cả sản phẩm',
+
+    // Categories
+    'Categories' => 'Danh mục',
+    'Category' => 'Danh mục',
+    'Add New Category' => 'Thêm danh mục mới',
+    'All Categories' => 'Tất cả danh mục',
+
+    // Admin Menu
+    'Dashboard' => 'Bảng điều khiển',
+    'All Posts' => 'Tất cả bài viết',
+    'Add New' => 'Thêm mới',
+    'Tags' => 'Thẻ',
+    'All Products' => 'Tất cả sản phẩm',
+    'Media' => 'Media',
+    'Widgets' => 'Widgets',
+    'Modules' => 'Modules',
+    'Appearance' => 'Giao diện',
+    'Themes' => 'Giao diện',
+    'Logout' => 'Đăng xuất',
+
+    // Common Buttons and Actions
+    'New' => 'Mới',
+    'Customize' => 'Tùy chỉnh',
+    'Switch to light mode' => 'Chuyển sang chế độ sáng',
+    'Switch to dark mode' => 'Chuyển sang chế độ tối',
+    'Manage your site settings' => 'Quản lý cài đặt trang web của bạn',
+    'Loading settings...' => 'Đang tải cài đặt...',
+
+    // Common Editor Actions
+    'Save Product' => 'Lưu sản phẩm',
+    'Save Post' => 'Lưu bài viết',
+    'Save Category' => 'Lưu danh mục',
+    'Update Tag' => 'Cập nhật thẻ',
+    'Create Tag' => 'Tạo thẻ',
+    'Update Category' => 'Cập nhật danh mục',
+    'Create Category' => 'Tạo danh mục',
+    'Update Post' => 'Cập nhật bài viết',
+    'Create Post' => 'Tạo bài viết',
+    'Update Product' => 'Cập nhật sản phẩm',
+    'Create Product' => 'Tạo sản phẩm',
+    'Description' => 'Mô tả',
+    'Create one' => 'Tạo mới',
+    'No posts found.' => 'Không tìm thấy bài viết nào.',
+    'No products found.' => 'Không tìm thấy sản phẩm nào.',
+    'Previous' => 'Trước',
+    'Next' => 'Sau',
+    'Showing' => 'Hiển thị',
+    'to' => 'đến',
+    'of' => 'trong tổng số',
+    'results' => 'kết quả',
+];
+

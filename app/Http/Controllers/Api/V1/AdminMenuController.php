@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Services\CoreMenuService;
 use App\Services\MenuRegistry;
 use App\Services\ModuleManager;
+use App\Helpers\LanguageHelper;
 use Illuminate\Http\JsonResponse;
 
 class AdminMenuController extends Controller
@@ -17,7 +18,26 @@ class AdminMenuController extends Controller
         protected MenuRegistry $menuRegistry,
         protected CoreMenuService $coreMenuService,
         protected ModuleManager $moduleManager
-    ) {}
+    ) {
+        // Ensure LanguageHelper is initialized
+        LanguageHelper::init();
+    }
+
+    /**
+     * Translate menu item labels recursively
+     */
+    protected function translateMenuItem(array &$item): void
+    {
+        if (isset($item['label'])) {
+            $item['label'] = _l($item['label']);
+        }
+        
+        if (isset($item['children']) && is_array($item['children'])) {
+            foreach ($item['children'] as &$child) {
+                $this->translateMenuItem($child);
+            }
+        }
+    }
 
     /**
      * Get admin menu items from registry
@@ -43,8 +63,11 @@ class AdminMenuController extends Controller
 
         $menuItems = $this->menuRegistry->all();
 
-        // Sort children by order
+        // Sort children by order and translate labels
         foreach ($menuItems as &$item) {
+            // Translate menu item label
+            $this->translateMenuItem($item);
+            
             if (!empty($item['children'])) {
                 usort($item['children'], function ($a, $b) {
                     $orderA = $a['order'] ?? 999;

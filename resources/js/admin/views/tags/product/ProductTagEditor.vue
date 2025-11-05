@@ -40,7 +40,7 @@
                         />
                     </div>
                     <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('Description') }}</label>
                         <textarea
                             v-model="form.description"
                             rows="4"
@@ -58,14 +58,14 @@
                     @click="router.back()"
                     class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                 >
-                    Cancel
+                    {{ $t('Cancel') }}
                 </button>
                 <button
                     type="submit"
                     :disabled="loading"
                     class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                 >
-                    {{ loading ? 'Saving...' : (isEdit ? 'Update Tag' : 'Create Tag') }}
+                    {{ loading ? $t('Saving') : (isEdit ? $t('Update Tag') : $t('Create Tag')) }}
                 </button>
             </div>
         </form>
@@ -73,11 +73,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, getCurrentInstance } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
 import { useSlugify } from '../../../composables/useSlugify';
 import { useDialog } from '../../../composables/useDialog';
+import { useTranslation } from '../../../composables/useTranslation';
+
+const { t } = useTranslation();
+const instance = getCurrentInstance();
+const $t = instance?.appContext.config.globalProperties.$t || t;
 
 const router = useRouter();
 const route = useRoute();

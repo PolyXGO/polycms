@@ -1,0 +1,79 @@
+<?php
+
+/**
+ * Vietnamese Translation File for Sample Theme
+ */
+
+return [
+    // Navigation
+    'Home' => 'Trang chủ',
+    'Blog' => 'Blog',
+    'Products' => 'Sản phẩm',
+    'About' => 'Giới thiệu',
+    'Contact' => 'Liên hệ',
+    'About Us' => 'Về chúng tôi',
+    
+    // Homepage
+    'Welcome to PolyCMS' => 'Chào mừng đến với PolyCMS',
+    'Building the future, one solution at a time' => 'Xây dựng tương lai, từng giải pháp một',
+    'Learn More' => 'Tìm hiểu thêm',
+    'Get Started' => 'Bắt đầu',
+    'About Us' => 'Về chúng tôi',
+    'We are a dedicated team committed to delivering excellence and innovation in everything we do.' => 'Chúng tôi là một đội ngũ tận tâm cam kết mang đến sự xuất sắc và đổi mới trong mọi việc chúng tôi làm.',
+    'Innovation' => 'Đổi mới',
+    'Cutting-edge solutions that drive your business forward' => 'Các giải pháp tiên tiến thúc đẩy doanh nghiệp của bạn phát triển',
+    'Quality' => 'Chất lượng',
+    'Uncompromising standards in every project we deliver' => 'Tiêu chuẩn không khoan nhượng trong mọi dự án chúng tôi thực hiện',
+    'Partnership' => 'Đối tác',
+    'Building lasting relationships with our clients' => 'Xây dựng mối quan hệ lâu dài với khách hàng',
+    'Latest News' => 'Tin tức mới nhất',
+    'Stay updated with our latest articles and insights' => 'Cập nhật những bài viết và thông tin mới nhất của chúng tôi',
+    'Read More' => 'Đọc thêm',
+    'View All Posts' => 'Xem tất cả bài viết',
+    'Featured Products' => 'Sản phẩm nổi bật',
+    'Discover our premium selection of products' => 'Khám phá bộ sưu tập sản phẩm cao cấp của chúng tôi',
+    'View Product' => 'Xem sản phẩm',
+    'View All Products' => 'Xem tất cả sản phẩm',
+    'Get In Touch' => 'Liên hệ',
+    'Have a question or want to work with us? We\'d love to hear from you.' => 'Có câu hỏi hoặc muốn làm việc với chúng tôi? Chúng tôi rất mong được nghe từ bạn.',
+    'Contact Us' => 'Liên hệ chúng tôi',
+    
+    // Posts
+    'Blog Posts' => 'Bài viết Blog',
+    'Latest articles and updates' => 'Các bài viết và cập nhật mới nhất',
+    'No posts found.' => 'Không tìm thấy bài viết nào.',
+    'Published on' => 'Được xuất bản vào',
+    'Tags:' => 'Thẻ:',
+    
+    // Products
+    'Products' => 'Sản phẩm',
+    'Browse our product catalog' => 'Duyệt danh mục sản phẩm của chúng tôi',
+    'No Image' => 'Không có hình ảnh',
+    'No products found.' => 'Không tìm thấy sản phẩm nào.',
+    
+    // Footer
+    'Just another PolyCMS site' => 'Chỉ là một trang PolyCMS khác',
+    'Powered by' => 'Được hỗ trợ bởi',
+    'Quick Links' => 'Liên kết nhanh',
+    'Get in touch with us for more information.' => 'Liên hệ với chúng tôi để biết thêm thông tin.',
+    'We\'re here to help with any questions you may have.' => 'Chúng tôi ở đây để giúp bạn với mọi câu hỏi.',
+    'All rights reserved.' => 'Bảo lưu mọi quyền.',
+    
+    // Common
+    'Sidebar' => 'Thanh bên',
+    'Toggle menu' => 'Chuyển đổi menu',
+    'Category' => 'Danh mục',
+    'Page' => 'Trang',
+    'Product' => 'Sản phẩm',
+    'Sale' => 'Giảm giá',
+    'In Stock' => 'Còn hàng',
+    'Out of Stock' => 'Hết hàng',
+    'On Backorder' => 'Đặt hàng trước',
+    'Add to Cart' => 'Thêm vào giỏ',
+    'SKU:' => 'Mã SKU:',
+    'Categories:' => 'Danh mục:',
+    'Description' => 'Mô tả',
+    'Read More →' => 'Đọc thêm →',
+    'No items found in this category.' => 'Không tìm thấy mục nào trong danh mục này.',
+];
+
