@@ -4,13 +4,13 @@
             v-if="editing"
             v-model="localText"
             @blur="handleBlur"
-            class="w-full min-h-[100px] border-none outline-none bg-transparent resize-none"
+            class="w-full min-h-[100px] border-none outline-none bg-transparent resize-none text-gray-900 dark:text-white"
             placeholder="Enter paragraph text..."
         />
         <p
             v-else
             @dblclick="editing = true"
-            class="cursor-pointer hover:bg-gray-100 rounded px-2 py-1 whitespace-pre-wrap"
+            class="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded px-2 py-1 whitespace-pre-wrap text-gray-900 dark:text-white"
         >
             {{ attrs.text || 'Double-click to edit paragraph...' }}
         </p>

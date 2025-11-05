@@ -83,7 +83,7 @@ class Product extends Model
      */
     public function tags(): BelongsToMany
     {
-        return $this->belongsToMany(ProductTag::class, 'product_tag');
+        return $this->belongsToMany(ProductTag::class, 'product_tag', 'product_id', 'tag_id');
     }
 
     /**
@@ -91,7 +91,7 @@ class Product extends Model
      */
     public function media(): BelongsToMany
     {
-        return $this->belongsToMany(Media::class)
+        return $this->belongsToMany(Media::class, 'product_media', 'product_id', 'media_id')
             ->withPivot('is_primary', 'order')
             ->orderByPivot('order');
     }
@@ -133,7 +133,8 @@ class Product extends Model
      */
     public function getEffectivePriceAttribute(): float
     {
-        return $this->sale_price ?? $this->price;
+        $price = $this->sale_price ?? $this->price;
+        return (float) $price;
     }
 
     /**

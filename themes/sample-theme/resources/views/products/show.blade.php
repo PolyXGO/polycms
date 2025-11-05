@@ -88,7 +88,7 @@
         </div>
         
         {{-- Product Description --}}
-        @if(!empty($product->description_html))
+        @if(!empty($product->description_html) && trim($product->description_html) !== '' && trim($product->description_html) !== '<p></p>' && trim($product->description_html) !== '<p><br></p>')
             <div class="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
                 <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">{{ _l('Description') }}</h2>
                 <div class="prose prose-lg dark:prose-invert max-w-none">

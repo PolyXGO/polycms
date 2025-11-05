@@ -1,6 +1,7 @@
 <template>
     <div class="absolute -left-12 top-0 flex flex-col bg-white border border-gray-200 rounded shadow-lg z-10">
         <button
+            type="button"
             @click="$emit('moveUp')"
             :disabled="!canMoveUp"
             class="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -11,6 +12,7 @@
             </svg>
         </button>
         <button
+            type="button"
             @click="$emit('moveDown')"
             :disabled="!canMoveDown"
             class="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -21,6 +23,7 @@
             </svg>
         </button>
         <button
+            type="button"
             @click="$emit('duplicate')"
             class="p-2 hover:bg-gray-100 transition-colors"
             title="Duplicate"
@@ -30,6 +33,7 @@
             </svg>
         </button>
         <button
+            type="button"
             @click="$emit('delete')"
             class="p-2 hover:bg-red-50 text-red-600 transition-colors"
             title="Delete"

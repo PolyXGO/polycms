@@ -5,14 +5,14 @@
             v-model="localText"
             @blur="handleBlur"
             @keyup.enter="handleBlur"
-            class="w-full text-2xl font-bold border-none outline-none bg-transparent"
+            class="w-full text-2xl font-bold border-none outline-none bg-transparent text-gray-900 dark:text-white"
             :placeholder="`Heading ${attrs.level || 2}`"
         />
         <component
             :is="`h${attrs.level || 2}`"
             v-else
             @dblclick="editing = true"
-            class="text-2xl font-bold cursor-pointer hover:bg-gray-100 rounded px-2 py-1"
+            class="text-2xl font-bold cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded px-2 py-1 text-gray-900 dark:text-white"
         >
             {{ attrs.text || `Heading ${attrs.level || 2}` }}
         </component>

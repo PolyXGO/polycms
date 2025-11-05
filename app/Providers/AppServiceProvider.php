@@ -54,6 +54,14 @@ class AppServiceProvider extends ServiceProvider
 
         // Register Settings Service as singleton
         $this->app->singleton(\App\Services\SettingsService::class);
+
+        // Register Media Service as singleton
+        $this->app->singleton('media.service', function ($app) {
+            return new \App\Services\MediaService();
+        });
+
+        // Register alias for MediaService facade
+        $this->app->alias('media.service', \App\Services\MediaService::class);
     }
 
     /**

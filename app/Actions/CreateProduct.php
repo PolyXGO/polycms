@@ -24,9 +24,17 @@ class CreateProduct
             // Apply filters before creating
             $data = Hook::applyFilters('product.create.data', $data);
 
-            // Render content from blocks if provided
-            if (isset($data['description_blocks']) && is_array($data['description_blocks'])) {
+            // Handle description: prioritize description_html (from Tiptap), fallback to rendering blocks
+            if (isset($data['description_html']) && trim($data['description_html']) !== '' && 
+                trim($data['description_html']) !== '<p></p>' && trim($data['description_html']) !== '<p><br></p>') {
+                // Use HTML content directly from Tiptap editor
+                // description_html is already set, no need to render
+            } elseif (isset($data['description_blocks']) && is_array($data['description_blocks']) && !empty($data['description_blocks'])) {
+                // Backward compatibility: render from blocks if description_html is not provided
                 $data['description_html'] = $this->renderer->render($data['description_blocks']);
+            } else {
+                // Ensure description_html is null if not provided or empty
+                $data['description_html'] = null;
             }
 
             $product = Product::create($data);

@@ -10,6 +10,24 @@ import { t } from './composables/useTranslation';
 axios.defaults.headers.common['Accept'] = 'application/json';
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 
+// Add request interceptor to handle FormData
+axios.interceptors.request.use(
+    (config) => {
+        // If data is FormData, remove Content-Type header so axios can set it with boundary
+        if (config.data instanceof FormData) {
+            // Delete from common headers
+            if (config.headers) {
+                delete config.headers['Content-Type'];
+                delete config.headers.common?.['Content-Type'];
+            }
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
 // Get auth token from localStorage
 const token = localStorage.getItem('auth_token');
 if (token) {

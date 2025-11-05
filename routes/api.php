@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\SettingsController;
 use App\Http\Controllers\Api\V1\ThemeController;
 use App\Http\Controllers\Api\V1\TopbarMenuController;
 use App\Http\Controllers\Api\V1\TranslationController;
+use App\Http\Controllers\Api\V1\UploadController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -44,6 +45,9 @@ Route::prefix('v1')->group(function () {
     Route::get('/post-tags/{postTag}', [PostTagController::class, 'show'])->name('api.v1.post-tags.show');
     Route::get('/product-tags', [ProductTagController::class, 'index'])->name('api.v1.product-tags.index');
     Route::get('/product-tags/{productTag}', [ProductTagController::class, 'show'])->name('api.v1.product-tags.show');
+
+    // Translation route (public, needed for admin panel)
+    Route::get('/translations', [TranslationController::class, 'index'])->name('api.v1.translations.index');
 
     // Authentication endpoints
     Route::prefix('auth')->group(function () {
@@ -79,8 +83,13 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('product-tags', ProductTagController::class)->except(['index', 'show']);
 
         // Media management
-                    Route::apiResource('media', MediaController::class);
-            Route::post('/media/upload', [MediaController::class, 'upload'])->name('api.v1.media.upload');
+        Route::apiResource('media', MediaController::class);
+        Route::get('/media/{media}/serve', [MediaController::class, 'serve'])->name('api.v1.media.serve');
+        Route::post('/media/upload', [MediaController::class, 'upload'])->name('api.v1.media.upload');
+        Route::post('/media/upload-from-url', [MediaController::class, 'uploadFromUrl'])->name('api.v1.media.upload-from-url');
+        
+        // Upload for editor
+        Route::post('/upload/image', [UploadController::class, 'image'])->name('api.v1.upload.image');
 
             // Widget routes
             Route::get('/widgets/types', [WidgetController::class, 'types'])->name('api.v1.widgets.types');
@@ -99,9 +108,6 @@ Route::prefix('v1')->group(function () {
             
             // Topbar menu routes
             Route::get('/topbar/menu', [TopbarMenuController::class, 'index'])->name('api.v1.topbar.menu.index');
-
-            // Translation routes
-            Route::get('/translations', [TranslationController::class, 'index'])->name('api.v1.translations.index');
 
             // Settings routes
             Route::get('/settings', [SettingsController::class, 'index'])->name('api.v1.settings.index');

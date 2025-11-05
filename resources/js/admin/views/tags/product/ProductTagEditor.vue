@@ -135,14 +135,21 @@ const saveTag = async () => {
     try {
         if (isEdit.value) {
             await axios.put(`/api/v1/product-tags/${route.params.id}`, form.value);
+            // Reload tag data to reflect changes, but stay on edit page
+            await loadTag();
+            dialog.success($t('Tag updated successfully') || 'Tag updated successfully');
         } else {
-            await axios.post('/api/v1/product-tags', form.value);
+            const response = await axios.post('/api/v1/product-tags', form.value);
+            // Redirect to edit page after creating
+            dialog.success($t('Tag created successfully') || 'Tag created successfully');
+            router.push({ 
+                name: 'admin.product-tags.edit', 
+                params: { id: response.data.data.id }
+            });
         }
-        router.push({ name: 'admin.product-tags.index' });
-        dialog.success('Tag saved successfully');
     } catch (error: any) {
         console.error('Error saving tag:', error);
-        const message = error.response?.data?.message || 'Failed to save tag';
+        const message = error.response?.data?.message || ($t('Failed to save tag') || 'Failed to save tag');
         dialog.error(message);
     } finally {
         loading.value = false;

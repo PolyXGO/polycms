@@ -24,9 +24,19 @@ class UpdateProduct
             // Apply filters before updating
             $data = Hook::applyFilters('product.update.data', $data, $product);
 
-            // Render content from blocks if provided
-            if (isset($data['description_blocks']) && is_array($data['description_blocks'])) {
+            // Handle description: prioritize description_html (from Tiptap), fallback to rendering blocks
+            if (isset($data['description_html']) && trim($data['description_html']) !== '' && 
+                trim($data['description_html']) !== '<p></p>' && trim($data['description_html']) !== '<p><br></p>') {
+                // Use HTML content directly from Tiptap editor
+                // description_html is already set, no need to render
+            } elseif (isset($data['description_blocks']) && is_array($data['description_blocks']) && !empty($data['description_blocks'])) {
+                // Backward compatibility: render from blocks if description_html is not provided
                 $data['description_html'] = $this->renderer->render($data['description_blocks']);
+            } else {
+                // If description_html is not provided or empty, set to null
+                if (isset($data['description_html'])) {
+                    $data['description_html'] = null;
+                }
             }
 
             $product->update($data);
@@ -44,6 +54,8 @@ class UpdateProduct
             // Sync media if provided
             if ($mediaIds !== null) {
                 $mediaData = [];
+                // First media is featured (is_primary = true)
+                // Rest are gallery images
                 foreach ($mediaIds as $index => $mediaId) {
                     $mediaData[$mediaId] = [
                         'is_primary' => $index === 0,

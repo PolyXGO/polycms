@@ -2,6 +2,7 @@
     <div class="block-image">
         <div v-if="!attrs.url && !attrs.media_id" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
             <button
+                type="button"
                 @click="openMediaPicker = true"
                 class="text-gray-500 hover:text-indigo-600"
             >
@@ -25,9 +26,9 @@
                 class="mt-2 w-full px-2 py-1 border border-gray-300 rounded"
                 placeholder="Alt text"
             />
-            <div v-else class="mt-2 text-sm text-gray-600">
+            <div v-else class="mt-2 text-sm text-gray-600 dark:text-gray-400">
                 Alt: {{ attrs.alt || 'No alt text' }}
-                <button @click="editingAlt = true" class="ml-2 text-indigo-600 hover:text-indigo-800">Edit</button>
+                <button type="button" @click="editingAlt = true" class="ml-2 text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">Edit</button>
             </div>
         </div>
         <!-- Media Picker Modal would go here -->

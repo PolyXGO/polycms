@@ -52,7 +52,14 @@
                 <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     <tr v-for="category in categories" :key="category.id">
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900 dark:text-white">{{ category.name }}</div>
+                            <a 
+                                :href="getFrontendUrl(category.slug)" 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                class="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 hover:underline"
+                            >
+                                {{ category.name }}
+                            </a>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                             {{ category.slug }}
@@ -174,6 +181,12 @@ const loadCategories = async () => {
 const changePage = (page: number) => {
     pagination.value.current_page = page;
     loadCategories();
+};
+
+const getFrontendUrl = (slug: string): string => {
+    if (!slug) return '#';
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/categories/${slug}`;
 };
 
 // Watch for query param changes

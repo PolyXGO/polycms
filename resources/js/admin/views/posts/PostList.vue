@@ -51,7 +51,14 @@
                 <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     <tr v-for="post in posts" :key="post.id">
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900 dark:text-white">{{ post.title }}</div>
+                            <a 
+                                :href="getFrontendUrl(post.type, post.slug)" 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                class="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 hover:underline"
+                            >
+                                {{ post.title }}
+                            </a>
                             <div class="text-sm text-gray-500 dark:text-gray-400">{{ post.slug }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -182,6 +189,16 @@ const loadPosts = async () => {
 const changePage = (page: number) => {
     pagination.value.current_page = page;
     loadPosts();
+};
+
+const getFrontendUrl = (type: string, slug: string): string => {
+    if (!slug) return '#';
+    const baseUrl = window.location.origin;
+    if (type === 'page') {
+        return `${baseUrl}/${slug}`;
+    } else {
+        return `${baseUrl}/posts/${slug}`;
+    }
 };
 
 const deletePost = async (id: number) => {

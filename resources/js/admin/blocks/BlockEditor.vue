@@ -31,6 +31,7 @@
         </div>
         <div class="mt-4">
             <button
+                type="button"
                 @click="showBlockPicker = true"
                 class="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-indigo-500 hover:text-indigo-600 transition-colors"
             >
@@ -45,7 +46,7 @@
             <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full m-4 max-h-[80vh] overflow-hidden flex flex-col">
                 <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                     <h3 class="text-lg font-semibold">Add Block</h3>
-                    <button @click="showBlockPicker = false" class="text-gray-400 hover:text-gray-600">
+                    <button type="button" @click="showBlockPicker = false" class="text-gray-400 hover:text-gray-600">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -54,6 +55,7 @@
                 <div class="p-6 overflow-y-auto flex-1">
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                         <button
+                            type="button"
                             v-for="blockType in availableBlockTypes"
                             :key="blockType.type"
                             @click="addBlock(blockType.type)"

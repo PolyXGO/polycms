@@ -53,6 +53,7 @@ class ContentRenderer
             'list' => $this->renderList($attrs),
             'quote' => $this->renderQuote($attrs),
             'code' => $this->renderCode($attrs),
+            'grid' => $this->renderGrid($block),
             default => $this->renderUnknown($block),
         };
     }
@@ -121,6 +122,37 @@ class ContentRenderer
         $language = $attrs['language'] ?? '';
 
         return '<pre><code' . ($language ? ' class="language-' . htmlspecialchars($language, ENT_QUOTES, 'UTF-8') . '"' : '') . '>' . htmlspecialchars($code, ENT_QUOTES, 'UTF-8') . '</code></pre>';
+    }
+
+    protected function renderGrid(array $block): string
+    {
+        $attrs = $block['attrs'] ?? [];
+        $columns = $attrs['columns'] ?? 2;
+        $nestedBlocks = $attrs['blocks'] ?? [];
+        
+        // Group blocks by column (round-robin distribution)
+        $columnsData = [];
+        for ($i = 0; $i < $columns; $i++) {
+            $columnsData[] = [];
+        }
+        
+        foreach ($nestedBlocks as $index => $nestedBlock) {
+            $colIndex = $index % $columns;
+            $columnsData[$colIndex][] = $nestedBlock;
+        }
+        
+        // Render each column
+        $html = "<div class=\"grid grid-cols-{$columns} gap-4\">";
+        foreach ($columnsData as $colBlocks) {
+            $html .= '<div class="grid-column">';
+            foreach ($colBlocks as $colBlock) {
+                $html .= $this->renderBlock($colBlock);
+            }
+            $html .= '</div>';
+        }
+        $html .= '</div>';
+        
+        return $html;
     }
 
     protected function renderUnknown(array $block): string

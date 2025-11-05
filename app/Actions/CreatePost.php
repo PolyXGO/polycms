@@ -24,9 +24,23 @@ class CreatePost
             // Apply filters before creating
             $data = Hook::applyFilters('post.create.data', $data);
 
-            // Render content from blocks if provided
-            if (isset($data['content_raw']) && is_array($data['content_raw'])) {
-                $data['content_html'] = $this->renderer->render($data['content_raw']);
+            // Handle content: prioritize content_html (from Tiptap), fallback to rendering blocks
+            if (isset($data['content_html']) && !empty($data['content_html'])) {
+                // Use HTML content directly from Tiptap editor
+                // content_html is already set, no need to render
+            } elseif (isset($data['content_raw'])) {
+                // Backward compatibility: render from blocks if content_html is not provided
+                $contentRaw = $data['content_raw'];
+                // Handle both formats: { blocks: [...] } or direct array
+                if (is_array($contentRaw)) {
+                    $blocks = isset($contentRaw['blocks']) ? $contentRaw['blocks'] : $contentRaw;
+                } else {
+                    $blocks = [];
+                }
+                
+                if (!empty($blocks) && is_array($blocks)) {
+                    $data['content_html'] = $this->renderer->render($blocks);
+                }
             }
 
             $post = Post::create($data);

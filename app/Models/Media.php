@@ -55,7 +55,7 @@ class Media extends Model
      */
     public function products(): BelongsToMany
     {
-        return $this->belongsToMany(Product::class)
+        return $this->belongsToMany(Product::class, 'product_media', 'media_id', 'product_id')
             ->withPivot('is_primary', 'order');
     }
 
@@ -64,6 +64,21 @@ class Media extends Model
      */
     public function getUrlAttribute(): string
     {
+        // Use asset() to generate proper URL with current app URL
+        // For public disk, files are in storage/app/public and symlinked to public/storage
+        if ($this->disk === 'public') {
+            // Use request()->getSchemeAndHttpHost() to get current domain
+            $baseUrl = request()->getSchemeAndHttpHost();
+            return $baseUrl . '/storage/' . $this->path;
+        }
+        
+        // For private disk, use API route to serve the file
+        if ($this->disk === 'local' || $this->disk === 'private') {
+            $baseUrl = request()->getSchemeAndHttpHost();
+            return $baseUrl . '/api/v1/media/' . $this->id . '/serve';
+        }
+        
+        // For other disks, use Storage URL
         return Storage::disk($this->disk)->url($this->path);
     }
 

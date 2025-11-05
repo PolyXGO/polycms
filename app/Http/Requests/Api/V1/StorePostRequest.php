@@ -18,6 +18,31 @@ class StorePostRequest extends FormRequest
     }
 
     /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        // Convert empty strings to null for nullable fields
+        $nullableFields = [
+            'excerpt',
+            'content_html',
+            'meta_title',
+            'meta_description',
+            'meta_keywords',
+            'og_image',
+            'featured_image',
+            'published_at',
+            'scheduled_at',
+        ];
+
+        foreach ($nullableFields as $field) {
+            if ($this->has($field) && $this->input($field) === '') {
+                $this->merge([$field => null]);
+            }
+        }
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
@@ -30,6 +55,7 @@ class StorePostRequest extends FormRequest
             'type' => ['required', Rule::in(['post', 'page', 'news'])],
             'status' => ['required', Rule::in(['draft', 'published', 'archived'])],
             'excerpt' => ['nullable', 'string', 'max:1000'],
+            'content_html' => ['nullable', 'string'],
             'content_raw' => ['nullable', 'array'],
             'published_at' => ['nullable', 'date'],
             'scheduled_at' => ['nullable', 'date', 'after:now'],

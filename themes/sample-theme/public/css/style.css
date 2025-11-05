@@ -593,7 +593,6 @@ a:hover {
    ============================================ */
 .prose {
     color: var(--color-gray-700);
-    max-width: 65ch;
 }
 
 .prose h1,

@@ -2,21 +2,34 @@
     <div>
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-                {{ isEdit ? 'Edit Category' : 'Create New Category' }}
+                {{ isEdit ? $t('Edit Category') || 'Edit Category' : $t('Create Category') || 'Create New Category' }}
             </h1>
-            <button
-                @click="router.back()"
-                class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-            >
-                Cancel
-            </button>
+            <div class="flex items-center gap-3">
+                <a
+                    v-if="isEdit && form.slug"
+                    :href="getPermalink()"
+                    target="_blank"
+                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                    {{ $t('View Page') || 'View Page' }}
+                </a>
+                <button
+                    @click="router.back()"
+                    class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                >
+                    {{ $t('Cancel') }}
+                </button>
+            </div>
         </div>
 
         <form @submit.prevent="saveCategory" class="space-y-6">
             <!-- Basic Information -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                 <h2 class="text-lg font-semibold mb-4 dark:text-white">Basic Information</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name (Title) *</label>
                         <input
@@ -37,8 +50,21 @@
                             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                             placeholder="category-slug"
                             @input="onSlugInput"
+                            @paste="onSlugInput"
                         />
+                        <div v-if="form.slug" class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                            <span class="font-medium">{{ $t('Permalink:') || 'Permalink:' }}</span>
+                            <a
+                                :href="getPermalink()"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="ml-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 hover:underline"
+                            >
+                                {{ getPermalink() }}
+                            </a>
+                        </div>
                     </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div v-if="!isTypeFixed">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type *</label>
                         <select v-model="form.type" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
@@ -61,7 +87,7 @@
                                 v-for="category in parentCategories"
                                 :key="category.id"
                                 :value="category.id"
-                                :disabled="category.id === parseInt(route.params.id)"
+                                :disabled="category.id === parseInt(String(route.params.id))"
                             >
                                 {{ category.name }}
                             </option>
@@ -78,12 +104,8 @@
                     </div>
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-                        <textarea
-                            v-model="form.description"
-                            rows="6"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                            placeholder="Full description of the category..."
-                        />
+                        <TiptapEditor v-model="form.description" :placeholder="$t('Enter category description...') || 'Enter category description...'" />
+                    </div>
                     </div>
                 </div>
             </div>
@@ -148,8 +170,10 @@
 import { ref, onMounted, computed, watch, getCurrentInstance } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
+import TiptapEditor from '../../components/TiptapEditor.vue';
 import { useSlugify } from '../../composables/useSlugify';
 import { useTranslation } from '../../composables/useTranslation';
+import { useDialog } from '../../composables/useDialog';
 
 const { t } = useTranslation();
 const instance = getCurrentInstance();
@@ -158,6 +182,7 @@ const $t = instance?.appContext.config.globalProperties.$t || t;
 const router = useRouter();
 const route = useRoute();
 const { slugify } = useSlugify();
+const dialog = useDialog();
 
 const isEdit = computed(() => !!route.params.id);
 
@@ -191,15 +216,48 @@ const form = ref({
 });
 
 const generateSlug = () => {
-    // Only auto-generate if slug is empty or hasn't been manually edited
-    if (!slugManuallyEdited.value && form.value.name) {
-        form.value.slug = slugify(form.value.name);
+    // Auto-generate slug from name if slug is empty or hasn't been manually edited
+    if (form.value.name) {
+        const nameSlug = slugify(form.value.name);
+        if (!form.value.slug || (!slugManuallyEdited.value && form.value.slug === nameSlug)) {
+            form.value.slug = nameSlug;
+            slugManuallyEdited.value = false;
+        }
     }
 };
 
-const onSlugInput = () => {
-    // Mark slug as manually edited when user types in slug field
-    slugManuallyEdited.value = true;
+const onSlugInput = (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    const inputValue = target.value;
+
+    // If slug is empty, auto-generate from name
+    if (!inputValue || inputValue.trim() === '') {
+        if (form.value.name) {
+            form.value.slug = slugify(form.value.name);
+            slugManuallyEdited.value = false;
+        }
+        return;
+    }
+
+    // Check if input contains non-slug characters (spaces, special chars, Vietnamese accents)
+    // Convert to lowercase for comparison
+    const lowerInput = inputValue.toLowerCase();
+    const hasNonSlugChars = /[^a-z0-9\-]/.test(lowerInput) || /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/.test(lowerInput);
+
+    // If input has non-slug characters, convert to slug
+    if (hasNonSlugChars) {
+        form.value.slug = slugify(inputValue);
+        slugManuallyEdited.value = true;
+    } else {
+        // Input is already in slug format, just mark as manually edited
+        slugManuallyEdited.value = true;
+    }
+};
+
+const getPermalink = (): string => {
+    if (!form.value.slug) return '';
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/categories/${form.value.slug}`;
 };
 
 const handleImageUpload = (event: Event) => {
@@ -231,7 +289,7 @@ const uploadImage = async (file: File) => {
         form.value.image = response.data.data.url;
     } catch (error) {
         console.error('Error uploading image:', error);
-        alert('Failed to upload image');
+        dialog.error($t('Failed to upload image') || 'Failed to upload image');
     }
 };
 
@@ -273,7 +331,7 @@ const loadCategory = async () => {
         await loadParentCategories();
     } catch (error) {
         console.error('Error loading category:', error);
-        alert('Failed to load category');
+        dialog.error($t('Failed to load category') || 'Failed to load category');
     }
 };
 
@@ -293,18 +351,23 @@ const saveCategory = async () => {
 
         if (isEdit.value) {
             await axios.put(`/api/v1/categories/${route.params.id}`, data);
+            // Reload category data to reflect changes, but stay on edit page
+            await loadCategory();
+            dialog.success($t('Category updated successfully') || 'Category updated successfully');
         } else {
-            await axios.post('/api/v1/categories', data);
+            const response = await axios.post('/api/v1/categories', data);
+            // Redirect to edit page after creating
+            dialog.success($t('Category created successfully') || 'Category created successfully');
+            router.push({
+                name: 'admin.categories.edit',
+                params: { id: response.data.data.id },
+                query: route.query
+            });
         }
-
-        router.push({ name: 'admin.categories.index' });
     } catch (error: any) {
         console.error('Error saving category:', error);
-        if (error.response?.data?.message) {
-            alert(error.response.data.message);
-        } else {
-            alert('Failed to save category');
-        }
+        const message = error.response?.data?.message || ($t('Failed to save category') || 'Failed to save category');
+        dialog.error(message);
     } finally {
         loading.value = false;
     }
