@@ -1,12 +1,12 @@
 <template>
     <div>
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold text-gray-900">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
                 {{ isEdit ? 'Edit Category' : 'Create New Category' }}
             </h1>
             <button
                 @click="router.back()"
-                class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
             >
                 Cancel
             </button>
@@ -14,48 +14,48 @@
 
         <form @submit.prevent="saveCategory" class="space-y-6">
             <!-- Basic Information -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-lg font-semibold mb-4">Basic Information</h2>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold mb-4 dark:text-white">Basic Information</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Name (Title) *</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name (Title) *</label>
                         <input
                             v-model="form.name"
                             type="text"
                             required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                             placeholder="Category name"
                             @input="generateSlug"
                         />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Slug *</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Slug *</label>
                         <input
                             v-model="form.slug"
                             type="text"
                             required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                             placeholder="category-slug"
                             @input="onSlugInput"
                         />
                     </div>
                     <div v-if="!isTypeFixed">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Type *</label>
-                        <select v-model="form.type" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type *</label>
+                        <select v-model="form.type" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                             <option value="">Select type</option>
                             <option value="post">Post</option>
                             <option value="product">Product</option>
                         </select>
                     </div>
                     <div v-else>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                        <div class="px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                        <div class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                             {{ form.type === 'post' ? 'Post' : 'Product' }}
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Parent Category</label>
-                        <select v-model="form.parent_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Parent Category</label>
+                        <select v-model="form.parent_id" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                             <option :value="null">None (Root Category)</option>
                             <option
                                 v-for="category in parentCategories"
@@ -68,20 +68,20 @@
                         </select>
                     </div>
                     <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Summary</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Summary</label>
                         <textarea
                             v-model="form.summary"
                             rows="2"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                             placeholder="Short summary of the category..."
                         />
                     </div>
                     <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
                         <textarea
                             v-model="form.description"
                             rows="6"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                             placeholder="Full description of the category..."
                         />
                     </div>
@@ -89,14 +89,14 @@
             </div>
 
             <!-- Image Upload -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-lg font-semibold mb-4">Category Image</h2>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold mb-4 dark:text-white">Category Image</h2>
                 <div class="space-y-4">
                     <div v-if="form.image || imagePreview" class="relative">
                         <img
                             :src="imagePreview || form.image"
                             alt="Category image preview"
-                            class="max-w-md h-64 object-cover rounded-lg border border-gray-300"
+                            class="max-w-md h-64 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
                         />
                         <button
                             v-if="form.image || imagePreview"
@@ -110,15 +110,15 @@
                         </button>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Upload Image</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Upload Image</label>
                         <input
                             ref="fileInput"
                             type="file"
                             accept="image/*"
                             @change="handleImageUpload"
-                            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                            class="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/20 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/30"
                         />
-                        <p class="mt-1 text-sm text-gray-500">PNG, JPG, GIF up to 10MB</p>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">PNG, JPG, GIF up to 10MB</p>
                     </div>
                 </div>
             </div>
@@ -128,7 +128,7 @@
                 <button
                     type="button"
                     @click="router.back()"
-                    class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                 >
                     Cancel
                 </button>

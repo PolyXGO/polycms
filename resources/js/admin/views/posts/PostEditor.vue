@@ -1,12 +1,12 @@
 <template>
     <div>
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold text-gray-900">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
                 {{ isEdit ? 'Edit Post' : 'Create New Post' }}
             </h1>
             <button
                 @click="router.back()"
-                class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
             >
                 Cancel
             </button>
@@ -14,80 +14,80 @@
 
         <form @submit.prevent="savePost" class="space-y-6">
             <!-- Basic Information -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-lg font-semibold mb-4">Basic Information</h2>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold mb-4 dark:text-white">Basic Information</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title *</label>
                         <input
                             v-model="form.title"
                             type="text"
                             required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                             @input="generateSlug"
                         />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Slug *</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Slug *</label>
                         <input
                             v-model="form.slug"
                             type="text"
                             required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                             @input="onSlugInput"
                         />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Type *</label>
-                        <select v-model="form.type" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type *</label>
+                        <select v-model="form.type" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                             <option value="post">Post</option>
                             <option value="page">Page</option>
                             <option value="news">News</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Status *</label>
-                        <select v-model="form.status" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status *</label>
+                        <select v-model="form.status" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                             <option value="draft">Draft</option>
                             <option value="published">Published</option>
                             <option value="archived">Archived</option>
                         </select>
                     </div>
                     <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Excerpt</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Excerpt</label>
                         <textarea
                             v-model="form.excerpt"
                             rows="3"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         />
                     </div>
                 </div>
             </div>
 
             <!-- Block Editor -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-lg font-semibold mb-4">Content</h2>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold mb-4 dark:text-white">Content</h2>
                 <BlockEditor v-model="contentBlocks" />
             </div>
 
             <!-- SEO Settings -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-lg font-semibold mb-4">SEO Settings</h2>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold mb-4 dark:text-white">SEO Settings</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Meta Title</label>
-                        <input v-model="form.meta_title" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Meta Title</label>
+                        <input v-model="form.meta_title" type="text" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Meta Keywords</label>
-                        <input v-model="form.meta_keywords" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Meta Keywords</label>
+                        <input v-model="form.meta_keywords" type="text" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                     </div>
                     <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Meta Description</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Meta Description</label>
                         <textarea
                             v-model="form.meta_description"
                             rows="3"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         />
                     </div>
                 </div>
@@ -98,7 +98,7 @@
                 <button
                     type="button"
                     @click="router.back()"
-                    class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                 >
                     Cancel
                 </button>
@@ -120,10 +120,12 @@ import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
 import BlockEditor from '../../blocks/BlockEditor.vue';
 import { useSlugify } from '../../composables/useSlugify';
+import { useDialog } from '../../composables/useDialog';
 
 const router = useRouter();
 const route = useRoute();
 const { slugify } = useSlugify();
+const dialog = useDialog();
 
 const isEdit = computed(() => !!route.params.id);
 
@@ -170,9 +172,10 @@ const loadPost = async () => {
             meta_keywords: post.meta_keywords || '',
         };
         contentBlocks.value = post.content_raw?.blocks || [];
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error loading post:', error);
-        alert('Failed to load post');
+        const message = error.response?.data?.message || 'Failed to load post';
+        dialog.error(message);
     }
 };
 
@@ -192,13 +195,11 @@ const savePost = async () => {
         }
 
         router.push({ name: 'admin.posts.index' });
+        dialog.success('Post saved successfully');
     } catch (error: any) {
         console.error('Error saving post:', error);
-        if (error.response?.data?.message) {
-            alert(error.response.data.message);
-        } else {
-            alert('Failed to save post');
-        }
+        const message = error.response?.data?.message || 'Failed to save post';
+        dialog.error(message);
     } finally {
         loading.value = false;
     }

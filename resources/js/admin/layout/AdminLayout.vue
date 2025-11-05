@@ -1,7 +1,7 @@
 <template>
-    <div class="min-h-screen bg-gray-100 flex">
+    <div class="min-h-screen bg-gray-100 dark:bg-gray-900 flex">
         <!-- Sidebar -->
-        <aside class="bg-gray-800 text-white w-64 space-y-6 py-7 px-2 fixed inset-y-0 left-0 transform md:relative md:translate-x-0 transition duration-200 ease-in-out overflow-y-auto">
+        <aside class="bg-gray-800 dark:bg-gray-800 text-white w-64 space-y-6 py-7 px-2 fixed inset-y-0 left-0 transform md:relative md:translate-x-0 transition duration-200 ease-in-out overflow-y-auto">
             <div class="flex items-center justify-between px-4">
                 <router-link :to="{ name: 'admin.dashboard' }" class="text-white text-2xl font-semibold uppercase">
                     PolyCMS
@@ -42,10 +42,47 @@
         <!-- Main content -->
         <div class="flex-1 flex flex-col md:ml-0">
             <!-- Header -->
-            <header class="w-full bg-white shadow-sm p-4 flex items-center justify-between">
-                <h1 class="text-xl font-semibold text-gray-900">Admin Panel</h1>
+            <header class="w-full bg-white dark:bg-gray-800 shadow-sm p-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
+                <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Admin Panel</h1>
                 <div class="flex items-center space-x-4">
-                    <span class="text-gray-700">{{ authStore.user?.name }}</span>
+                    <!-- Theme Toggle Button -->
+                    <button
+                        @click="themeStore.toggle()"
+                        class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        :title="themeStore.isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+                    >
+                        <!-- Sun icon (light mode) -->
+                        <svg
+                            v-if="themeStore.isDark"
+                            class="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                            />
+                        </svg>
+                        <!-- Moon icon (dark mode) -->
+                        <svg
+                            v-else
+                            class="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                            />
+                        </svg>
+                    </button>
+                    <span class="text-gray-700 dark:text-gray-300">{{ authStore.user?.name }}</span>
                 </div>
             </header>
 
@@ -61,6 +98,7 @@
 import { ref, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import { useThemeStore } from '../stores/theme';
 import axios from 'axios';
 import MenuItem from './MenuItem.vue';
 
@@ -84,6 +122,7 @@ interface MenuItemData {
 }
 
 const authStore = useAuthStore();
+const themeStore = useThemeStore();
 const route = useRoute();
 
 const menuItems = ref<MenuItemData[]>([]);

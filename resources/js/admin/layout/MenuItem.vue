@@ -6,7 +6,7 @@
                 @click="toggleMenu"
                 :class="[
                     'w-full flex items-center justify-between px-4 py-2.5 rounded transition duration-200',
-                    isOpen ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                    isOpen ? 'bg-gray-900 dark:bg-gray-700 text-white' : 'text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-gray-700 hover:text-white'
                 ]"
             >
                 <div class="flex items-center">
@@ -48,7 +48,7 @@
                     :to="getChildRoute(child)"
                     :class="[
                         'block px-4 py-2 rounded transition duration-200',
-                        isChildActive(child) ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                        isChildActive(child) ? 'bg-gray-900 dark:bg-gray-700 text-white' : 'text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-gray-700 hover:text-white'
                     ]"
                 >
                     {{ child.label }}
@@ -62,7 +62,7 @@
             :to="getItemRoute()"
             :class="[
                 'flex items-center px-4 py-2.5 rounded transition duration-200',
-                isItemActive() ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                isItemActive() ? 'bg-gray-900 dark:bg-gray-700 text-white' : 'text-gray-300 dark:text-gray-400 hover:bg-gray-700 dark:hover:bg-gray-700 hover:text-white'
             ]"
         >
             <svg

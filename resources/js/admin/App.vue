@@ -1,7 +1,8 @@
 <template>
     <router-view />
+    <DialogProvider />
 </template>
 
 <script setup lang="ts">
-// Root App component for Admin SPA
+import DialogProvider from './components/dialogs/DialogProvider.vue';
 </script>

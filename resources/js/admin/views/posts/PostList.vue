@@ -1,7 +1,7 @@
 <template>
     <div>
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold text-gray-900">Posts</h1>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Posts</h1>
             <router-link
                 :to="{ name: 'admin.posts.create' }"
                 class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
@@ -11,22 +11,22 @@
         </div>
 
         <!-- Filters -->
-        <div class="bg-white rounded-lg shadow p-4 mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <input
                     v-model="filters.search"
                     type="text"
                     placeholder="Search posts..."
-                    class="px-3 py-2 border border-gray-300 rounded-lg"
+                    class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                     @input="loadPosts"
                 />
-                <select v-model="filters.status" @change="loadPosts" class="px-3 py-2 border border-gray-300 rounded-lg">
+                <select v-model="filters.status" @change="loadPosts" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                     <option value="">All Status</option>
                     <option value="draft">Draft</option>
                     <option value="published">Published</option>
                     <option value="archived">Archived</option>
                 </select>
-                <select v-model="filters.type" @change="loadPosts" class="px-3 py-2 border border-gray-300 rounded-lg">
+                <select v-model="filters.type" @change="loadPosts" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                     <option value="">All Types</option>
                     <option value="post">Post</option>
                     <option value="page">Page</option>
@@ -36,63 +36,63 @@
         </div>
 
         <!-- Posts Table -->
-        <div class="bg-white rounded-lg shadow overflow-hidden">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Author</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Published</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Title</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Author</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Published</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     <tr v-for="post in posts" :key="post.id">
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">{{ post.title }}</div>
-                            <div class="text-sm text-gray-500">{{ post.slug }}</div>
+                            <div class="text-sm font-medium text-gray-900 dark:text-white">{{ post.title }}</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">{{ post.slug }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
                                 {{ post.type }}
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span :class="[
                                 'px-2 inline-flex text-xs leading-5 font-semibold rounded-full',
-                                post.status === 'published' ? 'bg-green-100 text-green-800' :
-                                post.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-gray-100 text-gray-800'
+                                post.status === 'published' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
+                                post.status === 'draft' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
+                                'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
                             ]">
                                 {{ post.status }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                             {{ post.user?.name }}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                             {{ post.published_at ? new Date(post.published_at).toLocaleDateString() : '-' }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <router-link
                                 :to="{ name: 'admin.posts.edit', params: { id: post.id } }"
-                                class="text-indigo-600 hover:text-indigo-900 mr-4"
+                                class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 mr-4"
                             >
                                 Edit
                             </router-link>
                             <button
                                 @click="deletePost(post.id)"
-                                class="text-red-600 hover:text-red-900"
+                                class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
                             >
                                 Delete
                             </button>
                         </td>
                     </tr>
                     <tr v-if="posts.length === 0">
-                        <td colspan="6" class="px-6 py-4 text-center text-gray-500">
-                            No posts found. <router-link :to="{ name: 'admin.posts.create' }" class="text-indigo-600">Create one</router-link>
+                        <td colspan="6" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                            No posts found. <router-link :to="{ name: 'admin.posts.create' }" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">Create one</router-link>
                         </td>
                     </tr>
                 </tbody>
@@ -101,21 +101,21 @@
 
         <!-- Pagination -->
         <div v-if="pagination.total > pagination.per_page" class="mt-6 flex items-center justify-between">
-            <div class="text-sm text-gray-700">
+            <div class="text-sm text-gray-700 dark:text-gray-300">
                 Showing {{ pagination.from }} to {{ pagination.to }} of {{ pagination.total }} results
             </div>
             <div class="flex space-x-2">
                 <button
                     @click="changePage(pagination.current_page - 1)"
                     :disabled="pagination.current_page === 1"
-                    class="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50"
+                    class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
                 >
                     Previous
                 </button>
                 <button
                     @click="changePage(pagination.current_page + 1)"
                     :disabled="pagination.current_page === pagination.last_page"
-                    class="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50"
+                    class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
                 >
                     Next
                 </button>
@@ -128,8 +128,10 @@
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
+import { useDialog } from '../../composables/useDialog';
 
 const router = useRouter();
+const dialog = useDialog();
 
 const posts = ref<any[]>([]);
 const filters = ref({
@@ -178,14 +180,24 @@ const changePage = (page: number) => {
 };
 
 const deletePost = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this post?')) return;
+    const confirmed = await dialog.confirm({
+        title: 'Delete Post',
+        message: 'Are you sure you want to delete this post?',
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        type: 'danger',
+    });
+
+    if (!confirmed) return;
 
     try {
         await axios.delete(`/api/v1/posts/${id}`);
         loadPosts();
-    } catch (error) {
+        dialog.success('Post deleted successfully');
+    } catch (error: any) {
         console.error('Error deleting post:', error);
-        alert('Failed to delete post');
+        const message = error.response?.data?.message || 'Failed to delete post';
+        dialog.error(message);
     }
 };
 

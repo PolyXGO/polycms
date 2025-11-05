@@ -1,14 +1,14 @@
 <template>
     <div>
-        <h1 class="text-2xl font-bold text-gray-900 mb-6">Dashboard</h1>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Dashboard</h1>
 
         <!-- Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <div class="bg-white rounded-lg shadow p-6">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-600">Total Posts</p>
-                        <p class="text-2xl font-bold text-gray-900 mt-2">{{ stats.posts }}</p>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Posts</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white mt-2">{{ stats.posts }}</p>
                     </div>
                     <div class="p-3 bg-blue-100 rounded-lg">
                         <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -21,11 +21,11 @@
                 </router-link>
             </div>
 
-            <div class="bg-white rounded-lg shadow p-6">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-600">Total Products</p>
-                        <p class="text-2xl font-bold text-gray-900 mt-2">{{ stats.products }}</p>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Products</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white mt-2">{{ stats.products }}</p>
                     </div>
                     <div class="p-3 bg-green-100 rounded-lg">
                         <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -38,11 +38,11 @@
                 </router-link>
             </div>
 
-            <div class="bg-white rounded-lg shadow p-6">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-600">Categories</p>
-                        <p class="text-2xl font-bold text-gray-900 mt-2">{{ stats.categories }}</p>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Categories</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white mt-2">{{ stats.categories }}</p>
                     </div>
                     <div class="p-3 bg-purple-100 rounded-lg">
                         <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -55,11 +55,11 @@
                 </router-link>
             </div>
 
-            <div class="bg-white rounded-lg shadow p-6">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-600">Media Files</p>
-                        <p class="text-2xl font-bold text-gray-900 mt-2">{{ stats.media }}</p>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Media Files</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white mt-2">{{ stats.media }}</p>
                     </div>
                     <div class="p-3 bg-yellow-100 rounded-lg">
                         <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -74,9 +74,9 @@
         </div>
 
         <!-- Recent Posts -->
-        <div class="bg-white rounded-lg shadow mb-6">
-            <div class="p-6 border-b border-gray-200 flex justify-between items-center">
-                <h2 class="text-lg font-semibold text-gray-900">Recent Posts</h2>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow mb-6">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Posts</h2>
                 <router-link :to="{ name: 'admin.posts.index' }" class="text-sm text-indigo-600 hover:text-indigo-800">
                     View all →
                 </router-link>
@@ -86,15 +86,15 @@
                     No posts yet. <router-link :to="{ name: 'admin.posts.create' }" class="text-indigo-600 hover:text-indigo-800">Create your first post</router-link>
                 </div>
                 <div v-else class="space-y-4">
-                    <div v-for="post in recentPosts" :key="post.id" class="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
+                    <div v-for="post in recentPosts" :key="post.id" class="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
                         <div>
                             <router-link
                                 :to="{ name: 'admin.posts.edit', params: { id: post.id } }"
-                                class="text-sm font-medium text-gray-900 hover:text-indigo-600"
+                                class="text-sm font-medium text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400"
                             >
                                 {{ post.title }}
                             </router-link>
-                            <p class="text-xs text-gray-500 mt-1">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                 {{ post.status }} • {{ post.published_at ? new Date(post.published_at).toLocaleDateString() : 'Not published' }}
                             </p>
                         </div>
@@ -112,35 +112,35 @@
         </div>
 
         <!-- Quick Actions -->
-        <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <router-link
                     :to="{ name: 'admin.posts.create' }"
-                    class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                    class="flex items-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
-                    <div class="p-2 bg-blue-100 rounded-lg mr-3">
-                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg mr-3">
+                        <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                         </svg>
                     </div>
                     <div>
-                        <p class="font-medium text-gray-900">Create Post</p>
-                        <p class="text-sm text-gray-500">Add a new blog post</p>
+                        <p class="font-medium text-gray-900 dark:text-white">Create Post</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Add a new blog post</p>
                     </div>
                 </router-link>
                 <router-link
                     :to="{ name: 'admin.products.create' }"
-                    class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                    class="flex items-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
-                    <div class="p-2 bg-green-100 rounded-lg mr-3">
-                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="p-2 bg-green-100 dark:bg-green-900 rounded-lg mr-3">
+                        <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                         </svg>
                     </div>
                     <div>
-                        <p class="font-medium text-gray-900">Create Product</p>
-                        <p class="text-sm text-gray-500">Add a new product</p>
+                        <p class="font-medium text-gray-900 dark:text-white">Create Product</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Add a new product</p>
                     </div>
                 </router-link>
                 <router-link

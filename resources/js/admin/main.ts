@@ -26,4 +26,9 @@ import { useAuthStore } from './stores/auth';
 const authStore = useAuthStore();
 authStore.checkAuth();
 
+// Initialize theme store
+import { useThemeStore } from './stores/theme';
+const themeStore = useThemeStore();
+themeStore.init();
+
 app.mount('#polycms-admin-app');
