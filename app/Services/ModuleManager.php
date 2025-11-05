@@ -34,7 +34,7 @@ class ModuleManager
 
     /**
      * Discover all modules in the modules directory
-     * 
+     *
      * @return array<string, array{name: string, vendor: string, version: string, description: string, provider: string, path: string, enabled: bool}>
      */
     public function discoverModules(): array
@@ -63,7 +63,7 @@ class ModuleManager
 
                     try {
                         $manifest = json_decode(File::get($manifestPath), true, 512, JSON_THROW_ON_ERROR);
-                        
+
                         $modules["{$vendor}.{$module}"] = [
                             'name' => $manifest['name'] ?? $module,
                             'vendor' => $manifest['vendor'] ?? $vendor,
@@ -88,7 +88,7 @@ class ModuleManager
 
     /**
      * Get a specific module information
-     * 
+     *
      * @param string $moduleKey Format: "Vendor.Module"
      * @return array<string, mixed>|null
      */
@@ -100,7 +100,7 @@ class ModuleManager
 
     /**
      * Check if a module is enabled
-     * 
+     *
      * @param string $moduleKey Format: "Vendor.Module"
      * @return bool
      */
@@ -112,14 +112,14 @@ class ModuleManager
 
     /**
      * Enable a module
-     * 
+     *
      * @param string $moduleKey Format: "Vendor.Module"
      * @return bool
      */
     public function enableModule(string $moduleKey): bool
     {
         $module = $this->getModule($moduleKey);
-        
+
         if (!$module) {
             return false;
         }
@@ -137,25 +137,25 @@ class ModuleManager
 
     /**
      * Disable a module
-     * 
+     *
      * @param string $moduleKey Format: "Vendor.Module"
      * @return bool
      */
     public function disableModule(string $moduleKey): bool
     {
         $enabled = $this->getEnabledModules();
-        
+
         $enabled = array_filter($enabled, fn($key) => $key !== $moduleKey);
-        
+
         $this->saveEnabledModules(array_values($enabled));
         $this->clearCache();
-        
+
         return true;
     }
 
     /**
      * Get list of enabled module keys
-     * 
+     *
      * @return array<int, string>
      */
     public function getEnabledModules(): array
@@ -163,7 +163,7 @@ class ModuleManager
         // In a real implementation, you might store this in database
         // For now, using config file
         $configPath = config_path('modules.php');
-        
+
         if (File::exists($configPath)) {
             $config = require $configPath;
             return $config['enabled'] ?? [];
@@ -174,7 +174,7 @@ class ModuleManager
 
     /**
      * Save enabled modules list
-     * 
+     *
      * @param array<int, string> $modules
      * @return void
      */
@@ -182,26 +182,26 @@ class ModuleManager
     {
         $configPath = config_path('modules.php');
         $config = "<?php\n\nreturn [\n    'enabled' => " . var_export($modules, true) . ",\n];\n";
-        
+
         File::put($configPath, $config);
     }
 
     /**
      * Register all enabled modules' service providers
-     * 
+     *
      * @return void
      */
     public function registerModules(): void
     {
         $modules = $this->discoverModules();
-        
+
         foreach ($modules as $moduleKey => $module) {
             if (!$module['enabled'] || !$module['provider']) {
                 continue;
             }
 
             $providerClass = $module['provider'];
-            
+
             if (class_exists($providerClass)) {
                 app()->register($providerClass);
             }
@@ -210,7 +210,7 @@ class ModuleManager
 
     /**
      * Register module autoloaders
-     * 
+     *
      * @return void
      */
     public function registerAutoloaders(): void
@@ -222,11 +222,19 @@ class ModuleManager
                 continue;
             }
 
-            $loader = app()->getLoader();
+            // Get Composer's autoloader instance
+            // In Laravel, the autoloader is already loaded, so we get it from registered loaders
+            $loaders = \Composer\Autoload\ClassLoader::getRegisteredLoaders();
+            $loader = $loaders['default'] ?? reset($loaders);
+
+            if (!$loader instanceof \Composer\Autoload\ClassLoader) {
+                // Fallback: if no loader found, create a new one and register it
+                $loader = new \Composer\Autoload\ClassLoader();
+            }
 
             foreach ($module['autoload']['psr-4'] as $namespace => $path) {
                 $fullPath = $module['path'] . '/' . ltrim($path, '/');
-                
+
                 if (File::exists($fullPath)) {
                     $loader->addPsr4($namespace, $fullPath);
                 }
@@ -236,7 +244,7 @@ class ModuleManager
 
     /**
      * Clear module cache
-     * 
+     *
      * @return void
      */
     public function clearCache(): void

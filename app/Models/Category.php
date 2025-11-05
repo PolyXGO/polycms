@@ -161,11 +161,11 @@ class Category extends Model
     public function scopeRoots($query, ?string $type = null)
     {
         $query = $query->whereNull('parent_id');
-        
+
         if ($type) {
             $query->where('type', $type);
         }
-        
+
         return $query->orderBy('order')->orderBy('name');
     }
 
@@ -176,17 +176,17 @@ class Category extends Model
     {
         $subquery = static::select('parent_id')
             ->whereNotNull('parent_id');
-            
+
         if ($type) {
             $subquery->where('type', $type);
         }
 
         $query = $query->whereNotIn('id', $subquery);
-        
+
         if ($type) {
             $query->where('type', $type);
         }
-        
+
         return $query;
     }
 
@@ -204,11 +204,11 @@ class Category extends Model
     public function scopeAtDepth($query, int $depth, ?string $type = null)
     {
         $query = $query->where('depth', $depth);
-        
+
         if ($type) {
             $query->where('type', $type);
         }
-        
+
         return $query;
     }
 
@@ -249,15 +249,15 @@ class Category extends Model
     public static function getTree(?string $type = null, ?int $maxDepth = null): Collection
     {
         $query = static::query();
-        
+
         if ($type) {
             $query->where('type', $type);
         }
-        
+
         if ($maxDepth !== null) {
             $query->where('depth', '<=', $maxDepth);
         }
-        
+
         $categories = $query->orderBy('depth')
             ->orderBy('order')
             ->orderBy('name')
@@ -328,7 +328,7 @@ class Category extends Model
     public function getTotalPostsCountAttribute(): int
     {
         $categoryIds = array_merge([$this->id], $this->descendantIds());
-        
+
         return DB::table('post_category')
             ->whereIn('category_id', $categoryIds)
             ->distinct('post_id')
@@ -341,7 +341,7 @@ class Category extends Model
     public function getTotalProductsCountAttribute(): int
     {
         $categoryIds = array_merge([$this->id], $this->descendantIds());
-        
+
         return DB::table('product_category')
             ->whereIn('category_id', $categoryIds)
             ->distinct('product_id')

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\MediaController;
 use App\Http\Controllers\Api\V1\PostController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\TagController;
+use App\Http\Controllers\Api\V1\AdminMenuController;
 use App\Http\Controllers\Api\V1\ModuleController;
 use App\Http\Controllers\Api\V1\WidgetAreaController;
 use App\Http\Controllers\Api\V1\WidgetController;
@@ -75,5 +76,9 @@ Route::prefix('v1')->group(function () {
             Route::get('/modules', [ModuleController::class, 'index'])->name('api.v1.modules.index');
             Route::post('/modules/{moduleKey}/enable', [ModuleController::class, 'enable'])->name('api.v1.modules.enable');
             Route::post('/modules/{moduleKey}/disable', [ModuleController::class, 'disable'])->name('api.v1.modules.disable');
+            Route::delete('/modules/{moduleKey}', [ModuleController::class, 'destroy'])->name('api.v1.modules.destroy');
+
+            // Admin menu routes
+            Route::get('/admin/menu', [AdminMenuController::class, 'index'])->name('api.v1.admin.menu.index');
         });
 });

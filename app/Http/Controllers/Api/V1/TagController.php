@@ -64,10 +64,19 @@ class TagController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', 'unique:tags,slug'],
+            'slug' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'type' => ['required', 'string', 'max:50'],
+            'type' => ['required', 'string', 'in:post,product'],
         ]);
+
+        // Validate unique slug per type
+        $existing = Tag::where('type', $validated['type'])
+            ->where('slug', $validated['slug'])
+            ->exists();
+
+        if ($existing) {
+            return $this->errorResponse('Slug already exists for this tag type', 422);
+        }
 
         $tag = Tag::create($validated);
 
@@ -93,10 +102,25 @@ class TagController extends Controller
     {
         $validated = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:255'],
-            'slug' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('tags', 'slug')->ignore($tag->id)],
+            'slug' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'type' => ['sometimes', 'required', 'string', 'max:50'],
+            'type' => ['sometimes', 'required', 'string', 'in:post,product'],
         ]);
+
+        // Validate unique slug per type (excluding current)
+        if (isset($validated['slug']) || isset($validated['type'])) {
+            $type = $validated['type'] ?? $tag->type;
+            $slug = $validated['slug'] ?? $tag->slug;
+
+            $existing = Tag::where('type', $type)
+                ->where('slug', $slug)
+                ->where('id', '!=', $tag->id)
+                ->exists();
+
+            if ($existing) {
+                return $this->errorResponse('Slug already exists for this tag type', 422);
+            }
+        }
 
         $tag->update($validated);
 

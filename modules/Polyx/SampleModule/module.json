@@ -1,0 +1,12 @@
+{
+  "name": "Sample Module",
+  "vendor": "Polyx",
+  "version": "1.0.0",
+  "description": "Sample module demonstrating hooks, filters, sidebar menu registration, and post content enhancement. Use this as a reference for developing custom modules.",
+  "provider": "Modules\\Polyx\\SampleModule\\SampleModuleServiceProvider",
+  "autoload": {
+    "psr-4": {
+      "Modules\\Polyx\\SampleModule\\": "src/"
+    }
+  }
+}

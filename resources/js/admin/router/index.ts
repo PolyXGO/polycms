@@ -12,6 +12,7 @@ import TagList from '../views/tags/TagList.vue';
 import MediaLibrary from '../views/media/MediaLibrary.vue';
 import WidgetManager from '../views/widgets/WidgetManager.vue';
 import ModuleList from '../views/modules/ModuleList.vue';
+import SampleModuleSettings from '../views/modules/SampleModuleSettings.vue';
 import { useAuthStore } from '../stores/auth';
 
 const routes: Array<RouteRecordRaw> = [
@@ -98,6 +99,11 @@ const routes: Array<RouteRecordRaw> = [
                 path: 'modules',
                 name: 'admin.modules.index',
                 component: ModuleList,
+            },
+            {
+                path: 'sample-module/settings',
+                name: 'admin.sample-module.settings',
+                component: SampleModuleSettings,
             },
         ],
     },

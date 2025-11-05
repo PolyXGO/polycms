@@ -35,6 +35,11 @@ class AppServiceProvider extends ServiceProvider
 
         // Register alias for Widget facade
         $this->app->alias('widget', WidgetManager::class);
+
+        // Register Menu Registry as singleton
+        $this->app->singleton(\App\Services\MenuRegistry::class, function ($app) {
+            return new \App\Services\MenuRegistry();
+        });
     }
 
     /**

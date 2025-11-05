@@ -82,4 +82,46 @@ class ModuleController extends Controller
             'message' => 'Module disabled successfully',
         ]);
     }
+
+    /**
+     * Delete a module (removes module files - use with caution)
+     */
+    public function destroy(Request $request, string $moduleKey): JsonResponse
+    {
+        $module = $this->moduleManager->getModule($moduleKey);
+
+        if (!$module) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Module not found',
+            ], 404);
+        }
+
+        // Disable module first if enabled
+        if ($module['enabled']) {
+            $this->moduleManager->disableModule($moduleKey);
+        }
+
+        // Delete module directory
+        try {
+            $modulePath = $module['path'];
+            if (file_exists($modulePath) && is_dir($modulePath)) {
+                // Use Laravel's File facade for safer deletion
+                \Illuminate\Support\Facades\File::deleteDirectory($modulePath);
+            }
+
+            // Clear cache
+            $this->moduleManager->clearCache();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Module deleted successfully',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete module: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }

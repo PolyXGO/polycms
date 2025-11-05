@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources\Api\V1;
 
+use App\Facades\Hook;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -24,7 +25,7 @@ class PostResource extends JsonResource
             'status' => $this->status,
             'excerpt' => $this->excerpt,
             'content_raw' => $this->content_raw,
-            'content_html' => $this->content_html,
+            'content_html' => Hook::applyFilters('post.content.render', $this->content_html ?? '', $this->resource),
             'published_at' => $this->published_at?->toISOString(),
             'scheduled_at' => $this->scheduled_at?->toISOString(),
             'meta' => [

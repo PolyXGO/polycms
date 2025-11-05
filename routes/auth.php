@@ -11,14 +11,21 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
+// Redirect /login to /admin/login (Admin SPA handles authentication)
+Route::get('login', function () {
+    // If already authenticated, redirect to admin dashboard
+    if (auth()->check()) {
+        return redirect('/admin');
+    }
+    // Otherwise redirect to admin login page
+    return redirect('/admin/login');
+})->name('login');
+
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
 
     Route::post('register', [RegisteredUserController::class, 'store']);
-
-    Route::get('login', [AuthenticatedSessionController::class, 'create'])
-        ->name('login');
 
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
 
