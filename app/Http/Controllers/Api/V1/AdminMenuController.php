@@ -6,13 +6,17 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Facades\Hook;
 use App\Http\Controllers\Controller;
+use App\Services\CoreMenuService;
 use App\Services\MenuRegistry;
+use App\Services\ModuleManager;
 use Illuminate\Http\JsonResponse;
 
 class AdminMenuController extends Controller
 {
     public function __construct(
-        protected MenuRegistry $menuRegistry
+        protected MenuRegistry $menuRegistry,
+        protected CoreMenuService $coreMenuService,
+        protected ModuleManager $moduleManager
     ) {}
 
     /**
@@ -20,10 +24,35 @@ class AdminMenuController extends Controller
      */
     public function index(): JsonResponse
     {
-        // Allow modules to register menu items via action hook
-        Hook::doAction('admin.menu.build');
+        // Clear registry before building
+        $this->menuRegistry->clear();
+
+        // Register core menu items first
+        $this->coreMenuService->registerCoreMenus();
+
+        // Get enabled modules and only allow them to register menu items
+        $enabledModules = $this->moduleManager->getEnabledModules();
+        
+        // Filter hook to only execute for enabled modules
+        // We'll wrap the hook execution to check module status
+        if (!empty($enabledModules)) {
+            // Allow modules to register menu items via action hook
+            // The hook callbacks will only execute for enabled modules since their service providers are only registered when enabled
+            Hook::doAction('admin.menu.build');
+        }
 
         $menuItems = $this->menuRegistry->all();
+
+        // Sort children by order
+        foreach ($menuItems as &$item) {
+            if (!empty($item['children'])) {
+                usort($item['children'], function ($a, $b) {
+                    $orderA = $a['order'] ?? 999;
+                    $orderB = $b['order'] ?? 999;
+                    return $orderA <=> $orderB;
+                });
+            }
+        }
 
         return response()->json([
             'success' => true,

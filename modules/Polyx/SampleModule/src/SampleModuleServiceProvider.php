@@ -38,6 +38,7 @@ class SampleModuleServiceProvider extends ServiceProvider
                         'label' => 'Settings',
                         'route' => 'admin.sample-module.settings',
                         'icon' => null,
+                        'order' => 1,
                     ],
                 ],
             ]);
