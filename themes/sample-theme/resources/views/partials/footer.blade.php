@@ -1,37 +1,36 @@
-<footer class="bg-gray-800 dark:bg-gray-900 text-white mt-auto">
-    <div class="container mx-auto px-4 py-8">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {{-- Footer Widget Area 1 --}}
-            <div>
-                <h3 class="text-lg font-semibold mb-4">About</h3>
-                <p class="text-gray-300 dark:text-gray-400">
-                    {{ $tagline ?? 'Just another PolyCMS site' }}
-                </p>
-                <p class="text-gray-400 dark:text-gray-500 text-sm mt-2">
-                    Powered by <a href="https://polycms.com" class="text-indigo-400 hover:text-indigo-300">PolyCMS</a>
+<footer class="footer">
+    <div class="container">
+        <div class="footer-content">
+            {{-- About Section --}}
+            <div class="footer-section">
+                <h3>About</h3>
+                <p>{{ $tagline ?? 'Just another PolyCMS site' }}</p>
+                <p class="mt-md">
+                    <small>Powered by <a href="https://polycms.com" class="footer-link">PolyCMS</a></small>
                 </p>
             </div>
             
-            {{-- Footer Widget Area 2 --}}
-            <div>
-                <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
-                <ul class="space-y-2 text-gray-300 dark:text-gray-400">
-                    <li><a href="{{ url('/') }}" class="hover:text-white transition-colors">Home</a></li>
-                    <li><a href="{{ url('/posts') }}" class="hover:text-white transition-colors">Blog</a></li>
-                    <li><a href="{{ url('/products') }}" class="hover:text-white transition-colors">Products</a></li>
-                </ul>
+            {{-- Quick Links --}}
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <a href="{{ url('/') }}" class="footer-link">Home</a>
+                <a href="{{ url('/posts') }}" class="footer-link">Blog</a>
+                <a href="{{ url('/products') }}" class="footer-link">Products</a>
+                <a href="{{ url('/#about') }}" class="footer-link">About Us</a>
+                <a href="{{ url('/#contact') }}" class="footer-link">Contact</a>
             </div>
             
-            {{-- Footer Widget Area 3 --}}
-            <div>
-                <h3 class="text-lg font-semibold mb-4">Contact</h3>
-                <p class="text-gray-300 dark:text-gray-400 text-sm">
-                    Get in touch with us for more information.
+            {{-- Contact Info --}}
+            <div class="footer-section">
+                <h3>Contact</h3>
+                <p>Get in touch with us for more information.</p>
+                <p class="mt-md">
+                    <small>We're here to help with any questions you may have.</small>
                 </p>
             </div>
         </div>
         
-        <div class="border-t border-gray-700 dark:border-gray-800 mt-8 pt-6 text-center text-gray-400 dark:text-gray-500 text-sm">
+        <div class="footer-bottom">
             <p>&copy; {{ date('Y') }} {{ $site_title ?? config('app.name', 'PolyCMS') }}. All rights reserved.</p>
         </div>
     </div>

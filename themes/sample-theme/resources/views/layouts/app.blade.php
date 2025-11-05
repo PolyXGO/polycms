@@ -12,17 +12,17 @@
     <meta name="description" content="@yield('description', $tagline ?? '')">
     
     <!-- Theme Styles -->
-    <link rel="stylesheet" href="{{ theme_asset('css/style.css') }}">
+    <link rel="stylesheet" href="{{ theme_asset('css/style.css') }}?v={{ time() }}">
     
     @stack('styles')
 </head>
 <body class="theme-sample">
-    <div id="app" class="min-h-screen flex flex-col">
+    <div id="app" style="min-height: 100vh; display: flex; flex-direction: column;">
         {{-- Header --}}
         @include('partials.header')
         
         {{-- Main Content --}}
-        <main class="flex-grow">
+        <main style="flex: 1;">
             @yield('content')
         </main>
         

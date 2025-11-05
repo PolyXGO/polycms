@@ -28,9 +28,6 @@ class ThemeServiceProvider extends ServiceProvider
 
         // Register view paths for active theme
         $this->registerThemeViews($themeManager);
-
-        // Register theme asset helper
-        $this->registerThemeAssets($themeManager);
     }
 
     /**
@@ -74,36 +71,4 @@ class ThemeServiceProvider extends ServiceProvider
         }
     }
 
-    /**
-     * Register theme asset helper
-     */
-    protected function registerThemeAssets(ThemeManager $themeManager): void
-    {
-        // Make theme asset helper available globally
-        if (!function_exists('theme_asset')) {
-            /**
-             * Get the URL to a theme asset
-             *
-             * @param string $path
-             * @param string $type
-             * @return string
-             */
-            function theme_asset(string $path, string $type = 'frontend'): string
-            {
-                $themeManager = app(ThemeManager::class);
-                $activeTheme = $themeManager->getActiveTheme($type);
-                
-                if (!$activeTheme) {
-                    // Fallback to default assets
-                    return asset($path);
-                }
-                
-                // Remove leading slash if present
-                $path = ltrim($path, '/');
-                
-                // Return theme asset URL using route
-                return route('theme.asset', ['themeSlug' => $activeTheme->slug, 'path' => $path]);
-            }
-        }
-    }
 }

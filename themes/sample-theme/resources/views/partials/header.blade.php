@@ -1,53 +1,45 @@
-<header class="bg-white dark:bg-gray-800 shadow-sm">
-    <div class="container mx-auto px-4 py-4">
-        <div class="flex items-center justify-between">
+<header class="header" id="main-header">
+    <div class="container">
+        <div class="header-content">
             {{-- Logo / Site Title --}}
-            <div class="flex items-center">
-                <a href="{{ url('/') }}" class="text-2xl font-bold text-gray-900 dark:text-white">
-                    {{ $site_title ?? config('app.name', 'PolyCMS') }}
-                </a>
-                @if(!empty($tagline))
-                    <span class="ml-4 text-sm text-gray-500 dark:text-gray-400 hidden md:inline">
-                        {{ $tagline }}
-                    </span>
-                @endif
-            </div>
+            <a href="{{ url('/') }}" class="logo">
+                {{ $site_title ?? config('app.name', 'PolyCMS') }}
+            </a>
             
             {{-- Navigation --}}
-            <nav class="hidden md:flex items-center space-x-6">
-                <a href="{{ url('/') }}" class="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+            <nav class="nav">
+                <a href="{{ url('/') }}" class="nav-link {{ request()->is('/') ? 'active' : '' }}">
                     Home
                 </a>
-                <a href="{{ url('/posts') }}" class="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                <a href="{{ url('/posts') }}" class="nav-link {{ request()->is('posts*') ? 'active' : '' }}">
                     Blog
                 </a>
-                <a href="{{ url('/products') }}" class="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                <a href="{{ url('/products') }}" class="nav-link {{ request()->is('products*') ? 'active' : '' }}">
                     Products
                 </a>
-                {{-- Add more menu items here or use dynamic menu system --}}
+                <a href="{{ url('/#about') }}" class="nav-link">
+                    About
+                </a>
+                <a href="{{ url('/#contact') }}" class="nav-link">
+                    Contact
+                </a>
             </nav>
             
             {{-- Mobile Menu Toggle --}}
-            <button class="md:hidden p-2 text-gray-700 dark:text-gray-300" id="mobile-menu-toggle">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle menu">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
             </button>
         </div>
-    </div>
-    
-    {{-- Mobile Menu --}}
-    <div class="md:hidden hidden border-t border-gray-200 dark:border-gray-700" id="mobile-menu">
-        <div class="container mx-auto px-4 py-4 space-y-2">
-            <a href="{{ url('/') }}" class="block text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400">
-                Home
-            </a>
-            <a href="{{ url('/posts') }}" class="block text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400">
-                Blog
-            </a>
-            <a href="{{ url('/products') }}" class="block text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400">
-                Products
-            </a>
+        
+        {{-- Mobile Menu --}}
+        <div class="mobile-menu" id="mobile-menu">
+            <a href="{{ url('/') }}" class="nav-link">Home</a>
+            <a href="{{ url('/posts') }}" class="nav-link">Blog</a>
+            <a href="{{ url('/products') }}" class="nav-link">Products</a>
+            <a href="{{ url('/#about') }}" class="nav-link">About</a>
+            <a href="{{ url('/#contact') }}" class="nav-link">Contact</a>
         </div>
     </div>
 </header>

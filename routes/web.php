@@ -1,18 +1,23 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Frontend\HomeController;
+use App\Http\Controllers\Frontend\PostController as FrontendPostController;
+use App\Http\Controllers\Frontend\ProductController as FrontendProductController;
+use App\Http\Controllers\Frontend\CategoryController;
+use App\Http\Controllers\Frontend\PageController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
-});
+// Frontend routes - Theme-based rendering
+Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/posts', [FrontendPostController::class, 'index'])->name('posts.index');
+Route::get('/posts/{slug}', [FrontendPostController::class, 'show'])->name('posts.show');
+Route::get('/products', [FrontendProductController::class, 'index'])->name('products.index');
+Route::get('/products/{slug}', [FrontendProductController::class, 'show'])->name('products.show');
+Route::get('/categories/{slug}', [CategoryController::class, 'show'])->name('categories.show');
+Route::get('/{slug}', [PageController::class, 'show'])->name('pages.show')->where('slug', '^(?!admin|api|themes).*');
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
@@ -42,7 +47,20 @@ Route::get('/themes/{themeSlug}/{path}', function (string $themeSlug, string $pa
         abort(404);
     }
     
-    $mimeType = mime_content_type($themePath);
+    // Determine MIME type based on file extension
+    $extension = pathinfo($themePath, PATHINFO_EXTENSION);
+    $mimeTypes = [
+        'css' => 'text/css',
+        'js' => 'application/javascript',
+        'png' => 'image/png',
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'gif' => 'image/gif',
+        'svg' => 'image/svg+xml',
+        'webp' => 'image/webp',
+    ];
+    
+    $mimeType = $mimeTypes[$extension] ?? mime_content_type($themePath) ?? 'application/octet-stream';
     $content = file_get_contents($themePath);
     
     return response($content, 200)

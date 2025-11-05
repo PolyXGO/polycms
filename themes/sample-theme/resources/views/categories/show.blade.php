@@ -48,11 +48,15 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 @foreach($products as $product)
                     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden">
-                        @if($product->media && $product->media->count() > 0)
-                            <a href="{{ url('/products/' . $product->slug) }}">
+                        <a href="{{ url('/products/' . $product->slug) }}">
+                            @if($product->media && $product->media->count() > 0)
                                 <img src="{{ $product->media->first()->url ?? '' }}" alt="{{ $product->name }}" class="w-full h-48 object-cover">
-                            </a>
-                        @endif
+                            @else
+                                <div class="w-full h-48 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                    <span class="text-gray-400 dark:text-gray-500">No Image</span>
+                                </div>
+                            @endif
+                        </a>
                         
                         <div class="p-6">
                             <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
