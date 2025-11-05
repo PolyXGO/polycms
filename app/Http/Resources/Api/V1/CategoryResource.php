@@ -16,17 +16,43 @@ class CategoryResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return [
+        $includeTree = $request->boolean('tree', false);
+        $includeChildren = $request->boolean('children', false);
+        $includeAncestors = $request->boolean('ancestors', false);
+
+        $data = [
             'id' => $this->id,
             'name' => $this->name,
             'slug' => $this->slug,
+            'summary' => $this->summary,
             'description' => $this->description,
             'type' => $this->type,
             'parent_id' => $this->parent_id,
+            'path' => $this->path,
+            'depth' => $this->depth,
             'image' => $this->image,
             'order' => $this->order,
-            'created_at' => $this->created_at->toISOString(),
-            'updated_at' => $this->updated_at->toISOString(),
+            'posts_count' => $this->posts_count ?? 0,
+            'products_count' => $this->products_count ?? 0,
+            'full_name' => $this->full_name,
+            'is_root' => $this->isRoot(),
+            'is_leaf' => $this->isLeaf(),
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
         ];
+
+        if ($includeChildren && $this->relationLoaded('children')) {
+            $data['children'] = CategoryResource::collection($this->children);
+        }
+
+        if ($includeAncestors && $this->relationLoaded('ancestors')) {
+            $data['ancestors'] = CategoryResource::collection($this->ancestors);
+        }
+
+        if ($this->relationLoaded('parent')) {
+            $data['parent'] = $this->parent ? new CategoryResource($this->parent) : null;
+        }
+
+        return $data;
     }
 }
