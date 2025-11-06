@@ -515,13 +515,16 @@ const saveProduct = async () => {
         };
 
         if (isEdit.value) {
+            // Update existing product - stay on edit page
             await axios.put(`/api/v1/products/${route.params.id}`, data);
+            dialog.success('Product updated successfully');
         } else {
-            await axios.post('/api/v1/products', data);
+            // Create new product - redirect to edit page
+            const response = await axios.post('/api/v1/products', data);
+            const productId = response.data.data.id;
+            dialog.success('Product created successfully');
+            router.push({ name: 'admin.products.edit', params: { id: productId } });
         }
-
-        router.push({ name: 'admin.products.index' });
-        dialog.success('Product saved successfully');
     } catch (error: any) {
         console.error('Error saving product:', error);
         const message = error.response?.data?.message || 'Failed to save product';

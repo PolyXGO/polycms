@@ -19,6 +19,27 @@ class MediaController extends Controller
     {
         $query = Media::with('user');
 
+        // Path filter (folder navigation)
+        $path = $request->get('path', '');
+        if ($path) {
+            // Filter by path: files directly in the current folder, not in subfolders
+            // Path format: "2025" or "2025/11" or custom folder names like "mmm"
+            $searchPath = 'media/' . trim($path, '/') . '/';
+
+            // Get files directly in this folder (not in subfolders)
+            // For path "2025/11", we want files in "media/2025/11/filename.ext" format
+            // For path "mmm", we want files in "media/mmm/filename.ext" format
+            // Files should NOT be in subfolders like "media/2025/11/subfolder/file.ext"
+
+            // Match files that start with the path and have no additional slashes after
+            $query->where('path', 'like', $searchPath . '%')
+                ->where('path', 'not like', $searchPath . '%/%'); // Exclude files in subfolders
+        } else {
+            // Root level: show only folders, not files
+            // Files are always in subfolders, so we don't show them at root
+            $query->whereRaw('1 = 0'); // Return no files at root level
+        }
+
         // Type filter
         if ($request->has('type')) {
             $query->where('type', $request->type);
@@ -42,8 +63,17 @@ class MediaController extends Controller
         $perPage = min($request->get('per_page', 15), 100);
         $media = $query->paginate($perPage);
 
+        // Get folders in current path
+        $folders = $this->getFoldersInPath($path);
+
         $response = $this->successResponse(MediaResource::collection($media->items()));
-        $response->getData()->meta = [
+        $responseData = $response->getData();
+
+        // Add folders to response
+        $responseData->folders = $folders;
+
+        // Add meta information
+        $responseData->meta = [
             'pagination' => [
                 'total' => $media->total(),
                 'per_page' => $media->perPage(),
@@ -51,7 +81,82 @@ class MediaController extends Controller
                 'last_page' => $media->lastPage(),
             ],
         ];
-        return $response;
+
+        // Return response with folders in root level
+        return response()->json([
+            'data' => $responseData->data,
+            'folders' => $folders,
+            'error' => null,
+            'meta' => $responseData->meta,
+            'message' => 'Success',
+        ], 200);
+    }
+
+    /**
+     * Get folders in a specific path
+     */
+    private function getFoldersInPath(string $path): array
+    {
+        $disk = Storage::disk('public');
+        $basePath = 'media/' . ($path ? trim($path, '/') . '/' : '');
+
+        // Ensure basePath doesn't end with double slash
+        $basePath = rtrim($basePath, '/') . '/';
+
+        try {
+            if (!$disk->exists($basePath)) {
+                \Log::info('Path does not exist', ['path' => $basePath]);
+                return [];
+            }
+
+            $folders = [];
+            $directories = $disk->directories($basePath);
+
+            \Log::info('Found directories', [
+                'basePath' => $basePath,
+                'directories' => $directories,
+                'count' => count($directories)
+            ]);
+
+            foreach ($directories as $dir) {
+                // Get relative path from basePath
+                $relativePath = str_replace($basePath, '', $dir);
+                $relativePath = rtrim($relativePath, '/');
+
+                // Get immediate subfolders only (not nested)
+                $parts = explode('/', $relativePath);
+                if (count($parts) === 1) {
+                    $folderName = $parts[0];
+                    // Include all folders (year folders like 2025, month folders like 11, and custom folders)
+                    $folders[] = $folderName;
+                }
+            }
+
+            // Sort: year folders first, then month folders, then custom folders
+            usort($folders, function($a, $b) {
+                $aIsYear = preg_match('/^[0-9]{4}$/', $a);
+                $bIsYear = preg_match('/^[0-9]{4}$/', $b);
+                $aIsMonth = preg_match('/^[0-9]{1,2}$/', $a);
+                $bIsMonth = preg_match('/^[0-9]{1,2}$/', $b);
+
+                if ($aIsYear && !$bIsYear) return -1;
+                if (!$aIsYear && $bIsYear) return 1;
+                if ($aIsMonth && !$bIsMonth && !$aIsYear && !$bIsYear) return -1;
+                if (!$aIsMonth && $bIsMonth && !$aIsYear && !$bIsYear) return 1;
+
+                return strnatcasecmp($a, $b);
+            });
+
+            \Log::info('Returning folders', ['folders' => $folders]);
+            return $folders;
+        } catch (\Exception $e) {
+            \Log::error('Error getting folders', [
+                'path' => $path,
+                'basePath' => $basePath,
+                'error' => $e->getMessage()
+            ]);
+            return [];
+        }
     }
 
     /**
@@ -80,7 +185,7 @@ class MediaController extends Controller
             }
             return $value;
         };
-        
+
         $maxSize = min(
             $parseSize(ini_get('upload_max_filesize')),
             $parseSize(ini_get('post_max_size')),
@@ -88,16 +193,27 @@ class MediaController extends Controller
         );
 
         // Check if file exists in request
+        // Check both hasFile and file() methods
         if (!$request->hasFile('file')) {
+            \Log::warning('Upload request missing file', [
+                'has_file' => $request->hasFile('file'),
+                'all_files' => $request->allFiles(),
+                'content_type' => $request->header('Content-Type'),
+                'method' => $request->method(),
+            ]);
             return $this->errorResponse('No file provided in request.', 'NO_FILE', [], 422);
         }
 
         $file = $request->file('file');
-        
+
         if (!$file) {
-            return $this->errorResponse('No file provided in request.', 'NO_FILE', [], 422);
+            \Log::warning('Upload file invalid or missing', [
+                'file_exists' => $file !== null,
+                'all_files' => $request->allFiles(),
+            ]);
+            return $this->errorResponse('Invalid file provided in request.', 'INVALID_FILE', [], 422);
         }
-        
+
         if (!$file->isValid()) {
             $errorCode = $file->getError();
             $errorMessage = match($errorCode) {
@@ -118,15 +234,47 @@ class MediaController extends Controller
             'caption' => ['nullable', 'string', 'max:500'],
             'description' => ['nullable', 'string'],
         ]);
-        
+
         // Apply hooks before upload (ensure file is still valid after filter)
         $filteredFile = \App\Facades\Hook::applyFilters('media.upload.file', $file, $validated);
         if ($filteredFile && $filteredFile instanceof \Illuminate\Http\UploadedFile) {
             $file = $filteredFile;
         }
         $validated = \App\Facades\Hook::applyFilters('media.upload.data', $validated, $file);
-        $disk = 'public'; // Always use public disk for web-accessible files
-        $path = $file->store('media/' . date('Y/m'), $disk);
+        $diskName = 'public'; // Always use public disk for web-accessible files
+        $disk = Storage::disk($diskName);
+
+        // Get current path from request (for folder navigation)
+        // Can come from query parameter or form data
+        $currentPath = $request->get('path', '') ?: $request->input('path', '');
+
+        // If path is provided, upload directly to that folder
+        // If no path (root), use date-based organization (Y/m)
+        if ($currentPath) {
+            // Upload directly to the current folder: media/{path}/filename.ext
+            $uploadPath = 'media/' . trim($currentPath, '/');
+        } else {
+            // Root level: organize by date: media/{Y/m}/filename.ext
+            $uploadPath = 'media/' . date('Y/m');
+        }
+
+        // Ensure the directory exists and has proper permissions
+        if (!$disk->exists($uploadPath)) {
+            $disk->makeDirectory($uploadPath, true);
+            // Set permissions after creation
+            $realPath = storage_path('app/public/' . $uploadPath);
+            if (file_exists($realPath)) {
+                @chmod($realPath, 0755);
+            }
+        } else {
+            // Ensure existing directory has proper permissions
+            $realPath = storage_path('app/public/' . $uploadPath);
+            if (file_exists($realPath)) {
+                @chmod($realPath, 0755);
+            }
+        }
+
+        $path = $file->store($uploadPath, $diskName);
         $mimeType = $file->getMimeType();
         $type = $this->determineMediaType($mimeType);
 
@@ -138,7 +286,7 @@ class MediaController extends Controller
         if ($type === 'image') {
             try {
                 // Try to get image dimensions using getimagesize
-                $imagePath = Storage::disk($disk)->path($path);
+                $imagePath = $disk->path($path);
                 if (file_exists($imagePath)) {
                     $imageInfo = getimagesize($imagePath);
                     if ($imageInfo !== false) {
@@ -161,7 +309,7 @@ class MediaController extends Controller
             'name' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
             'file_name' => $file->getClientOriginalName(),
             'mime_type' => $mimeType,
-            'disk' => $disk,
+            'disk' => $diskName, // Use string disk name, not Storage instance
             'path' => $path,
             'size' => $file->getSize(),
             'type' => $type,
@@ -207,17 +355,17 @@ class MediaController extends Controller
 
         try {
             $disk = Storage::disk($media->disk);
-            
+
             if (!$disk->exists($media->path)) {
                 abort(404);
             }
 
             // Get file content
             $fileContent = $disk->get($media->path);
-            
+
             // Determine MIME type
             $mimeType = $media->mime_type ?? mime_content_type($disk->path($media->path)) ?? 'application/octet-stream';
-            
+
             // Return file response
             return response($fileContent, 200)
                 ->header('Content-Type', $mimeType)
@@ -262,12 +410,12 @@ class MediaController extends Controller
         try {
             // Find media (including soft deleted)
             $media = Media::withTrashed()->findOrFail($id);
-            
+
             // Store path and disk before deleting record
             $path = $media->path;
             $diskName = $media->disk;
             $mediaId = $media->id;
-            
+
             // Fire action hook before delete
             \App\Facades\Hook::doAction('media.deleting', $media);
 
@@ -276,12 +424,12 @@ class MediaController extends Controller
             if ($path && $diskName) {
                 try {
                     $disk = Storage::disk($diskName);
-                    
+
                     // Check if file exists
                     if ($disk->exists($path)) {
                         // Attempt to delete
                         $fileDeleted = $disk->delete($path);
-                        
+
                         \Log::info('Media file deletion attempt', [
                             'media_id' => $mediaId,
                             'path' => $path,
@@ -290,7 +438,7 @@ class MediaController extends Controller
                             'deleted' => $fileDeleted,
                             'storage_root' => $disk->path(''),
                         ]);
-                        
+
                         // Verify deletion
                         if ($disk->exists($path)) {
                             \Log::warning('Media file still exists after delete attempt', [
@@ -332,10 +480,10 @@ class MediaController extends Controller
             // Fire action hook after delete
             \App\Facades\Hook::doAction('media.deleted', $media);
 
-            $message = $fileDeleted 
-                ? 'Media deleted successfully' 
+            $message = $fileDeleted
+                ? 'Media deleted successfully'
                 : 'Media record deleted, but file may still exist in storage';
-            
+
             return $this->successResponse(null, $message, 200);
         } catch (\Exception $e) {
             \Log::error('Error deleting media', [
@@ -343,10 +491,202 @@ class MediaController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            
+
             return $this->errorResponse(
                 'Failed to delete media: ' . $e->getMessage(),
                 'DELETE_ERROR',
+                [],
+                500
+            );
+        }
+    }
+
+    /**
+     * Create a new folder
+     */
+    public function createFolder(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'path' => ['required', 'string', 'max:500'],
+        ]);
+
+        $path = $validated['path'];
+        $disk = Storage::disk('public');
+        $fullPath = 'media/' . ltrim($path, '/');
+
+        // Sanitize path to prevent directory traversal
+        $fullPath = str_replace('..', '', $fullPath);
+        $fullPath = preg_replace('/[^a-zA-Z0-9\/\-_]/', '', $fullPath);
+
+        // Check if folder already exists
+        if ($disk->exists($fullPath)) {
+            return $this->errorResponse(
+                'Folder already exists',
+                'FOLDER_EXISTS',
+                [],
+                409
+            );
+        }
+
+        try {
+            // Create directory with recursive option
+            $disk->makeDirectory($fullPath, true);
+
+            // Set full permissions (read, write, execute for owner, group, and others)
+            // chmod 755: owner can read/write/execute, group and others can read/execute
+            $realPath = storage_path('app/public/' . $fullPath);
+            if (file_exists($realPath)) {
+                @chmod($realPath, 0755);
+            }
+
+            return $this->successResponse(
+                ['path' => $fullPath],
+                'Folder created successfully',
+                201
+            );
+        } catch (\Exception $e) {
+            \Log::error('Error creating folder', [
+                'path' => $fullPath,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->errorResponse(
+                'Failed to create folder: ' . $e->getMessage(),
+                'CREATE_FOLDER_ERROR',
+                [],
+                500
+            );
+        }
+    }
+
+    /**
+     * Rename a folder
+     */
+    public function renameFolder(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'old_path' => ['required', 'string', 'max:500'],
+            'new_path' => ['required', 'string', 'max:500'],
+        ]);
+
+        $oldPath = $validated['old_path'];
+        $newPath = $validated['new_path'];
+        $disk = Storage::disk('public');
+        $fullOldPath = 'media/' . ltrim($oldPath, '/');
+        $fullNewPath = 'media/' . ltrim($newPath, '/');
+
+        // Sanitize paths to prevent directory traversal
+        $fullOldPath = str_replace('..', '', $fullOldPath);
+        $fullNewPath = str_replace('..', '', $fullNewPath);
+        $fullOldPath = preg_replace('/[^a-zA-Z0-9\/\-_]/', '', $fullOldPath);
+        $fullNewPath = preg_replace('/[^a-zA-Z0-9\/\-_]/', '', $fullNewPath);
+
+        // Check if old folder exists
+        if (!$disk->exists($fullOldPath)) {
+            return $this->errorResponse(
+                'Folder does not exist',
+                'FOLDER_NOT_FOUND',
+                [],
+                404
+            );
+        }
+
+        // Check if new folder already exists
+        if ($disk->exists($fullNewPath)) {
+            return $this->errorResponse(
+                'A folder with this name already exists',
+                'FOLDER_EXISTS',
+                [],
+                409
+            );
+        }
+
+        try {
+            // Move/rename the folder
+            $disk->move($fullOldPath, $fullNewPath);
+
+            // Update all media records that reference files in the old path
+            Media::where('path', 'like', $fullOldPath . '%')
+                ->get()
+                ->each(function ($media) use ($fullOldPath, $fullNewPath) {
+                    $media->path = str_replace($fullOldPath, $fullNewPath, $media->path);
+                    $media->save();
+                });
+
+            return $this->successResponse(
+                ['path' => $fullNewPath],
+                'Folder renamed successfully',
+                200
+            );
+        } catch (\Exception $e) {
+            \Log::error('Error renaming folder', [
+                'old_path' => $fullOldPath,
+                'new_path' => $fullNewPath,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->errorResponse(
+                'Failed to rename folder: ' . $e->getMessage(),
+                'RENAME_FOLDER_ERROR',
+                [],
+                500
+            );
+        }
+    }
+
+    /**
+     * Delete a folder
+     */
+    public function deleteFolder(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'path' => ['required', 'string', 'max:500'],
+        ]);
+
+        $path = $validated['path'];
+        $disk = Storage::disk('public');
+        $fullPath = 'media/' . ltrim($path, '/');
+
+        // Sanitize path to prevent directory traversal
+        $fullPath = str_replace('..', '', $fullPath);
+        $fullPath = preg_replace('/[^a-zA-Z0-9\/\-_]/', '', $fullPath);
+
+        // Check if folder exists
+        if (!$disk->exists($fullPath)) {
+            return $this->errorResponse(
+                'Folder does not exist',
+                'FOLDER_NOT_FOUND',
+                [],
+                404
+            );
+        }
+
+        try {
+            // Delete all media records that reference files in this path
+            $mediaToDelete = Media::where('path', 'like', $fullPath . '%')->get();
+            $deletedCount = $mediaToDelete->count();
+
+            $mediaToDelete->each(function ($media) {
+                $media->forceDelete();
+            });
+
+            // Delete the folder and all its contents
+            $disk->deleteDirectory($fullPath);
+
+            return $this->successResponse(
+                ['deleted_media_count' => $deletedCount],
+                'Folder deleted successfully',
+                200
+            );
+        } catch (\Exception $e) {
+            \Log::error('Error deleting folder', [
+                'path' => $fullPath,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->errorResponse(
+                'Failed to delete folder: ' . $e->getMessage(),
+                'DELETE_FOLDER_ERROR',
                 [],
                 500
             );
@@ -368,7 +708,7 @@ class MediaController extends Controller
         try {
             $url = $validated['url'];
             $imageContent = @file_get_contents($url);
-            
+
             if ($imageContent === false) {
                 return $this->errorResponse('Failed to download image from URL', 'DOWNLOAD_ERROR', [], 400);
             }

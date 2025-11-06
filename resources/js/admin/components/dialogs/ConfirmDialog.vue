@@ -68,12 +68,14 @@
                         <!-- Footer -->
                         <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 flex justify-end gap-3">
                             <button
+                                ref="cancelButtonRef"
                                 @click="dialogStore.closeConfirm(false)"
                                 class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium transition-colors"
                             >
                                 {{ dialogStore.confirm.cancelText }}
                             </button>
                             <button
+                                ref="confirmButtonRef"
                                 @click="dialogStore.closeConfirm(true)"
                                 :class="[
                                     'px-4 py-2 rounded-lg font-medium transition-colors',
@@ -91,10 +93,51 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
 import { useDialogStore } from '../../stores/dialog';
 
 const dialogStore = useDialogStore();
+const confirmButtonRef = ref<HTMLButtonElement | null>(null);
+const cancelButtonRef = ref<HTMLButtonElement | null>(null);
+
+// Handle keyboard events
+const handleKeydown = (event: KeyboardEvent) => {
+    if (!dialogStore.confirm.show) return;
+
+    // Enter key - confirm
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        event.stopPropagation();
+        dialogStore.closeConfirm(true);
+        return;
+    }
+
+    // Escape key - cancel
+    if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        dialogStore.closeConfirm(false);
+        return;
+    }
+};
+
+// Auto-focus confirm button when dialog opens
+watch(() => dialogStore.confirm.show, (isOpen) => {
+    if (isOpen) {
+        // Use nextTick to ensure DOM is updated
+        setTimeout(() => {
+            confirmButtonRef.value?.focus();
+        }, 100);
+    }
+});
+
+onMounted(() => {
+    document.addEventListener('keydown', handleKeydown);
+});
+
+onUnmounted(() => {
+    document.removeEventListener('keydown', handleKeydown);
+});
 
 const iconClass = computed(() => {
     const types: Record<string, string> = {

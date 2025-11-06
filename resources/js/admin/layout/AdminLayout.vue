@@ -2,12 +2,20 @@
     <div class="min-h-screen bg-gray-100 dark:bg-gray-900 flex">
         <!-- Topbar Menu -->
         <TopbarMenu />
-        
+
         <!-- Sidebar -->
         <aside class="bg-gray-800 dark:bg-gray-800 text-white w-64 space-y-6 py-6 px-2 fixed left-0 bottom-0 transform md:relative md:translate-x-0 transition duration-200 ease-in-out overflow-y-auto" style="top: 32px;">
             <div class="flex items-center justify-between px-4 pt-2">
-                <router-link :to="{ name: 'admin.dashboard' }" class="text-white text-xl font-semibold uppercase tracking-wide">
-                    PolyCMS
+                <router-link :to="{ name: 'admin.dashboard' }" class="flex items-center">
+                    <img
+                        v-if="brandLogo"
+                        :src="brandLogo"
+                        :alt="brandName"
+                        class="h-8 w-auto max-w-full object-contain"
+                    />
+                    <span v-else class="text-white text-xl font-semibold uppercase tracking-wide">
+                        {{ brandName }}
+                    </span>
                 </router-link>
             </div>
 
@@ -138,6 +146,21 @@ const menuItems = ref<MenuItemData[]>([]);
 const menuLoading = ref(true);
 const openMenus = ref<Set<string>>(new Set());
 
+// Brand logo and name
+const brandLogo = ref<string | null>(null);
+const brandName = ref<string>('POLYCMS');
+
+const loadBrandSettings = async () => {
+    try {
+        const response = await axios.get('/api/v1/settings');
+        const generalSettings = response.data.data?.general || {};
+        brandLogo.value = generalSettings.brand_logo?.value || null;
+        brandName.value = generalSettings.brand_name?.value || generalSettings.brand_name || 'POLYCMS';
+    } catch (error) {
+        console.error('Error loading brand settings:', error);
+    }
+};
+
 // Load menu from API
 const loadMenu = async () => {
     menuLoading.value = true;
@@ -218,5 +241,6 @@ watch(() => [route.name, route.query], () => {
 
 onMounted(() => {
     loadMenu();
+    loadBrandSettings();
 });
 </script>

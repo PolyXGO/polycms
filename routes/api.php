@@ -87,7 +87,10 @@ Route::prefix('v1')->group(function () {
         Route::get('/media/{media}/serve', [MediaController::class, 'serve'])->name('api.v1.media.serve');
         Route::post('/media/upload', [MediaController::class, 'upload'])->name('api.v1.media.upload');
         Route::post('/media/upload-from-url', [MediaController::class, 'uploadFromUrl'])->name('api.v1.media.upload-from-url');
-        
+        Route::post('/media/folders', [MediaController::class, 'createFolder'])->name('api.v1.media.folders.create');
+        Route::put('/media/folders/rename', [MediaController::class, 'renameFolder'])->name('api.v1.media.folders.rename');
+        Route::delete('/media/folders', [MediaController::class, 'deleteFolder'])->name('api.v1.media.folders.delete');
+
         // Upload for editor
         Route::post('/upload/image', [UploadController::class, 'image'])->name('api.v1.upload.image');
 
@@ -105,7 +108,7 @@ Route::prefix('v1')->group(function () {
 
             // Admin menu routes
             Route::get('/admin/menu', [AdminMenuController::class, 'index'])->name('api.v1.admin.menu.index');
-            
+
             // Topbar menu routes
             Route::get('/topbar/menu', [TopbarMenuController::class, 'index'])->name('api.v1.topbar.menu.index');
 

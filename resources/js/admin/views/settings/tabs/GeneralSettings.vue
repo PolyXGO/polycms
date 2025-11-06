@@ -40,33 +40,47 @@
                 <label for="brand_logo" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     {{ getSettingLabel('brand_logo') }}
                 </label>
+                <!-- Hidden input to store the URL -->
+                <input
+                    id="brand_logo"
+                    :value="getSettingValue('brand_logo')"
+                    @input="updateValue('brand_logo', ($event.target as HTMLInputElement).value)"
+                    type="hidden"
+                />
                 <div class="flex items-center gap-4">
-                    <input
-                        id="brand_logo"
-                        :value="getSettingValue('brand_logo')"
-                        @input="updateValue('brand_logo', ($event.target as HTMLInputElement).value)"
-                        type="text"
-                        class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-indigo-500 focus:border-indigo-500"
-                        placeholder="URL or path to brand logo"
-                    />
-                    <button
-                        type="button"
-                        class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-                        @click="openMediaPicker('brand_logo')"
-                    >
-                        {{ getSettingLabel('Select Logo') || 'Select Logo' }}
-                    </button>
+                    <div v-if="getSettingValue('brand_logo')" class="flex-shrink-0">
+                        <img
+                            :src="getSettingValue('brand_logo')"
+                            alt="Brand Logo"
+                            class="h-16 w-auto object-contain border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-gray-700"
+                        />
+                    </div>
+                    <div v-else class="flex-shrink-0 w-16 h-16 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded flex items-center justify-center bg-gray-50 dark:bg-gray-700">
+                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <button
+                            type="button"
+                            class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                            @click="openMediaPicker('brand_logo')"
+                        >
+                            {{ getSettingValue('brand_logo') ? (getSettingLabel('Change Logo') || 'Change Logo') : (getSettingLabel('Select Logo') || 'Select Logo') }}
+                        </button>
+                        <button
+                            v-if="getSettingValue('brand_logo')"
+                            type="button"
+                            class="ml-2 px-4 py-2 border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                            @click="updateValue('brand_logo', '')"
+                        >
+                            {{ getSettingLabel('Remove') || 'Remove' }}
+                        </button>
+                    </div>
                 </div>
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     {{ getSettingDescription('brand_logo') || 'Upload a logo for your brand. If no logo is set, the brand name will be displayed instead.' }}
                 </p>
-                <div v-if="getSettingValue('brand_logo')" class="mt-2">
-                    <img
-                        :src="getSettingValue('brand_logo')"
-                        alt="Brand Logo"
-                        class="h-16 object-contain border border-gray-300 dark:border-gray-600 rounded"
-                    />
-                </div>
             </div>
 
             <!-- Brand Name -->
@@ -159,33 +173,47 @@
                 <label for="site_icon" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     {{ getSettingLabel('site_icon') }}
                 </label>
+                <!-- Hidden input to store the URL -->
+                <input
+                    id="site_icon"
+                    :value="getSettingValue('site_icon')"
+                    @input="updateValue('site_icon', ($event.target as HTMLInputElement).value)"
+                    type="hidden"
+                />
                 <div class="flex items-center gap-4">
-                    <input
-                        id="site_icon"
-                        :value="getSettingValue('site_icon')"
-                        @input="updateValue('site_icon', ($event.target as HTMLInputElement).value)"
-                        type="text"
-                        class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-indigo-500 focus:border-indigo-500"
-                        placeholder="URL or path to site icon"
-                    />
-                    <button
-                        type="button"
-                        class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-                        @click="openMediaPicker('site_icon')"
-                    >
-                        {{ getSettingLabel('Select Icon') || 'Select Icon' }}
-                    </button>
+                    <div v-if="getSettingValue('site_icon')" class="flex-shrink-0">
+                        <img
+                            :src="getSettingValue('site_icon')"
+                            alt="Site Icon"
+                            class="w-16 h-16 object-contain border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-gray-700"
+                        />
+                    </div>
+                    <div v-else class="flex-shrink-0 w-16 h-16 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded flex items-center justify-center bg-gray-50 dark:bg-gray-700">
+                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <button
+                            type="button"
+                            class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                            @click="openMediaPicker('site_icon')"
+                        >
+                            {{ getSettingValue('site_icon') ? (getSettingLabel('Change Icon') || 'Change Icon') : (getSettingLabel('Select Icon') || 'Select Icon') }}
+                        </button>
+                        <button
+                            v-if="getSettingValue('site_icon')"
+                            type="button"
+                            class="ml-2 px-4 py-2 border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                            @click="updateValue('site_icon', '')"
+                        >
+                            {{ getSettingLabel('Remove') || 'Remove' }}
+                        </button>
+                    </div>
                 </div>
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     {{ getSettingDescription('site_icon') }}
                 </p>
-                <div v-if="getSettingValue('site_icon')" class="mt-2">
-                    <img
-                        :src="getSettingValue('site_icon')"
-                        alt="Site Icon"
-                        class="w-16 h-16 object-contain border border-gray-300 dark:border-gray-600 rounded"
-                    />
-                </div>
             </div>
 
             <!-- Timezone -->
@@ -385,11 +413,19 @@
                 </button>
             </div>
         </form>
+        <!-- Media Picker -->
+        <MediaPicker
+            ref="mediaPickerRef"
+            :multiple="false"
+            :accepted-types="['image']"
+            @select="handleMediaSelect"
+        />
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import MediaPicker from '../../../components/MediaPicker.vue';
 
 interface Setting {
     key: string;
@@ -416,7 +452,9 @@ const emit = defineEmits<{
 const showCustomDateFormat = ref(false);
 
 const getSettingValue = (key: string): any => {
-    return props.settings[key]?.value ?? '';
+    // Ensure we return a string even if value is null/undefined
+    const value = props.settings[key]?.value;
+    return value !== null && value !== undefined ? String(value) : '';
 };
 
 const getSettingLabel = (key: string): string => {
@@ -459,22 +497,24 @@ const formatTime = (date: Date, format: string): string => {
     }
 };
 
+const mediaPickerRef = ref<any>(null);
+const currentPickerField = ref<string>('');
+
 const openMediaPicker = (field: string = 'site_icon') => {
-    // TODO: Implement media picker
-    console.log('Media picker not implemented yet for field:', field);
-    // For now, we can use a simple file input as fallback
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e) => {
-        const file = (e.target as HTMLInputElement).files?.[0];
-        if (file) {
-            // Create a temporary URL for preview
-            const url = URL.createObjectURL(file);
-            updateValue(field, url);
-            // In production, this should upload to server and get the URL
+    currentPickerField.value = field;
+    if (mediaPickerRef.value) {
+        mediaPickerRef.value.open();
+    }
+};
+
+const handleMediaSelect = (media: any) => {
+    if (currentPickerField.value && media) {
+        // media can be single object or array, handle both
+        const selectedMedia = Array.isArray(media) ? media[0] : media;
+        if (selectedMedia && selectedMedia.url) {
+            updateValue(currentPickerField.value, selectedMedia.url);
         }
-    };
-    input.click();
+    }
+    currentPickerField.value = '';
 };
 </script>

@@ -33,15 +33,19 @@ import { useDialogStore, type AlertOptions, type ConfirmOptions, type ModalOptio
 export function useDialog() {
     const dialogStore = useDialogStore();
 
+    // Cache action methods to avoid conflicts with state properties
+    const alertAction = dialogStore.alert.bind(dialogStore);
+    const confirmAction = dialogStore.confirm.bind(dialogStore);
+
     return {
         /**
          * Show alert dialog
          */
         alert: (options: AlertOptions | string) => {
             if (typeof options === 'string') {
-                return dialogStore.alert({ message: options });
+                return alertAction({ message: options });
             }
-            return dialogStore.alert(options);
+            return alertAction(options);
         },
 
         /**
@@ -49,9 +53,9 @@ export function useDialog() {
          */
         confirm: (options: ConfirmOptions | string) => {
             if (typeof options === 'string') {
-                return dialogStore.confirm({ message: options });
+                return confirmAction({ message: options });
             }
-            return dialogStore.confirm(options);
+            return confirmAction(options);
         },
 
         /**
