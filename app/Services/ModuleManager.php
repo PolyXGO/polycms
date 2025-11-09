@@ -257,6 +257,14 @@ class ModuleManager
     }
 
     /**
+     * Get absolute path to the modules directory
+     */
+    public function getModulesPath(): string
+    {
+        return $this->modulesPath;
+    }
+
+    /**
      * Clear module cache
      *
      * @return void

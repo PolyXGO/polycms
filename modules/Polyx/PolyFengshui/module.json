@@ -1,0 +1,13 @@
+{
+  "name": "Poly Fengshui",
+  "vendor": "Polyx",
+  "version": "1.0.0",
+  "description": "Feng Shui computations, auspicious day lookup, and moving date recommendations for PolyCMS.",
+  "provider": "Modules\\Polyx\\PolyFengshui\\PolyFengshuiServiceProvider",
+  "autoload": {
+    "psr-4": {
+      "Modules\\Polyx\\PolyFengshui\\": "src/"
+    }
+  }
+}
+

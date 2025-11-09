@@ -6,12 +6,49 @@
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Modules</h1>
                 <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Manage and enable/disable modules</p>
             </div>
-            <button
-                @click="loadModules"
-                class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
-            >
-                Refresh
-            </button>
+            <div class="flex items-center gap-3">
+                <input
+                    ref="uploadInput"
+                    type="file"
+                    class="hidden"
+                    accept=".zip"
+                    @change="handleUpload"
+                />
+                <button
+                    type="button"
+                    @click="triggerUpload"
+                    :disabled="uploadLoading"
+                    class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                    <svg
+                        v-if="uploadLoading"
+                        class="h-4 w-4 animate-spin"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                    >
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a12 12 0 00-12 12h4z"></path>
+                    </svg>
+                    <span>{{ uploadLoading ? 'Uploading...' : 'Upload Module' }}</span>
+                </button>
+                <button
+                    type="button"
+                    @click="loadModules"
+                    :disabled="loading"
+                    class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                    <svg
+                        v-if="loading"
+                        class="h-4 w-4 animate-spin text-gray-500 dark:text-gray-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                    >
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a12 12 0 00-12 12h4z"></path>
+                    </svg>
+                    <span>Refresh</span>
+                </button>
+            </div>
         </div>
 
         <!-- Filters and Search -->
@@ -211,6 +248,25 @@
                             </button>
                         </div>
 
+                        <!-- Download Button -->
+                        <button
+                            @click="downloadModule(module)"
+                            :disabled="downloadLoading === module.key"
+                            type="button"
+                            class="w-full px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            <span v-if="downloadLoading === module.key" class="flex items-center justify-center">
+                                <div class="h-4 w-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mr-2"></div>
+                                Preparing...
+                            </span>
+                            <span v-else class="flex items-center justify-center">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v16h16V4H4zm4 6h8m-4 4l-3-3m3 3l3-3" />
+                                </svg>
+                                Download ZIP
+                            </span>
+                        </button>
+
                         <!-- Delete Button -->
                         <button
                             @click="deleteModule(module)"
@@ -375,6 +431,17 @@
                                             <span class="text-gray-300 dark:text-gray-600">|</span>
                                             <a
                                                 href="#"
+                                                @click.prevent="downloadModule(module)"
+                                                :class="[
+                                                    'text-sm text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300',
+                                                    downloadLoading === module.key ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''
+                                                ]"
+                                            >
+                                                Download
+                                            </a>
+                                            <span class="text-gray-300 dark:text-gray-600">|</span>
+                                            <a
+                                                href="#"
                                                 @click.prevent="deleteModule(module)"
                                                 class="text-sm text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
                                             >
@@ -530,9 +597,12 @@ const modules = ref<Module[]>([]);
 const loading = ref(false);
 const toggleLoading = ref<string | null>(null);
 const deleteLoading = ref<string | null>(null);
+const downloadLoading = ref<string | null>(null);
+const uploadLoading = ref(false);
 const selectedModules = ref<string[]>([]);
 const bulkAction = ref('');
 const dialog = useDialog();
+const uploadInput = ref<HTMLInputElement | null>(null);
 // Load view mode from localStorage or default to 'list'
 const viewMode = ref<'grid' | 'list'>(
     (localStorage.getItem('modules_view_mode') as 'grid' | 'list') || 'list'
@@ -646,6 +716,98 @@ const loadModules = async () => {
         alert('Failed to load modules');
     } finally {
         loading.value = false;
+    }
+};
+
+const triggerUpload = () => {
+    if (uploadLoading.value) return;
+    uploadInput.value?.click();
+};
+
+const handleUpload = async (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) {
+        return;
+    }
+
+    uploadLoading.value = true;
+
+    try {
+        const formData = new FormData();
+        formData.append('module', file);
+
+        await axios.post('/api/v1/modules/upload', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+
+        dialog.success('Module uploaded and activated successfully');
+
+        await loadModules();
+
+        setTimeout(() => {
+            window.location.reload();
+        }, 300);
+    } catch (error: any) {
+        console.error('Error uploading module:', error);
+        const message = error.response?.data?.message || 'Failed to upload module';
+        dialog.error(message);
+    } finally {
+        uploadLoading.value = false;
+
+        if (input) {
+            input.value = '';
+        }
+
+        if (uploadInput.value) {
+            uploadInput.value.value = '';
+        }
+    }
+};
+
+const downloadModule = async (module: Module) => {
+    if (downloadLoading.value === module.key) {
+        return;
+    }
+
+    downloadLoading.value = module.key;
+
+    try {
+        const response = await axios.get(
+            `/api/v1/modules/${encodeURIComponent(module.key)}/download`,
+            { responseType: 'blob' }
+        );
+
+        const blob = new Blob([response.data], { type: 'application/zip' });
+        let filename = `${module.module}-${module.version || 'module'}.zip`;
+
+        const headers = response.headers as Record<string, string | undefined>;
+        const contentDisposition = headers['content-disposition'] || headers['Content-Disposition'];
+
+        if (contentDisposition) {
+            const match = /filename="?([^";]+)"?/i.exec(contentDisposition);
+            if (match?.[1]) {
+                filename = decodeURIComponent(match[1]);
+            }
+        }
+
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+        console.error('Error downloading module:', error);
+        const message = error.response?.data?.message || 'Failed to download module';
+        dialog.error(message);
+    } finally {
+        downloadLoading.value = null;
     }
 };
 

@@ -1,0 +1,72 @@
+extend type Query {
+    fengshuiDate(years: [Int!]!): FengshuiBreakdown!
+        @field(resolver: "Modules\\Polyx\\PolyFengshui\\GraphQL\\Queries\\FengshuiQuery@date")
+
+    fengshuiMovingDate(date: String): JSON!
+        @field(resolver: "Modules\\Polyx\\PolyFengshui\\GraphQL\\Queries\\FengshuiQuery@movingDate")
+
+    fengshuiMovingDateLookup(
+        checked_year: Int!
+        target_year: Int
+        target_month: Int
+        target_day: Int
+    ): FengshuiBreakdown!
+        @field(resolver: "Modules\\Polyx\\PolyFengshui\\GraphQL\\Queries\\FengshuiQuery@movingDateLookup")
+
+    polyfengshuiTokens: [PolyFengshuiToken!]!
+        @guard
+        @field(resolver: "Modules\\Polyx\\PolyFengshui\\GraphQL\\Queries\\TokenQuery@tokens")
+
+    polyfengshuiTokenSettings: PolyFengshuiTokenSettings!
+        @guard
+        @field(resolver: "Modules\\Polyx\\PolyFengshui\\GraphQL\\Queries\\TokenQuery@settings")
+}
+
+scalar JSON @scalar(class: "MLL\\GraphQLScalars\\JSON")
+
+type FengshuiBreakdown {
+    good_bad: JSON!
+    good_zodiac_by_year: JSON!
+    bad_zodiac_by_year: JSON!
+}
+
+type PolyFengshuiToken {
+    id: ID!
+    name: String
+    token: String!
+    domain: String
+    created_at: DateTime
+}
+
+type PolyFengshuiTokenSettings {
+    active: Boolean!
+}
+
+input PolyFengshuiTokenInput {
+    name: String
+    domain: String
+}
+
+type PolyFengshuiTokenPayload {
+    token: PolyFengshuiToken!
+    tokens: [PolyFengshuiToken!]!
+}
+
+type PolyFengshuiTokenListPayload {
+    tokens: [PolyFengshuiToken!]!
+}
+
+extend type Mutation {
+    createPolyfengshuiToken(input: PolyFengshuiTokenInput!): PolyFengshuiTokenPayload!
+        @guard
+        @field(resolver: "Modules\\Polyx\\PolyFengshui\\GraphQL\\Mutations\\TokenMutation@create")
+
+    deletePolyfengshuiToken(id: ID!): PolyFengshuiTokenListPayload!
+        @guard
+        @field(resolver: "Modules\\Polyx\\PolyFengshui\\GraphQL\\Mutations\\TokenMutation@delete")
+
+    updatePolyfengshuiTokenSettings(active: Boolean!): PolyFengshuiTokenSettings!
+        @guard
+        @field(resolver: "Modules\\Polyx\\PolyFengshui\\GraphQL\\Mutations\\TokenMutation@updateSettings")
+}
+

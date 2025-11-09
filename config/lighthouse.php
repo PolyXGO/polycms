@@ -16,7 +16,7 @@ return [
         /*
          * The URI the endpoint responds to, e.g. mydomain.com/graphql.
          */
-        'uri' => '/graphql',
+        'uri' => '/graphql.json',
 
         /*
          * Lighthouse creates a named route for convenient URL generation and redirects.
@@ -33,6 +33,7 @@ return [
 
             // Always set the `Accept: application/json` header.
             Nuwave\Lighthouse\Http\Middleware\AcceptJson::class,
+            App\Http\Middleware\EnsureGraphQLQuery::class,
 
             // Logs in a user if they are authenticated. In contrast to Laravel's 'auth'
             // middleware, this delegates auth and permission checks to the field level.

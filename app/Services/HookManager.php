@@ -13,16 +13,16 @@ namespace App\Services;
 class HookManager
 {
     /**
-     * Registered action callbacks
-     * 
-     * @var array<string, array<int, array{callback: callable, priority: int}>>
+     * Registered action callbacks.
+     *
+     * @var array<string, array<int, array<int, array{callback: callable|string, accepted_args: int}>>>
      */
     protected array $actions = [];
 
     /**
-     * Registered filter callbacks
-     * 
-     * @var array<string, array<int, array{callback: callable, priority: int}>>
+     * Registered filter callbacks.
+     *
+     * @var array<string, array<int, array<int, array{callback: callable|string, accepted_args: int}>>>
      */
     protected array $filters = [];
 
@@ -34,19 +34,9 @@ class HookManager
      * @param int $priority Priority (lower number = earlier execution, default 10)
      * @return void
      */
-    public function addAction(string $hookName, callable|string $callback, int $priority = 10): void
+    public function addAction(string $hookName, callable|string $callback, int $priority = 10, int $acceptedArgs = 1): void
     {
-        if (!isset($this->actions[$hookName])) {
-            $this->actions[$hookName] = [];
-        }
-
-        $this->actions[$hookName][] = [
-            'callback' => $callback,
-            'priority' => $priority,
-        ];
-
-        // Sort by priority
-        usort($this->actions[$hookName], fn($a, $b) => $a['priority'] <=> $b['priority']);
+        $this->addHook($this->actions, $hookName, $callback, $priority, $acceptedArgs);
     }
 
     /**
@@ -62,8 +52,13 @@ class HookManager
             return;
         }
 
-        foreach ($this->actions[$hookName] as $hook) {
-            $this->callCallback($hook['callback'], $args);
+        ksort($this->actions[$hookName]);
+
+        foreach ($this->actions[$hookName] as $hooks) {
+            foreach ($hooks as $hook) {
+                $callbackArgs = array_slice($args, 0, $hook['accepted_args']);
+                $this->callCallback($hook['callback'], $callbackArgs);
+            }
         }
     }
 
@@ -75,19 +70,9 @@ class HookManager
      * @param int $priority Priority (lower number = earlier execution, default 10)
      * @return void
      */
-    public function addFilter(string $hookName, callable|string $callback, int $priority = 10): void
+    public function addFilter(string $hookName, callable|string $callback, int $priority = 10, int $acceptedArgs = 1): void
     {
-        if (!isset($this->filters[$hookName])) {
-            $this->filters[$hookName] = [];
-        }
-
-        $this->filters[$hookName][] = [
-            'callback' => $callback,
-            'priority' => $priority,
-        ];
-
-        // Sort by priority
-        usort($this->filters[$hookName], fn($a, $b) => $a['priority'] <=> $b['priority']);
+        $this->addHook($this->filters, $hookName, $callback, $priority, $acceptedArgs);
     }
 
     /**
@@ -104,10 +89,17 @@ class HookManager
             return $value;
         }
 
-        $filtered = $value;
+        ksort($this->filters[$hookName]);
 
-        foreach ($this->filters[$hookName] as $hook) {
-            $filtered = $this->callCallback($hook['callback'], [$filtered, ...$args]);
+        $filtered = $value;
+        $arguments = array_merge([$filtered], $args);
+
+        foreach ($this->filters[$hookName] as $hooks) {
+            foreach ($hooks as $hook) {
+                $callbackArgs = array_slice($arguments, 0, $hook['accepted_args']);
+                $filtered = $this->callCallback($hook['callback'], $callbackArgs);
+                $arguments[0] = $filtered;
+            }
         }
 
         return $filtered;
@@ -120,27 +112,9 @@ class HookManager
      * @param callable|string|null $callback The callback to remove (null removes all)
      * @return bool True if removed, false otherwise
      */
-    public function removeAction(string $hookName, callable|string|null $callback = null): bool
+    public function removeAction(string $hookName, callable|string|null $callback = null, ?int $priority = null): bool
     {
-        if (!isset($this->actions[$hookName])) {
-            return false;
-        }
-
-        if ($callback === null) {
-            unset($this->actions[$hookName]);
-            return true;
-        }
-
-        $this->actions[$hookName] = array_filter(
-            $this->actions[$hookName],
-            fn($hook) => $hook['callback'] !== $callback
-        );
-
-        if (empty($this->actions[$hookName])) {
-            unset($this->actions[$hookName]);
-        }
-
-        return true;
+        return $this->removeHook($this->actions, $hookName, $callback, $priority);
     }
 
     /**
@@ -150,27 +124,9 @@ class HookManager
      * @param callable|string|null $callback The callback to remove (null removes all)
      * @return bool True if removed, false otherwise
      */
-    public function removeFilter(string $hookName, callable|string|null $callback = null): bool
+    public function removeFilter(string $hookName, callable|string|null $callback = null, ?int $priority = null): bool
     {
-        if (!isset($this->filters[$hookName])) {
-            return false;
-        }
-
-        if ($callback === null) {
-            unset($this->filters[$hookName]);
-            return true;
-        }
-
-        $this->filters[$hookName] = array_filter(
-            $this->filters[$hookName],
-            fn($hook) => $hook['callback'] !== $callback
-        );
-
-        if (empty($this->filters[$hookName])) {
-            unset($this->filters[$hookName]);
-        }
-
-        return true;
+        return $this->removeHook($this->filters, $hookName, $callback, $priority);
     }
 
     /**
@@ -207,8 +163,98 @@ class HookManager
         if (is_string($callback) && str_contains($callback, '::')) {
             [$class, $method] = explode('::', $callback, 2);
             $callback = [app($class), $method];
+        } elseif (is_string($callback) && str_contains($callback, '@')) {
+            [$class, $method] = explode('@', $callback, 2);
+            $callback = [app($class), $method];
         }
 
         return call_user_func_array($callback, $args);
+    }
+
+    /**
+     * Store a hook definition.
+     *
+     * @param  array<string, array<int, array<int, array{callback: callable|string, accepted_args: int}>>>  $registry
+     */
+    protected function addHook(array &$registry, string $hookName, callable|string $callback, int $priority, int $acceptedArgs): void
+    {
+        if (!isset($registry[$hookName][$priority])) {
+            $registry[$hookName][$priority] = [];
+        }
+
+        $registry[$hookName][$priority][] = [
+            'callback' => $callback,
+            'accepted_args' => max(0, $acceptedArgs),
+        ];
+    }
+
+    /**
+     * Remove hook definitions.
+     *
+     * @param  array<string, array<int, array<int, array{callback: callable|string, accepted_args: int}>>>  $registry
+     */
+    protected function removeHook(array &$registry, string $hookName, callable|string|null $callback = null, ?int $priority = null): bool
+    {
+        if (!isset($registry[$hookName])) {
+            return false;
+        }
+
+        if ($callback === null && $priority === null) {
+            unset($registry[$hookName]);
+            return true;
+        }
+
+        if ($priority !== null) {
+            if (!isset($registry[$hookName][$priority])) {
+                return false;
+            }
+
+            if ($callback === null) {
+                unset($registry[$hookName][$priority]);
+            } else {
+                $registry[$hookName][$priority] = array_filter(
+                    $registry[$hookName][$priority],
+                    fn($hook) => !$this->callbacksAreEqual($hook['callback'], $callback)
+                );
+
+                if (empty($registry[$hookName][$priority])) {
+                    unset($registry[$hookName][$priority]);
+                }
+            }
+        } else {
+            foreach ($registry[$hookName] as $prio => &$hooks) {
+                $hooks = array_filter(
+                    $hooks,
+                    fn($hook) => !$this->callbacksAreEqual($hook['callback'], $callback)
+                );
+
+                if (empty($hooks)) {
+                    unset($registry[$hookName][$prio]);
+                }
+            }
+            unset($hooks);
+        }
+
+        if (empty($registry[$hookName])) {
+            unset($registry[$hookName]);
+        }
+
+        return true;
+    }
+
+    protected function callbacksAreEqual(callable|string $a, callable|string $b): bool
+    {
+        return $this->normalizeCallback($a) === $this->normalizeCallback($b);
+    }
+
+    protected function normalizeCallback(callable|string $callback): string
+    {
+        if (is_array($callback)) {
+            [$objectOrClass, $method] = $callback;
+            $class = is_object($objectOrClass) ? $objectOrClass::class : (string) $objectOrClass;
+            return $class . '::' . $method;
+        }
+
+        return (string) $callback;
     }
 }

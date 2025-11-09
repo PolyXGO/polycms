@@ -16,10 +16,22 @@ import ProductTagEditor from '../views/tags/product/ProductTagEditor.vue';
 import MediaLibrary from '../views/media/MediaLibrary.vue';
 import WidgetManager from '../views/widgets/WidgetManager.vue';
 import ModuleList from '../views/modules/ModuleList.vue';
-import SampleModuleSettings from '../views/modules/SampleModuleSettings.vue';
 import Settings from '../views/settings/Settings.vue';
 import ThemeList from '../views/themes/ThemeList.vue';
 import { useAuthStore } from '../stores/auth';
+
+const moduleRouteModules = import.meta.glob('../../../../modules/*/*/resources/admin/routes.ts', {
+    eager: true,
+    import: 'default',
+});
+
+const moduleChildRoutes: RouteRecordRaw[] = [];
+
+Object.values(moduleRouteModules).forEach((moduleRoutes: unknown) => {
+    if (Array.isArray(moduleRoutes)) {
+        moduleChildRoutes.push(...(moduleRoutes as RouteRecordRaw[]));
+    }
+});
 
 const routes: Array<RouteRecordRaw> = [
     {
@@ -139,11 +151,6 @@ const routes: Array<RouteRecordRaw> = [
                 component: ModuleList,
             },
             {
-                path: 'sample-module/settings',
-                name: 'admin.sample-module.settings',
-                component: SampleModuleSettings,
-            },
-            {
                 path: 'options-general',
                 name: 'admin.options-general',
                 component: Settings,
@@ -153,6 +160,7 @@ const routes: Array<RouteRecordRaw> = [
                 name: 'admin.themes.index',
                 component: ThemeList,
             },
+            ...moduleChildRoutes,
         ],
     },
 ];

@@ -116,16 +116,6 @@ class CoreMenuService
             'children' => [],
         ]);
 
-        // Widgets
-        $this->menuRegistry->register('widgets', [
-            'key' => 'widgets',
-            'label' => 'Widgets',
-            'route' => 'admin.widgets.index',
-            'icon' => 'M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z',
-            'order' => 50,
-            'children' => [],
-        ]);
-
         // Modules
         $this->menuRegistry->register('modules', [
             'key' => 'modules',
@@ -144,11 +134,18 @@ class CoreMenuService
             'order' => 65,
             'children' => [
                 [
-                    'key' => 'themes',
+                    'key' => 'appearance-themes',
                     'label' => 'Themes',
                     'route' => 'admin.themes.index',
                     'icon' => null,
                     'order' => 1,
+                ],
+                [
+                    'key' => 'appearance-widgets',
+                    'label' => 'Widgets',
+                    'route' => 'admin.widgets.index',
+                    'icon' => null,
+                    'order' => 2,
                 ],
             ],
         ]);

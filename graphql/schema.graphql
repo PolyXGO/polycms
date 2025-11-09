@@ -1,3 +1,4 @@
+#import ../modules/*/*/graphql/*.graphql
 "A datetime string with format `Y-m-d H:i:s`, e.g. `2018-05-23 13:43:32`."
 scalar DateTime @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\DateTime")
 
@@ -27,7 +28,7 @@ type Query {
     posts(
       status: String @where(operator: "=")
       type: String @where(operator: "=")
-      category_id: ID @whereHas(relation: "categories", column: "id")
+      category_id: ID @builder(method: "App\\GraphQL\\Queries\\PostQuery@filterByCategory")
       search: String @builder(method: "App\\GraphQL\\Queries\\PostQuery@search")
     ): [Post!]! @paginate(defaultCount: 15) @orderBy(columns: ["created_at", "published_at", "title"])
 
@@ -39,7 +40,7 @@ type Query {
       status: String @where(operator: "=")
       featured: Boolean @where
       stock_status: String @where(operator: "=")
-      category_id: ID @whereHas(relation: "categories", column: "id")
+      category_id: ID @builder(method: "App\\GraphQL\\Queries\\ProductQuery@filterByCategory")
       min_price: Float @where(operator: ">=", column: "price")
       max_price: Float @where(operator: "<=", column: "price")
       search: String @builder(method: "App\\GraphQL\\Queries\\ProductQuery@search")

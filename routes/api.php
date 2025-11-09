@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V1\ThemeController;
 use App\Http\Controllers\Api\V1\TopbarMenuController;
 use App\Http\Controllers\Api\V1\TranslationController;
 use App\Http\Controllers\Api\V1\UploadController;
+use App\Services\ModuleManager;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -98,10 +99,13 @@ Route::prefix('v1')->group(function () {
             Route::get('/widgets/types', [WidgetController::class, 'types'])->name('api.v1.widgets.types');
             Route::get('/widgets/types/{type}', [WidgetController::class, 'show'])->name('api.v1.widgets.type');
             Route::apiResource('widget-areas', WidgetAreaController::class);
+            Route::post('/widget-areas/{widgetArea}/reorder', [WidgetInstanceController::class, 'reorder'])->name('api.v1.widget-areas.reorder');
             Route::apiResource('widget-instances', WidgetInstanceController::class);
 
             // Module routes
             Route::get('/modules', [ModuleController::class, 'index'])->name('api.v1.modules.index');
+            Route::post('/modules/upload', [ModuleController::class, 'upload'])->name('api.v1.modules.upload');
+            Route::get('/modules/{moduleKey}/download', [ModuleController::class, 'download'])->name('api.v1.modules.download');
             Route::post('/modules/{moduleKey}/enable', [ModuleController::class, 'enable'])->name('api.v1.modules.enable');
             Route::post('/modules/{moduleKey}/disable', [ModuleController::class, 'disable'])->name('api.v1.modules.disable');
             Route::delete('/modules/{moduleKey}', [ModuleController::class, 'destroy'])->name('api.v1.modules.destroy');
@@ -129,3 +133,20 @@ Route::prefix('v1')->group(function () {
             Route::delete('/themes/{slug}', [ThemeController::class, 'destroy'])->name('api.v1.themes.destroy');
         });
 });
+
+$moduleManager = app(ModuleManager::class);
+
+foreach ($moduleManager->discoverModules() as $module) {
+    if (!$module['enabled']) {
+        continue;
+    }
+
+    $moduleApiRoutes = $module['path'] . '/routes/api.php';
+
+    if (file_exists($moduleApiRoutes)) {
+        Route::middleware('api')
+            ->group(function () use ($moduleApiRoutes): void {
+                require $moduleApiRoutes;
+            });
+    }
+}
