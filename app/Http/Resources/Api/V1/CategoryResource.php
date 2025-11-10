@@ -24,22 +24,19 @@ class CategoryResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'slug' => $this->slug,
+            'type' => $this->type,
             'summary' => $this->summary,
             'description' => $this->description,
-            'type' => $this->type,
             'parent_id' => $this->parent_id,
-            'path' => $this->path,
-            'depth' => $this->depth,
             'image' => $this->image,
             'order' => $this->order,
-            'posts_count' => $this->posts_count ?? 0,
-            'products_count' => $this->products_count ?? 0,
-            'full_name' => $this->full_name,
-            'is_root' => $this->isRoot(),
-            'is_leaf' => $this->isLeaf(),
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
+            'created_at' => optional($this->created_at)->toISOString(),
+            'updated_at' => optional($this->updated_at)->toISOString(),
         ];
+
+        if (isset($this->usage_count)) {
+            $data['usage_count'] = (int) $this->usage_count;
+        }
 
         if ($includeChildren && $this->relationLoaded('children')) {
             $data['children'] = CategoryResource::collection($this->children);

@@ -114,14 +114,13 @@
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                 <h2 class="text-lg font-semibold mb-4 dark:text-white">Category Image</h2>
                 <div class="space-y-4">
-                    <div v-if="form.image || imagePreview" class="relative">
+                    <div v-if="imagePreview" class="relative max-w-md">
                         <img
-                            :src="imagePreview || form.image"
+                            :src="imagePreview"
                             alt="Category image preview"
-                            class="max-w-md h-64 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
+                            class="w-full h-64 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
                         />
                         <button
-                            v-if="form.image || imagePreview"
                             type="button"
                             @click="removeImage"
                             class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600"
@@ -131,18 +130,25 @@
                             </svg>
                         </button>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Upload Image</label>
-                        <input
-                            ref="fileInput"
-                            type="file"
-                            accept="image/*"
-                            @change="handleImageUpload"
-                            class="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/20 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/30"
-                        />
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">PNG, JPG, GIF up to 10MB</p>
+                    <div class="flex flex-col gap-2">
+                        <button
+                            type="button"
+                            class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors w-max"
+                            @click="openMediaPicker"
+                        >
+                            {{ imagePreview ? 'Change Image' : 'Select Image' }}
+                        </button>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            Choose an image from the media library.
+                        </p>
                     </div>
                 </div>
+                <MediaPicker
+                    ref="mediaPickerRef"
+                    :multiple="false"
+                    :accepted-types="['image']"
+                    @select="handleMediaSelect"
+                />
             </div>
 
             <!-- Actions -->
@@ -170,7 +176,8 @@
 import { ref, onMounted, computed, watch, getCurrentInstance } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
-import TiptapEditor from '../../components/TiptapEditor.vue';
+import TiptapEditor from '../../components/TiptapEditor.ts';
+import MediaPicker from '../../components/MediaPicker.ts';
 import { useSlugify } from '../../composables/useSlugify';
 import { useTranslation } from '../../composables/useTranslation';
 import { useDialog } from '../../composables/useDialog';
@@ -187,7 +194,7 @@ const dialog = useDialog();
 const isEdit = computed(() => !!route.params.id);
 
 const loading = ref(false);
-const fileInput = ref<HTMLInputElement | null>(null);
+const mediaPickerRef = ref<InstanceType<typeof MediaPicker> | null>(null);
 const imagePreview = ref<string | null>(null);
 const parentCategories = ref<any[]>([]);
 const slugManuallyEdited = ref(false);
@@ -260,45 +267,9 @@ const getPermalink = (): string => {
     return `${baseUrl}/categories/${form.value.slug}`;
 };
 
-const handleImageUpload = (event: Event) => {
-    const target = event.target as HTMLInputElement;
-    const file = target.files?.[0];
-    if (!file) return;
-
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        imagePreview.value = e.target?.result as string;
-    };
-    reader.readAsDataURL(file);
-
-    // Upload file first
-    uploadImage(file);
-};
-
-const uploadImage = async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-        const response = await axios.post('/api/v1/media', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
-        form.value.image = response.data.data.url;
-    } catch (error) {
-        console.error('Error uploading image:', error);
-        dialog.error($t('Failed to upload image') || 'Failed to upload image');
-    }
-};
-
 const removeImage = () => {
     form.value.image = '';
     imagePreview.value = null;
-    if (fileInput.value) {
-        fileInput.value.value = '';
-    }
 };
 
 const loadParentCategories = async () => {
@@ -327,6 +298,7 @@ const loadCategory = async () => {
             summary: category.summary || '', // If summary field exists
             image: category.image || '',
         };
+        imagePreview.value = category.image || null;
         // Load parent categories for the same type
         await loadParentCategories();
     } catch (error) {
@@ -393,5 +365,19 @@ onMounted(async () => {
     } else {
         await loadParentCategories();
     }
+    if (form.value.image) {
+        imagePreview.value = form.value.image;
+    }
 });
+
+const openMediaPicker = () => {
+    mediaPickerRef.value?.open();
+};
+
+const handleMediaSelect = (media: any) => {
+    const selected = Array.isArray(media) ? media[0] : media;
+    if (!selected) return;
+    form.value.image = selected.url;
+    imagePreview.value = selected.url;
+};
 </script>

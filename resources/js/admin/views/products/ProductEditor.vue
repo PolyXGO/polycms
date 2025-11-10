@@ -1,272 +1,66 @@
 <template>
-    <div>
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-                {{ isEdit ? $t('Edit Product') || 'Edit Product' : $t('Create Product') || 'Create New Product' }}
+    <div class="editor-page">
+        <header class="editor-page__header">
+            <h1 class="editor-page__title">
+                {{ isEdit ? ($t('Edit Product') || 'Edit Product') : ($t('Create Product') || 'Create New Product') }}
             </h1>
-            <div class="flex items-center gap-3">
+            <div class="editor-page__actions">
                 <a
                     v-if="isEdit && form.slug"
                     :href="getPermalink()"
                     target="_blank"
-                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
+                    class="editor-page__action editor-page__action--primary"
                 >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                    {{ $t('View Page') || 'View Page' }}
+                    View Product
                 </a>
-                <button
-                    @click="router.back()"
-                    class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-                >
-                    {{ $t('Cancel') }}
+                <button type="button" class="editor-page__action" @click="router.back()">
+                    Cancel
                 </button>
             </div>
-        </div>
+        </header>
 
-        <form @submit.prevent="saveProduct" class="space-y-6">
-            <!-- Basic Information -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h2 class="text-lg font-semibold mb-4 dark:text-white">Basic Information</h2>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name *</label>
-                        <input
-                            v-model="form.name"
-                            type="text"
-                            required
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                            @input="generateSlug"
-                        />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Slug *</label>
-                        <input
-                            v-model="form.slug"
-                            type="text"
-                            required
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                            @input="onSlugInput"
-                            @paste="onSlugInput"
-                        />
-                        <div v-if="form.slug" class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                            <span class="font-medium">{{ $t('Permalink:') || 'Permalink:' }}</span>
-                            <a 
-                                :href="getPermalink()" 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                class="ml-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 hover:underline"
-                            >
-                                {{ getPermalink() }}
-                            </a>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SKU</label>
-                        <input
-                            v-model="form.sku"
-                            type="text"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status *</label>
-                        <select v-model="form.status" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                            <option value="draft">Draft</option>
-                            <option value="published">Published</option>
-                            <option value="archived">Archived</option>
-                        </select>
-                    </div>
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-                        <TiptapEditor v-model="form.description" :placeholder="$t('Enter product description...') || 'Enter product description...'" />
-                    </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Pricing & Inventory -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h2 class="text-lg font-semibold mb-4 dark:text-white">Pricing & Inventory</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price *</label>
-                        <input
-                            v-model.number="form.price"
-                            type="number"
-                            step="0.01"
-                            required
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Compare at Price</label>
-                        <input
-                            v-model.number="form.compare_at_price"
-                            type="number"
-                            step="0.01"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Stock Quantity</label>
-                        <input
-                            v-model.number="form.stock_quantity"
-                            type="number"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Stock Status *</label>
-                        <select
-                            v-model="form.stock_status"
-                            required
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        >
-                            <option value="in_stock">In Stock</option>
-                            <option value="out_of_stock">Out of Stock</option>
-                            <option value="on_backorder">On Backorder</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Product Images -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h2 class="text-lg font-semibold mb-4 dark:text-white">Product Images</h2>
-                <div class="space-y-4">
-                    <!-- Featured Image -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Featured Image</label>
-                        <div class="flex items-center gap-4">
-                            <div v-if="featuredImage" class="relative w-32 h-32 border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
-                                <img :src="featuredImage.url" :alt="featuredImage.name" class="w-full h-full object-cover" />
-                                <button
-                                    @click="removeFeaturedImage"
-                                    class="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
-                                >
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
-                            <button
-                                @click="openMediaPicker('featured')"
-                                type="button"
-                                class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                            >
-                                {{ featuredImage ? 'Change Image' : 'Select Image' }}
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Gallery -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Gallery</label>
-                        <div class="space-y-2">
-                            <div v-if="galleryImages.length > 0" class="grid grid-cols-4 gap-4">
-                                <div
-                                    v-for="(image, index) in galleryImages"
-                                    :key="image.id"
-                                    class="relative aspect-square border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden group"
-                                >
-                                    <img :src="image.url" :alt="image.name" class="w-full h-full object-cover" />
-                                    <button
-                                        @click="removeGalleryImage(index)"
-                                        class="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-                                    <button
-                                        @click="moveGalleryImage(index, 'up')"
-                                        v-if="index > 0"
-                                        class="absolute top-1 left-1 bg-gray-600 text-white rounded-full p-1 hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="Move up"
-                                    >
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                            <button
-                                @click="openMediaPicker('gallery')"
-                                type="button"
-                                class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                            >
-                                Add to Gallery
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- SEO Settings -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h2 class="text-lg font-semibold mb-4 dark:text-white">SEO Settings</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Meta Title</label>
-                        <input v-model="form.meta_title" type="text" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Meta Keywords</label>
-                        <input v-model="form.meta_keywords" type="text" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
-                    </div>
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Meta Description</label>
-                        <textarea
-                            v-model="form.meta_description"
-                            rows="3"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            <!-- Actions -->
-            <div class="flex justify-end space-x-3">
-                <button
-                    type="button"
-                    @click="router.back()"
-                    class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-                >
-                    {{ $t('Cancel') }}
-                </button>
-                <button
-                    type="submit"
-                    :disabled="loading"
-                    class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-                >
-                    {{ loading ? $t('Saving') : $t('Save Product') }}
-                </button>
-            </div>
+        <form class="editor-form" @submit.prevent="saveProduct">
+            <EditorPanelLayout type="product" :components="panelComponents" />
         </form>
 
-        <!-- Media Picker -->
         <MediaPicker
             ref="mediaPickerRef"
             :multiple="currentPickerMode === 'gallery'"
             :accepted-types="['image']"
             @select="handleMediaSelect"
         />
+
+        <div class="editor-floating-actions">
+            <button type="button" class="editor-floating-actions__primary" :disabled="loading" @click="saveProduct">
+                {{ loading ? 'Saving…' : 'Save Product' }}
+            </button>
+            <button type="button" class="editor-floating-actions__secondary" @click="router.back()">
+                Cancel
+            </button>
+        </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, computed, getCurrentInstance, watch, onMounted, provide } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
-import TiptapEditor from '../../components/TiptapEditor.vue';
-import MediaPicker from '../../components/MediaPicker.vue';
+import MediaPicker from '../../components/MediaPicker.ts';
 import { useSlugify } from '../../composables/useSlugify';
 import { useDialog } from '../../composables/useDialog';
 import { useTranslation } from '../../composables/useTranslation';
-import { getCurrentInstance } from 'vue';
+import { usePermalinkSettings } from '../../composables/usePermalinkSettings';
+import EditorPanelLayout from '../../components/editor/EditorPanelLayout.vue';
+import ProductPrimaryPanel from '../../components/editor/panels/product/ProductPrimaryPanel.vue';
+import ProductPricingPanel from '../../components/editor/panels/product/ProductPricingPanel.vue';
+import ProductMediaPanel from '../../components/editor/panels/product/ProductMediaPanel.vue';
+import ProductCategoriesPanel from '../../components/editor/panels/product/ProductCategoriesPanel.vue';
+import ProductTagsPanel from '../../components/editor/panels/product/ProductTagsPanel.vue';
+import ProductBrandsPanel from '../../components/editor/panels/product/ProductBrandsPanel.vue';
+import ProductPublishPanel from '../../components/editor/panels/product/ProductPublishPanel.vue';
+import ProductSeoPanel from '../../components/editor/panels/product/ProductSeoPanel.vue';
+import { EditorContextKey, createEditorContext } from '../../editor/context';
+import type { TagItem } from '../../components/editor/panels/shared/TagSelector.vue';
 
 interface MediaItem {
     id: number;
@@ -288,6 +82,9 @@ const router = useRouter();
 const route = useRoute();
 const { slugify } = useSlugify();
 const dialog = useDialog();
+const { ensureStructureLoaded, buildUrl } = usePermalinkSettings();
+
+ensureStructureLoaded();
 
 const isEdit = computed(() => !!route.params.id);
 
@@ -297,24 +94,65 @@ const mediaPickerRef = ref<InstanceType<typeof MediaPicker> | null>(null);
 const currentPickerMode = ref<'featured' | 'gallery'>('featured');
 const featuredImage = ref<MediaItem | null>(null);
 const galleryImages = ref<MediaItem[]>([]);
-const form = ref({
+const selectedCategories = ref<number[]>([]);
+const selectedTags = ref<TagItem[]>([]);
+const selectedBrands = ref<number[]>([]);
+
+const defaultFormState = (type?: string) => ({
     name: '',
     slug: '',
     sku: '',
+    type: type ?? 'product',
     status: 'draft',
-    description: '',
-    description_html: '',
     price: 0,
-    compare_at_price: null as number | null,
+    sale_price: null as number | null,
     stock_quantity: 0,
     stock_status: 'in_stock',
+    manage_stock: false,
+    featured: false,
     meta_title: '',
     meta_description: '',
     meta_keywords: '',
+    created_at: null as string | null,
+    updated_at: null as string | null,
 });
 
+const form = ref(defaultFormState());
+
+const panelComponents = {
+    primary: ProductPrimaryPanel,
+    pricing: ProductPricingPanel,
+    media: ProductMediaPanel,
+    categories: ProductCategoriesPanel,
+    tags: ProductTagsPanel,
+    brands: ProductBrandsPanel,
+    publish: ProductPublishPanel,
+    seo: ProductSeoPanel,
+};
+
+const descriptionHtml = ref('');
+
+const editorState = {
+    descriptionHtml,
+    featuredImage,
+    galleryImages,
+    productCategories: selectedCategories,
+    productTags: selectedTags,
+    productBrands: selectedBrands,
+};
+
+const resetForm = () => {
+    Object.assign(form.value, defaultFormState(form.value.type));
+    descriptionHtml.value = '';
+    featuredImage.value = null;
+    galleryImages.value = [];
+    slugManuallyEdited.value = false;
+    selectedCategories.value = [];
+    selectedTags.value = [];
+    selectedBrands.value = [];
+};
+
 const generateSlug = () => {
-    // Auto-generate slug from name if slug is empty or hasn't been manually edited
     if (form.value.name) {
         const nameSlug = slugify(form.value.name);
         if (!form.value.slug || (!slugManuallyEdited.value && form.value.slug === nameSlug)) {
@@ -328,7 +166,6 @@ const onSlugInput = (event: Event) => {
     const target = event.target as HTMLInputElement;
     const inputValue = target.value;
     
-    // If slug is empty, auto-generate from name
     if (!inputValue || inputValue.trim() === '') {
         if (form.value.name) {
             form.value.slug = slugify(form.value.name);
@@ -337,25 +174,22 @@ const onSlugInput = (event: Event) => {
         return;
     }
     
-    // Check if input contains non-slug characters (spaces, special chars, Vietnamese accents)
-    // Convert to lowercase for comparison
     const lowerInput = inputValue.toLowerCase();
-    const hasNonSlugChars = /[^a-z0-9\-]/.test(lowerInput) || /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/.test(lowerInput);
+    const hasNonSlugChars =
+        /[^a-z0-9\-]/.test(lowerInput) ||
+        /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/.test(lowerInput);
     
-    // If input has non-slug characters, convert to slug
     if (hasNonSlugChars) {
         form.value.slug = slugify(inputValue);
         slugManuallyEdited.value = true;
     } else {
-        // Input is already in slug format, just mark as manually edited
         slugManuallyEdited.value = true;
     }
 };
 
 const getPermalink = (): string => {
     if (!form.value.slug) return '';
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/products/${form.value.slug}`;
+    return buildUrl('product', form.value.slug);
 };
 
 const openMediaPicker = (mode: 'featured' | 'gallery') => {
@@ -365,24 +199,16 @@ const openMediaPicker = (mode: 'featured' | 'gallery') => {
 
 const handleMediaSelect = (media: MediaItem | MediaItem[]) => {
     if (currentPickerMode.value === 'featured') {
-        if (Array.isArray(media)) {
-            featuredImage.value = media[0] || null;
-        } else {
-            featuredImage.value = media;
-        }
+        featuredImage.value = Array.isArray(media) ? media[0] || null : media;
     } else {
-        // Gallery mode
         if (Array.isArray(media)) {
-            // Add new images to gallery (avoid duplicates)
-            media.forEach(img => {
-                if (!galleryImages.value.find(existing => existing.id === img.id)) {
+            media.forEach((img) => {
+                if (!galleryImages.value.find((existing) => existing.id === img.id)) {
                     galleryImages.value.push(img);
                 }
             });
-        } else {
-            if (!galleryImages.value.find(existing => existing.id === media.id)) {
+        } else if (!galleryImages.value.find((existing) => existing.id === media.id)) {
                 galleryImages.value.push(media);
-            }
         }
     }
 };
@@ -407,61 +233,115 @@ const moveGalleryImage = (index: number, direction: 'up' | 'down') => {
     }
 };
 
+const panelContext = createEditorContext({
+    type: 'product',
+    form,
+    loading,
+    helpers: {
+        generateSlug,
+        onSlugInput,
+        getPermalink,
+        openMediaPicker,
+        removeFeaturedImage,
+        removeGalleryImage,
+        moveGalleryImage,
+        save: () => saveProduct(),
+        preview: () => {
+            const url = getPermalink();
+            if (url) {
+                window.open(url, '_blank');
+            }
+        },
+    },
+    state: editorState,
+});
+
+provide(EditorContextKey, panelContext);
+
 const loadProduct = async () => {
-    if (!isEdit.value) return;
+    if (!route.params.id) return;
 
     try {
         const response = await axios.get(`/api/v1/products/${route.params.id}`);
         const product = response.data.data;
-        form.value = {
-            name: product.name,
-            slug: product.slug,
+        Object.assign(form.value, defaultFormState(product.type), {
+            name: product.name || '',
+            slug: product.slug || '',
             sku: product.sku || '',
-            status: product.status,
-            description: product.description_html || '',
-            description_html: product.description_html || '',
-            price: product.price || 0,
-            compare_at_price: product.compare_at_price || null,
-            stock_quantity: product.stock_quantity || 0,
+            type: product.type || 'product',
+            status: product.status || 'draft',
+            price: product.price ?? 0,
+            sale_price: product.sale_price ?? null,
+            stock_quantity: product.stock_quantity ?? 0,
             stock_status: product.stock_status || 'in_stock',
-            meta_title: product.meta_title || '',
-            meta_description: product.meta_description || '',
-            meta_keywords: product.meta_keywords || '',
-        };
+            manage_stock: product.manage_stock ?? false,
+            featured: product.featured ?? false,
+            meta_title: product.meta?.title || '',
+            meta_description: product.meta?.description || '',
+            meta_keywords: product.meta?.keywords || '',
+            created_at: product.created_at || null,
+            updated_at: product.updated_at || null,
+        });
+        descriptionHtml.value = product.description_html || '';
+        form.value.type = product.type || 'product';
 
-        // Load media
+        selectedCategories.value = Array.isArray(product.categories)
+            ? product.categories
+                  .map((category: any) => Number(category.id))
+                  .filter((id) => Number.isFinite(id))
+            : [];
+
+        selectedTags.value = Array.isArray(product.tags)
+            ? product.tags
+                  .map((tag: any) => ({
+                      id: Number(tag.id),
+                      name: tag.name,
+                  }))
+                  .filter((tag: TagItem) => Number.isFinite(tag.id) && typeof tag.name === 'string')
+            : [];
+
+        selectedBrands.value = Array.isArray(product.brands)
+            ? product.brands
+                  .map((brand: any) => Number(brand.id))
+                  .filter((id) => Number.isFinite(id))
+            : [];
+
         if (product.media && Array.isArray(product.media)) {
-            const primaryMedia = product.media.find((m: any) => m.pivot?.is_primary);
+            const mediaItems = [...product.media];
+            const primaryMedia = mediaItems.find((m: any) => m.pivot?.is_primary);
+
+            const buildMediaPayload = (media: any) => ({
+                id: media.id,
+                name: media.name,
+                file_name: media.file_name,
+                url: media.url,
+                type: media.type,
+                size: media.size,
+                created_at: media.created_at,
+                width: media.width,
+                height: media.height,
+            });
+
             if (primaryMedia) {
-                featuredImage.value = {
-                    id: primaryMedia.id,
-                    name: primaryMedia.name,
-                    file_name: primaryMedia.file_name,
-                    url: primaryMedia.url,
-                    type: primaryMedia.type,
-                    size: primaryMedia.size,
-                    created_at: primaryMedia.created_at,
-                    width: primaryMedia.width,
-                    height: primaryMedia.height,
-                };
+                featuredImage.value = buildMediaPayload(primaryMedia);
+            } else if (mediaItems.length > 0) {
+                const firstMedia = mediaItems[0];
+                featuredImage.value = buildMediaPayload(firstMedia);
+            } else {
+                featuredImage.value = null;
             }
 
-            // Load gallery (non-primary images, sorted by order)
-            const galleryMedia = product.media
-                .filter((m: any) => !m.pivot?.is_primary)
+            const featuredId = featuredImage.value?.id ?? null;
+
+            const galleryMedia = mediaItems
+                .filter((m: any) => (m.pivot?.is_primary ? false : featuredId ? m.id !== featuredId : true))
                 .sort((a: any, b: any) => (a.pivot?.order || 0) - (b.pivot?.order || 0))
-                .map((m: any) => ({
-                    id: m.id,
-                    name: m.name,
-                    file_name: m.file_name,
-                    url: m.url,
-                    type: m.type,
-                    size: m.size,
-                    created_at: m.created_at,
-                    width: m.width,
-                    height: m.height,
-                }));
+                .map((m: any) => buildMediaPayload(m));
+
             galleryImages.value = galleryMedia;
+        } else {
+            featuredImage.value = null;
+            galleryImages.value = [];
         }
     } catch (error: any) {
         console.error('Error loading product:', error);
@@ -470,60 +350,63 @@ const loadProduct = async () => {
     }
 };
 
+const collectMediaIds = () => {
+    const ids: number[] = [];
+    if (featuredImage.value) {
+        ids.push(featuredImage.value.id);
+    }
+    galleryImages.value.forEach((img) => {
+        if (!ids.includes(img.id)) {
+            ids.push(img.id);
+        }
+    });
+    return ids;
+};
+
 const saveProduct = async () => {
     loading.value = true;
 
     try {
-        // Prepare data - sync description_html with description from TiptapEditor
-        let descriptionHtml = form.value.description || '';
-        
-        // Check if description_html is empty or just empty paragraph
-        const isEmptyDescription = !descriptionHtml || 
-            descriptionHtml.trim() === '' || 
-            descriptionHtml.trim() === '<p></p>' || 
-            descriptionHtml.trim() === '<p><br></p>';
+        let descriptionHtmlValue: string | null = descriptionHtml.value || '';
+        const isEmptyDescription =
+            !descriptionHtmlValue ||
+            descriptionHtmlValue.trim() === '' ||
+            descriptionHtmlValue.trim() === '<p></p>' ||
+            descriptionHtmlValue.trim() === '<p><br></p>';
         
         if (isEmptyDescription) {
-            descriptionHtml = null;
+            descriptionHtmlValue = null;
         }
         
-        // Prepare media IDs
-        const mediaIds: number[] = [];
-        if (featuredImage.value) {
-            mediaIds.push(featuredImage.value.id);
-        }
-        galleryImages.value.forEach(img => {
-            if (!mediaIds.includes(img.id)) {
-                mediaIds.push(img.id);
-            }
-        });
-
-        const data: any = {
+        const payload: Record<string, any> = {
             name: form.value.name,
             slug: form.value.slug,
             sku: form.value.sku || null,
             status: form.value.status,
-            description_html: descriptionHtml,
+            description_html: descriptionHtmlValue,
             price: form.value.price,
-            compare_at_price: form.value.compare_at_price || null,
+            sale_price: form.value.sale_price || null,
             stock_quantity: form.value.stock_quantity || 0,
             stock_status: form.value.stock_status,
+            manage_stock: form.value.manage_stock ? 1 : 0,
+            featured: form.value.featured ? 1 : 0,
             meta_title: form.value.meta_title || null,
             meta_description: form.value.meta_description || null,
             meta_keywords: form.value.meta_keywords || null,
-            media_ids: mediaIds,
+            categories: selectedCategories.value,
+            tags: selectedTags.value.map((tag) => tag.id),
+            brands: selectedBrands.value,
+            media_ids: collectMediaIds(),
         };
 
         if (isEdit.value) {
-            // Update existing product - stay on edit page
-            await axios.put(`/api/v1/products/${route.params.id}`, data);
+            await axios.put(`/api/v1/products/${route.params.id}`, payload);
+            await loadProduct();
             dialog.success('Product updated successfully');
         } else {
-            // Create new product - redirect to edit page
-            const response = await axios.post('/api/v1/products', data);
-            const productId = response.data.data.id;
+            const response = await axios.post('/api/v1/products', payload);
             dialog.success('Product created successfully');
-            router.push({ name: 'admin.products.edit', params: { id: productId } });
+            router.push({ name: 'admin.products.edit', params: { id: response.data.data.id } });
         }
     } catch (error: any) {
         console.error('Error saving product:', error);
@@ -534,7 +417,102 @@ const saveProduct = async () => {
     }
 };
 
+watch(
+    () => route.params.id,
+    async (newId) => {
+        if (newId) {
+            await loadProduct();
+        } else {
+            resetForm();
+        }
+    },
+    { immediate: true }
+);
+
 onMounted(() => {
     loadProduct();
 });
 </script>
+
+<style scoped>
+.editor-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.editor-page__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.editor-page__title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.editor-page__actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.editor-page__action {
+    padding: 0.45rem 0.95rem;
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #0f172a;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.editor-page__action--primary {
+    background: #4f46e5;
+    border-color: #4f46e5;
+    color: white;
+}
+
+.editor-form {
+    display: block;
+}
+
+.editor-floating-actions {
+    position: fixed;
+    display: none;
+    bottom: 2rem;
+    right: 2rem;
+    flex-direction: column;
+    gap: 0.75rem;
+    z-index: 40;
+}
+
+.editor-floating-actions__primary {
+    padding: 0.65rem 1.35rem;
+    border-radius: 0.85rem;
+    background: #4f46e5;
+    color: #ffffff;
+    border: none;
+    font-weight: 600;
+    box-shadow: 0 10px 30px rgba(79, 70, 229, 0.25);
+    cursor: pointer;
+}
+
+.editor-floating-actions__secondary {
+    padding: 0.55rem 1.2rem;
+    border-radius: 0.85rem;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    color: #0f172a;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+@media (min-width: 1024px) {
+    .editor-floating-actions {
+        display: flex;
+    }
+}
+</style>
