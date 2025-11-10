@@ -42,7 +42,7 @@ import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore - Vue SFC typing provided via shim
-import MediaPicker from '../../components/MediaPicker.ts';
+import MediaPicker from '../../components/MediaPicker';
 import { useSlugify } from '../../composables/useSlugify';
 import { useDialog } from '../../composables/useDialog';
 import { useTranslation } from '../../composables/useTranslation';
@@ -152,13 +152,12 @@ const resetForm = () => {
 };
 
 const generateSlug = () => {
-    if (form.value.title) {
-        const titleSlug = slugify(form.value.title);
-        if (!form.value.slug || (!slugManuallyEdited.value && form.value.slug === titleSlug)) {
-            form.value.slug = titleSlug;
-            slugManuallyEdited.value = false;
-        }
+    if (isEdit.value) {
+        return;
     }
+    const freshSlug = form.value.title ? slugify(form.value.title) : '';
+    form.value.slug = freshSlug;
+    slugManuallyEdited.value = false;
 };
 
 const onSlugInput = (event: Event) => {

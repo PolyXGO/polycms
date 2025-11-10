@@ -45,7 +45,7 @@
 import { ref, computed, getCurrentInstance, watch, onMounted, provide } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
-import MediaPicker from '../../components/MediaPicker.ts';
+import MediaPicker from '../../components/MediaPicker';
 import { useSlugify } from '../../composables/useSlugify';
 import { useDialog } from '../../composables/useDialog';
 import { useTranslation } from '../../composables/useTranslation';
@@ -153,13 +153,12 @@ const resetForm = () => {
 };
 
 const generateSlug = () => {
-    if (form.value.name) {
-        const nameSlug = slugify(form.value.name);
-        if (!form.value.slug || (!slugManuallyEdited.value && form.value.slug === nameSlug)) {
-            form.value.slug = nameSlug;
-            slugManuallyEdited.value = false;
-        }
+    if (isEdit.value) {
+        return;
     }
+    const freshSlug = form.value.name ? slugify(form.value.name) : '';
+    form.value.slug = freshSlug;
+    slugManuallyEdited.value = false;
 };
 
 const onSlugInput = (event: Event) => {

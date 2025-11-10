@@ -176,8 +176,8 @@
 import { ref, onMounted, computed, watch, getCurrentInstance } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
-import TiptapEditor from '../../components/TiptapEditor.ts';
-import MediaPicker from '../../components/MediaPicker.ts';
+import TiptapEditor from '../../components/TiptapEditor';
+import MediaPicker from '../../components/MediaPicker';
 import { useSlugify } from '../../composables/useSlugify';
 import { useTranslation } from '../../composables/useTranslation';
 import { useDialog } from '../../composables/useDialog';
@@ -223,14 +223,12 @@ const form = ref({
 });
 
 const generateSlug = () => {
-    // Auto-generate slug from name if slug is empty or hasn't been manually edited
-    if (form.value.name) {
-        const nameSlug = slugify(form.value.name);
-        if (!form.value.slug || (!slugManuallyEdited.value && form.value.slug === nameSlug)) {
-            form.value.slug = nameSlug;
-            slugManuallyEdited.value = false;
-        }
+    if (isEdit.value) {
+        return;
     }
+    const freshSlug = form.value.name ? slugify(form.value.name) : '';
+    form.value.slug = freshSlug;
+    slugManuallyEdited.value = false;
 };
 
 const onSlugInput = (event: Event) => {
