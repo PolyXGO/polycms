@@ -14,6 +14,8 @@ use App\Http\Resources\Api\V1\ProductResource;
 use App\Models\Product;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Schema;
 
 class ProductController extends Controller
 {
@@ -23,6 +25,10 @@ class ProductController extends Controller
     public function index(Request $request): ProductCollection
     {
         $query = Product::with(['user', 'categories', 'tags', 'media']);
+
+        if ($this->supportsBrands()) {
+            $query->with('brands');
+        }
 
         // Apply filters
         $query = \App\Facades\Hook::applyFilters('product.query.builder', $query, $request);
@@ -82,18 +88,23 @@ class ProductController extends Controller
      */
     public function store(StoreProductRequest $request, CreateProduct $createProduct): JsonResponse
     {
-        $data = $request->validated();
+        $data = $this->normalizePublishData($request->validated());
+        if (array_key_exists('compare_at_price', $data)) {
+            $data['sale_price'] = $data['compare_at_price'];
+            unset($data['compare_at_price']);
+        }
         $categoryIds = $data['categories'] ?? [];
         $tagIds = $data['tags'] ?? [];
+        $brandIds = $this->supportsBrands() ? ($data['brands'] ?? []) : [];
         $mediaIds = $data['media_ids'] ?? [];
 
         // Set user_id
         $data['user_id'] = $request->user()->id;
 
         // Remove from main data
-        unset($data['categories'], $data['tags'], $data['media_ids']);
+        unset($data['categories'], $data['tags'], $data['media_ids'], $data['brands']);
 
-        $product = $createProduct->execute($data, $categoryIds, $tagIds, $mediaIds);
+        $product = $createProduct->execute($data, $categoryIds, $tagIds, $mediaIds, $brandIds);
 
         return $this->successResponse(
             new ProductResource($product),
@@ -107,7 +118,12 @@ class ProductController extends Controller
      */
     public function show(Product $product): JsonResponse
     {
-        $product->load(['user', 'categories', 'tags', 'media']);
+        $relations = ['user', 'categories', 'tags', 'media'];
+        if ($this->supportsBrands()) {
+            $relations[] = 'brands';
+        }
+
+        $product->load($relations);
 
         return $this->successResponse(new ProductResource($product));
     }
@@ -117,15 +133,20 @@ class ProductController extends Controller
      */
     public function update(UpdateProductRequest $request, Product $product, UpdateProduct $updateProduct): JsonResponse
     {
-        $data = $request->validated();
+        $data = $this->normalizePublishData($request->validated());
+        if (array_key_exists('compare_at_price', $data)) {
+            $data['sale_price'] = $data['compare_at_price'];
+            unset($data['compare_at_price']);
+        }
         $categoryIds = $data['categories'] ?? null;
         $tagIds = $data['tags'] ?? null;
+        $brandIds = $this->supportsBrands() ? ($data['brands'] ?? null) : null;
         $mediaIds = $data['media_ids'] ?? null;
 
         // Remove from main data
-        unset($data['categories'], $data['tags'], $data['media_ids']);
+        unset($data['categories'], $data['tags'], $data['media_ids'], $data['brands']);
 
-        $product = $updateProduct->execute($product, $data, $categoryIds, $tagIds, $mediaIds);
+        $product = $updateProduct->execute($product, $data, $categoryIds, $tagIds, $mediaIds, $brandIds);
 
         return $this->successResponse(
             new ProductResource($product),
@@ -141,5 +162,59 @@ class ProductController extends Controller
         $deleteProduct->execute($product);
 
         return $this->successResponse(null, 'Product deleted successfully', 204);
+    }
+
+    protected function supportsBrands(): bool
+    {
+        return Schema::hasTable('product_brand');
+    }
+
+    /**
+     * Normalize published/scheduled timestamps based on status.
+     *
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    protected function normalizePublishData(array $data): array
+    {
+        $status = $data['status'] ?? null;
+        $publishedAt = $data['published_at'] ?? null;
+        $scheduledAt = $data['scheduled_at'] ?? null;
+        $now = Carbon::now();
+
+        $parse = static fn (?string $value): ?Carbon => $value ? Carbon::parse($value) : null;
+
+        $published = $parse($publishedAt);
+        $scheduled = $parse($scheduledAt);
+
+        if ($status === 'published') {
+            if ($scheduled && $scheduled->isFuture()) {
+                $data['status'] = 'draft';
+                $data['scheduled_at'] = $scheduled->toISOString();
+                $data['published_at'] = null;
+            } else {
+                $data['published_at'] = ($published && $published->isPast())
+                    ? $published->toISOString()
+                    : $now->toISOString();
+                $data['scheduled_at'] = null;
+            }
+        } elseif ($scheduled) {
+            if ($scheduled->isPast()) {
+                $data['published_at'] = $scheduled->toISOString();
+                $data['scheduled_at'] = null;
+                $data['status'] = 'published';
+            } else {
+                $data['scheduled_at'] = $scheduled->toISOString();
+                $data['published_at'] = null;
+            }
+        } else {
+            $data['published_at'] = $published?->toISOString();
+            if (!empty($data['published_at']) && $status !== 'published') {
+                $data['status'] = 'published';
+            }
+            $data['scheduled_at'] = null;
+        }
+
+        return $data;
     }
 }

@@ -115,6 +115,8 @@ const defaultFormState = (type?: string) => ({
     meta_keywords: '',
     created_at: null as string | null,
     updated_at: null as string | null,
+    published_at: null as string | null,
+    scheduled_at: null as string | null,
 });
 
 const form = ref(defaultFormState());
@@ -280,6 +282,8 @@ const loadProduct = async () => {
             meta_keywords: product.meta?.keywords || '',
             created_at: product.created_at || null,
             updated_at: product.updated_at || null,
+            published_at: product.published_at || product.created_at || null,
+            scheduled_at: product.scheduled_at || null,
         });
         descriptionHtml.value = product.description_html || '';
         form.value.type = product.type || 'product';
@@ -376,6 +380,31 @@ const saveProduct = async () => {
         if (isEmptyDescription) {
             descriptionHtmlValue = null;
         }
+
+        const nowIso = new Date().toISOString();
+
+        let publishedAt: string | null = form.value.published_at || null;
+        let scheduledAt: string | null = form.value.scheduled_at || null;
+
+        if (form.value.status === 'published') {
+            if (scheduledAt && new Date(scheduledAt) > new Date()) {
+                form.value.status = 'draft';
+            } else {
+                publishedAt = publishedAt ?? nowIso;
+                scheduledAt = null;
+            }
+        } else if (scheduledAt) {
+            // keep schedule in future, clear published
+            if (new Date(scheduledAt) <= new Date()) {
+                publishedAt = scheduledAt;
+                scheduledAt = null;
+                form.value.status = 'published';
+            } else {
+                publishedAt = null;
+            }
+        } else {
+            publishedAt = null;
+        }
         
         const payload: Record<string, any> = {
             name: form.value.name,
@@ -396,6 +425,8 @@ const saveProduct = async () => {
             tags: selectedTags.value.map((tag) => tag.id),
             brands: selectedBrands.value,
             media_ids: collectMediaIds(),
+            published_at: publishedAt,
+            scheduled_at: scheduledAt,
         };
 
         if (isEdit.value) {

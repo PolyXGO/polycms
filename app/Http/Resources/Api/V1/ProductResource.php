@@ -24,6 +24,17 @@ class ProductResource extends JsonResource
             'short_description' => $this->short_description,
             'description_blocks' => $this->description_blocks,
             'description_html' => $this->description_html,
+            // Commonly-used flattened fields for admin forms
+            'price' => (float) $this->price,
+            'sale_price' => $this->sale_price ? (float) $this->sale_price : null,
+            'compare_at_price' => $this->sale_price ? (float) $this->sale_price : null,
+            'cost_price' => $this->cost_price ? (float) $this->cost_price : null,
+            'stock_status' => $this->stock_status,
+            'stock_quantity' => $this->stock_quantity,
+            'manage_stock' => (bool) $this->manage_stock,
+            'meta_title' => $this->meta_title,
+            'meta_description' => $this->meta_description,
+            'meta_keywords' => $this->meta_keywords,
             'pricing' => [
                 'price' => (float) $this->price,
                 'sale_price' => $this->sale_price ? (float) $this->sale_price : null,
@@ -53,13 +64,19 @@ class ProductResource extends JsonResource
                 'height' => $this->height ? (float) $this->height : null,
             ],
             'views' => $this->views,
-            'author' => [
-                'id' => $this->user->id,
-                'name' => $this->user->name,
-                'email' => $this->user->email,
-            ],
+            'published_at' => $this->published_at?->toISOString(),
+            'scheduled_at' => $this->scheduled_at?->toISOString(),
+            'author' => $this->when($this->relationLoaded('user') || $this->user, function () {
+                $user = $this->user;
+                return $user ? [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                ] : null;
+            }),
             'categories' => CategoryResource::collection($this->whenLoaded('categories')),
             'tags' => TagResource::collection($this->whenLoaded('tags')),
+            'brands' => CategoryResource::collection($this->whenLoaded('brands')),
             'media' => MediaResource::collection($this->whenLoaded('media')),
             'created_at' => $this->created_at->toISOString(),
             'updated_at' => $this->updated_at->toISOString(),

@@ -22,6 +22,25 @@ class StoreProductRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
+    protected function prepareForValidation(): void
+    {
+        $nullableFields = [
+            'short_description',
+            'description_html',
+            'meta_title',
+            'meta_description',
+            'meta_keywords',
+            'published_at',
+            'scheduled_at',
+        ];
+
+        foreach ($nullableFields as $field) {
+            if ($this->has($field) && $this->input($field) === '') {
+                $this->merge([$field => null]);
+            }
+        }
+    }
+
     public function rules(): array
     {
         return [
@@ -51,9 +70,13 @@ class StoreProductRequest extends FormRequest
             'categories.*' => ['exists:categories,id'],
             'tags' => ['nullable', 'array'],
             'tags.*' => ['exists:product_tags,id'],
+            'brands' => ['nullable', 'array'],
+            'brands.*' => [Rule::exists('categories', 'id')->where('type', 'product_brand')],
             'media_ids' => ['nullable', 'array'],
             'media_ids.*' => ['exists:media,id'],
             'order' => ['nullable', 'integer', 'min:0'],
+            'published_at' => ['nullable', 'date'],
+            'scheduled_at' => ['nullable', 'date', 'after:now'],
         ];
     }
 }

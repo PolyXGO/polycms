@@ -31,6 +31,8 @@ class Product extends Model
         'stock_low_threshold',
         'status',
         'featured',
+        'published_at',
+        'scheduled_at',
         'order',
         'meta_title',
         'meta_description',
@@ -59,6 +61,8 @@ class Product extends Model
             'width' => 'decimal:2',
             'height' => 'decimal:2',
             'views' => 'integer',
+            'published_at' => 'datetime',
+            'scheduled_at' => 'datetime',
         ];
     }
 
@@ -76,6 +80,12 @@ class Product extends Model
     public function categories(): BelongsToMany
     {
         return $this->belongsToMany(Category::class, 'product_category');
+    }
+
+    public function brands(): BelongsToMany
+    {
+        return $this->belongsToMany(Category::class, 'product_brand', 'product_id', 'brand_id')
+            ->where('type', 'product_brand');
     }
 
     /**
