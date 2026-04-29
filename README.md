@@ -18,9 +18,9 @@
 
 ## Overview
 
-**PolyCMS** is a high-performance, open-source content management system designed for modern web applications. It provides a complete ecosystem for content publishing, e-commerce, multi-language support, and extensible module architecture — all powered by a beautiful Vue 3 admin panel.
+**PolyCMS** is an open-source content management system for modern web applications, inspired by the WordPress plugin and theme ecosystem but built on top of the Laravel framework. It is designed to provide a complete foundation for content publishing, e-commerce, multi-language support, and extensible module architecture — powered by a Vue 3 admin panel with data served entirely through RESTful APIs.
 
-Whether you're building a blog, a documentation site, an online store, or a multi-tenant SaaS platform, PolyCMS gives you the foundation to ship fast and scale confidently.
+Whether you're building a blog, a documentation site, an online store, or a multi-tenant SaaS platform, PolyCMS aims to give you a comprehensive starting scaffold so you can ship quickly and extend easily through integrated modules and themes. In particular, themes in PolyCMS follow a multi-theme architecture — one Main theme and an unlimited number of Sub themes can run side by side on the same installation.
 
 ---
 
@@ -50,7 +50,7 @@ Whether you're building a blog, a documentation site, an online store, or a mult
 - **REST API** — Sanctum-authenticated `/api/v1` endpoints with rate limiting and token management
 
 ### 🎨 Theme System
-- **Multi-Theme** — Switch themes instantly with live preview
+- **Multi-Theme Architecture** — One Main theme with unlimited Sub themes active simultaneously; switch or preview themes without downtime
 - **Landing Page Builder** — Visual block-based page construction with pre-built templates
 - **Theme Hooks** — `header_scripts`, `footer_scripts`, `after_body_open`, and more for flexible injection
 - **Responsive** — All bundled themes are mobile-first and fully responsive
