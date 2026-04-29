@@ -1,0 +1,17 @@
+{
+    "name": "FlexiMyTa",
+    "slug": "fleximyta",
+    "version": "1.0.0",
+    "author": "PolyCMS Team",
+    "description": "A modern, flexible blog theme designed for content creators with clean design, responsive layout, and dark mode support",
+    "type": "frontend",
+    "requires": {
+        "polycms": ">=1.0.0"
+    },
+    "templates": {
+        "products.single-product-variants": {
+            "name": "Single Product Variants",
+            "description": "Interactive layout specialized for variable products."
+        }
+    }
+}

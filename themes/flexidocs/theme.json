@@ -1,0 +1,34 @@
+{
+    "name": "FlexiDocs",
+    "slug": "flexidocs",
+    "version": "1.0.0",
+    "author": "PolyCMS Team",
+    "description": "A modern, responsive documentation and Wiki Help Desk theme with tree-view sidebar.",
+    "role": "main",
+    "templates": {
+        "posts.wiki-article": {
+            "name": "FlexiDocs — Wiki Article",
+            "description": "Documentation article view with sidebar navigation and breadcrumbs"
+        },
+        "posts.iframe": {
+            "name": "FlexiDocs — iFrame",
+            "description": "Load content from an external URL via iFrame."
+        },
+        "posts.iframe-full": {
+            "name": "FlexiDocs — iFrame Full Width",
+            "description": "Load content from an external URL via iFrame without the sidebar."
+        },
+        "categories.iframe": {
+            "name": "FlexiDocs — iFrame",
+            "description": "Hiển thị nội dung từ URL bên ngoài qua iFrame."
+        },
+        "categories.iframe-full": {
+            "name": "FlexiDocs — iFrame Full Width",
+            "description": "Hiển thị nội dung từ URL bên ngoài qua iFrame không viền, không sidebar."
+        }
+    },
+    "type": "frontend",
+    "requires": {
+        "polycms": ">=1.0.0"
+    }
+}

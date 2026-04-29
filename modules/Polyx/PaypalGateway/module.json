@@ -1,0 +1,23 @@
+﻿{
+    "name": "PayPal Gateway",
+  "module": "PaypalGateway",
+    "slug": "paypal-gateway",
+    "version": "1.0.0",
+    "description": "PayPal payment gateway integration for PolyCMS e-commerce",
+    "author": "PolyCMS",
+    "vendor": "Polyx",
+    "namespace": "Modules\\Polyx\\PaypalGateway",
+    "provider": "Modules\\Polyx\\PaypalGateway\\PaypalGatewayServiceProvider",
+    "autoload": {
+        "psr-4": {
+            "Modules\\Polyx\\PaypalGateway\\": ""
+        }
+    },
+    "requires": {
+        "core": ">=1.0.0"
+    },
+    "settings": {
+        "admin_menu": false
+    }
+}
+

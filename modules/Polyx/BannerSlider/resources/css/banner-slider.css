@@ -1,0 +1,505 @@
+/**
+ * BannerSlider Module - Styles
+ * PolyCMS Module Asset
+ */
+
+.banner-slider-container {
+    width: 100%;
+    background: var(--light, #f8f9fa);
+    overflow: hidden;
+    position: relative;
+    z-index: 99998;
+    touch-action: pan-y pinch-zoom;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+.banner-slider-container * {
+    box-sizing: border-box;
+}
+
+
+.banner-slider-wrapper {
+    position: relative;
+    max-width: 100%;
+    margin: 0 auto;
+    overflow: hidden;
+}
+
+.banner-slider {
+    display: flex;
+    width: 100%;
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    position: relative;
+    margin: 0;
+    padding: 0;
+}
+
+/* Slide effects - horizontal */
+.banner-slider[data-effect="slide"],
+.banner-slider[data-effect="slide-right"] {
+    flex-direction: row;
+    transition: transform 0.5s ease-in-out;
+    will-change: transform;
+}
+
+/* Slide effects - vertical */
+.banner-slider[data-effect="slide-top"],
+.banner-slider[data-effect="slide-bottom"] {
+    flex-direction: column;
+    transition: transform 0.5s ease-in-out;
+    will-change: transform;
+}
+
+.banner-slide {
+    min-width: 100%;
+    width: 100%;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.banner-slider[data-effect="slide-top"] .banner-slide,
+.banner-slider[data-effect="slide-bottom"] .banner-slide {
+    min-height: 100%;
+    height: 100%;
+    width: 100%;
+    flex-shrink: 0;
+}
+
+/* Admin Edit Icon */
+.banner-edit-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    text-decoration: none;
+    color: #2563eb;
+    opacity: 0.9;
+}
+
+.banner-edit-icon:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: translate(-50%, -50%) scale(1.1);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+    opacity: 1;
+    color: #1d4ed8;
+}
+
+.banner-edit-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* Ensure edit icon is visible on all slide types */
+.banner-slide .banner-edit-icon {
+    pointer-events: auto;
+}
+
+.banner-slider-container[data-transition-effect="slide-top"],
+.banner-slider-container[data-transition-effect="slide-bottom"] {
+    height: auto;
+    min-height: 300px;
+}
+
+/* Fade effects */
+.banner-slide[data-effect="fade"],
+.banner-slide[data-effect="fade-in"],
+.banner-slide[data-effect="fade-out"] {
+    opacity: 0;
+    display: none;
+    transition: opacity 0.5s ease-in-out;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.banner-slide[data-effect="fade"].active,
+.banner-slide[data-effect="fade-in"].active,
+.banner-slide[data-effect="fade-out"].active {
+    opacity: 1;
+    display: block;
+    position: relative;
+}
+
+/* Zoom effects */
+.banner-slide[data-effect="zoom"],
+.banner-slide[data-effect="zoom-in"],
+.banner-slide[data-effect="zoom-out"] {
+    transform: scale(0.8);
+    opacity: 0;
+    display: none;
+    transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.banner-slide[data-effect="zoom"].active {
+    transform: scale(1);
+    opacity: 1;
+    display: block;
+    position: relative;
+}
+
+.banner-slide[data-effect="zoom-in"].active {
+    transform: scale(1);
+    opacity: 1;
+    display: block;
+    position: relative;
+}
+
+.banner-slide[data-effect="zoom-out"].active {
+    transform: scale(0.95);
+    opacity: 1;
+    display: block;
+    position: relative;
+}
+
+/* Ensure fade/zoom slider container has relative positioning */
+.banner-slider[data-effect="fade"],
+.banner-slider[data-effect="fade-in"],
+.banner-slider[data-effect="fade-out"],
+.banner-slider[data-effect="zoom"],
+.banner-slider[data-effect="zoom-in"],
+.banner-slider[data-effect="zoom-out"] {
+    position: relative;
+    min-height: 200px;
+}
+
+.banner-link,
+.banner-image-wrapper {
+    display: block;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.banner-image {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+    max-height: 120px;
+}
+
+.banner-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+    padding: 1rem;
+    color: white;
+}
+
+.banner-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem 0;
+}
+
+.banner-description {
+    font-size: 0.875rem;
+    margin: 0;
+    opacity: 0.9;
+}
+
+/* Text Banner Styles */
+.banner-text-wrapper {
+    display: flex;
+    width: 100%;
+    padding: 2rem;
+    min-height: 120px;
+    align-items: center;
+    justify-content: center;
+}
+
+.banner-text-title-link,
+.banner-text-body-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.banner-text-title-link .banner-text-title {
+    color: inherit;
+}
+
+.banner-text-title-link:hover,
+.banner-text-body-link:hover {
+    opacity: 0.9;
+}
+
+.banner-text-content {
+    max-width: 1200px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.banner-text-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 1rem 0;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    width: 100%;
+    color: inherit;
+}
+
+.banner-text-title-link {
+    text-align: center;
+    width: 100%;
+    display: block;
+}
+
+.banner-text-body-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.banner-text-body {
+    font-size: 1rem;
+    line-height: 1.6;
+    margin: 0;
+    display: inline;
+}
+
+.banner-cta-button {
+    display: inline-block;
+    padding: 0.75rem 2rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease-out;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.banner-cta-button:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Apply hover styles dynamically if data-hover-style attribute exists */
+.banner-cta-button[data-hover-style]:hover {
+    opacity: 1;
+}
+
+/* Apply hover styles from data attribute */
+.banner-cta-button[data-hover-style] {
+    transition: all 0.2s ease-out;
+}
+
+.banner-countdown {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    align-items: center;
+    margin-top: 1rem;
+}
+
+.countdown-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 60px;
+}
+
+.countdown-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+}
+
+.countdown-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    opacity: 0.8;
+}
+
+.banner-slider-prev,
+.banner-slider-next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.2s ease-out;
+    color: var(--dark, #1a1a2e);
+}
+
+.banner-slider-prev {
+    left: 1rem;
+}
+
+.banner-slider-next {
+    right: 1rem;
+}
+
+.banner-slider-prev:hover,
+.banner-slider-next:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.banner-slider-dots {
+    position: absolute;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 0.5rem;
+    z-index: 10;
+}
+
+.banner-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: all 0.2s ease-out;
+    padding: 0;
+}
+
+.banner-dot.active {
+    background: rgba(255, 255, 255, 1);
+    width: 24px;
+    border-radius: 5px;
+}
+
+.banner-dot:hover {
+    background: rgba(255, 255, 255, 0.8);
+}
+
+@media (max-width: 768px) {
+    .banner-image {
+        max-height: 80px;
+    }
+
+    .banner-text-wrapper {
+        padding: 1.5rem 1rem;
+        min-height: 100px;
+    }
+
+    .banner-text-title {
+        font-size: 1.25rem;
+    }
+
+    .banner-text-body {
+        font-size: 0.875rem;
+    }
+
+    .banner-text-body-wrapper {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .banner-text-body {
+        display: inline;
+    }
+
+    .banner-cta-button {
+        padding: 0.625rem 1.5rem;
+        font-size: 0.875rem;
+        flex-shrink: 0;
+    }
+
+    .banner-countdown {
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .countdown-item {
+        min-width: 50px;
+    }
+
+    .countdown-value {
+        font-size: 1.25rem;
+    }
+
+    .countdown-label {
+        font-size: 0.625rem;
+    }
+
+    .banner-slider-prev,
+    .banner-slider-next {
+        width: 32px;
+        height: 32px;
+    }
+
+    .banner-slider-prev {
+        left: 0.5rem;
+    }
+
+    .banner-slider-next {
+        right: 0.5rem;
+    }
+
+    .banner-overlay {
+        padding: 0.75rem;
+    }
+
+    .banner-title {
+        font-size: 0.875rem;
+    }
+
+    .banner-description {
+        font-size: 0.75rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .banner-slider {
+        transition: none;
+    }
+
+    .banner-slider-prev:hover,
+    .banner-slider-next:hover {
+        transform: translateY(-50%);
+    }
+}

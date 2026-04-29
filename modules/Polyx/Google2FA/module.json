@@ -1,0 +1,14 @@
+﻿{
+  "name": "Google2FA",
+  "module": "Google2FA",
+  "vendor": "Polyx",
+  "version": "1.0.0",
+  "description": "Google Authenticator (TOTP) 2FA support for PolyCMS.",
+  "provider": "Modules\\Polyx\\Google2FA\\Google2FAServiceProvider",
+  "autoload": {
+    "psr-4": {
+      "Modules\\Polyx\\Google2FA\\": "src/"
+    }
+  }
+}
+

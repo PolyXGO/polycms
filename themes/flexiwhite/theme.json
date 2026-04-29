@@ -1,0 +1,40 @@
+{
+    "name": "FlexiWhite",
+    "slug": "flexiwhite",
+    "version": "2.1.0",
+    "role": "main",
+    "templates": [
+        "posts.index",
+        "posts.show",
+        "pages.show",
+        "categories.show",
+        "tags.show",
+        "authors.show",
+        "products.index",
+        "products.show"
+    ],
+    "author": "PolyCMS Team",
+    "homepage": "https://polycms.org/docs/themes/flexiwhite",
+    "description": "Developer reference theme for PolyCMS. Demonstrates all available theme hooks, filters, widget areas, template system, SEO integration, and Blade template conventions. Use this as your blueprint when building custom themes.",
+    "type": "frontend",
+    "tags": ["sample", "reference", "developer", "starter"],
+    "screenshot": "screenshot.png",
+    "requires": {
+        "polycms": ">=1.0.0"
+    },
+    "supports": {
+        "post-thumbnails": true,
+        "custom-logo": true,
+        "menus": true,
+        "widgets": true,
+        "dark-mode": true,
+        "block-editor": true,
+        "products": true,
+        "multi-language": true
+    },
+    "menus": {
+        "header": "Header Navigation",
+        "footer": "Footer Menu",
+        "mobile": "Mobile Menu"
+    }
+}

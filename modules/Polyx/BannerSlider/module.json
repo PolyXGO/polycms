@@ -1,0 +1,14 @@
+﻿{
+  "name": "Banner Slider",
+  "module": "BannerSlider",
+  "vendor": "Polyx",
+  "version": "1.0.0",
+  "description": "Banner slider management module for displaying promotional banners in topbar area with scheduling, ordering, and responsive slider support",
+  "provider": "Modules\\Polyx\\BannerSlider\\BannerSliderServiceProvider",
+  "autoload": {
+    "psr-4": {
+      "Modules\\Polyx\\BannerSlider\\": "src/"
+    }
+  }
+}
+

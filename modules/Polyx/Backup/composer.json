@@ -1,0 +1,10 @@
+{
+  "name": "polyx/backup",
+  "description": "Backup & Restore module for PolyCMS",
+  "type": "polycms-module",
+  "autoload": {
+    "psr-4": {
+      "Modules\\Polyx\\Backup\\": "src/"
+    }
+  }
+}
