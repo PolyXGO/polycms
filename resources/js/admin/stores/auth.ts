@@ -55,7 +55,8 @@ export const useAuthStore = defineStore('auth', {
         },
         async logout(hard: boolean = true) {
             try {
-                if (this.token) {
+                // Only call logout API if we were actually authenticated
+                if (this.token && this.isAuthenticated) {
                     await axios.post('/api/v1/auth/logout').catch(() => {});
                 }
             } finally {
@@ -64,36 +65,41 @@ export const useAuthStore = defineStore('auth', {
                 this.isAuthenticated = false;
                 localStorage.removeItem('auth_token');
                 delete axios.defaults.headers.common['Authorization'];
-                
+
                 if (hard) {
-                    // Also clear web session (e.g. customer login) by submitting native form
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '/logout';
-                
-                const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
-                if (csrfTokenMeta) {
-                    const input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = '_token';
-                    input.value = csrfTokenMeta.getAttribute('content') || '';
-                    form.appendChild(input);
+                    // Also clear web session by submitting native form
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/logout';
+
+                    const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
+                    if (csrfTokenMeta) {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = '_token';
+                        input.value = csrfTokenMeta.getAttribute('content') || '';
+                        form.appendChild(input);
+                    }
+
+                    document.body.appendChild(form);
+                    form.submit();
                 }
-                
-                document.body.appendChild(form);
-                form.submit();
-                } // end if (hard)
             }
         },
         async checkAuth() {
             if (this.token) {
                 try {
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
                     const response = await axios.get('/api/v1/auth/me');
                     this.user = response.data.data;
                     this.isAuthenticated = true;
-                    axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
-                } catch (error) {
-                    this.logout(false);
+                } catch {
+                    // Silently clear stale token — no API calls, no redirects
+                    this.token = null;
+                    this.user = null;
+                    this.isAuthenticated = false;
+                    localStorage.removeItem('auth_token');
+                    delete axios.defaults.headers.common['Authorization'];
                 }
             } else {
                 this.isAuthenticated = false;
