@@ -21,9 +21,15 @@ Route::get('login', function () {
     return redirect('/account/login');
 })->name('login');
 
+// Account login: redirect to dashboard if already authenticated
+Route::get('account/login', function () {
+    if (auth()->check()) {
+        return redirect('/account/dashboard');
+    }
+    return app(AuthenticatedSessionController::class)->create(request());
+})->name('account.login');
+
 Route::middleware('guest')->group(function () {
-    Route::get('account/login', [AuthenticatedSessionController::class, 'create'])
-        ->name('account.login');
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
 

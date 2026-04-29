@@ -82,7 +82,7 @@ Whether you're building a blog, a documentation site, an online store, or a mult
 | **BannerSlider** | Promotional banner management with scheduling and responsive slider |
 | **Backup** | Full backup & restore system with cloud storage integration |
 
-> **Pro Edition** includes additional modules: Accounting, Data Builder (API management & visual reporting), Remote Server Manager, SEO Optimizer, Demo Builder, and more. Visit [polyxgo.com](https://polyxgo.com) for details.
+> **Pro Edition** includes additional modules: Accounting, Data Builder (API management & visual reporting), Remote Server Manager, SEO Optimizer, Demo Builder, and more. Visit [polycms.org](https://polycms.org) for details.
 
 ---
 
@@ -294,12 +294,12 @@ PolyCMS Community Edition is open-source software licensed under the [MIT Licens
 
 ## 🔗 Links
 
-- **Website**: [polyxgo.com](https://polyxgo.com)
+- **Website**: [polycms.org](https://polycms.org)
 - **GitHub**: [github.com/PolyXGO/polycms](https://github.com/PolyXGO/polycms)
 - **Issues**: [github.com/PolyXGO/polycms/issues](https://github.com/PolyXGO/polycms/issues)
 
 ---
 
 <p align="center">
-  Made with ❤️ by <a href="https://polyxgo.com">PolyXGO</a>
+  Made with ❤️ by <a href="https://polycms.org">PolyXGO</a>
 </p>

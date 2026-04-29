@@ -26,8 +26,10 @@ try {
 } catch (\Exception $e) {}
 $currentCurrencyCode = $ecommerceSettings['ecommerce_currency']['value'] ?? 'USD';
 $currentCurrencySymbol = $ecommerceSettings['ecommerce_currency_symbol']['value'] ?? '$';
+// Do not render topbar on login pages
+$isLoginPage = request()->is('admin/login', 'account/login', 'login', 'register');
 @endphp
-
+@if(!$isLoginPage)
 <div id="polycms-topbar" class="polycms-topbar" style="{{ $isWebAuth ? 'display: block;' : 'display: none;' }}">
     <div class="polycms-topbar-container">
         {{-- Left Menu --}}
@@ -1344,3 +1346,4 @@ $currentCurrencySymbol = $ecommerceSettings['ecommerce_currency_symbol']['value'
 
     })();
 </script>
+@endif

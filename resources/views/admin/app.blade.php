@@ -45,7 +45,7 @@
             ],
         };
     </script>
-    @vite(['resources/js/admin/main.ts', 'resources/css/app.css', 'resources/css/landing-blocks.css', 'modules/Polyx/XemTuoiXongDat/resources/admin/index.ts'])
+    @vite(['resources/js/admin/main.ts', 'resources/css/app.css', 'resources/css/landing-blocks.css'])
 </head>
 <body class="antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
     <div id="polycms-admin-app"></div>

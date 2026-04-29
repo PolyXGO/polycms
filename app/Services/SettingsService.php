@@ -359,7 +359,7 @@ class SettingsService
             ],
             'show_brand_label' => [
                 'key' => 'show_brand_label',
-                'value' => false,
+                'value' => true,
                 'type' => 'boolean',
                 'label' => 'Show Site Name next to Logo',
                 'description' => 'When enabled, the brand name text will be displayed alongside the logo in the admin sidebar.',
@@ -574,7 +574,7 @@ class SettingsService
         return [
             'auth_login_text' => [
                 'key' => 'auth_login_text',
-                'value' => "PolyXGO with love\nCopyright 2026 © PolyXGO.",
+                'value' => "PolyCMS with love\nCopyright 2026 © polycms.org.",
                 'type' => 'textarea',
                 'label' => 'Login Page Footer Text',
                 'description' => 'Text displayed at the bottom right of the login screen. You can use multiple lines.'
@@ -588,7 +588,7 @@ class SettingsService
             ],
             'auth_layout_position' => [
                 'key' => 'auth_layout_position',
-                'value' => 'center',
+                'value' => 'right',
                 'type' => 'select',
                 'label' => 'Login Layout Position',
                 'description' => 'Position of the login form on the page',
