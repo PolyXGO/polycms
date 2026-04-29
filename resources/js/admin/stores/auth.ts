@@ -53,9 +53,11 @@ export const useAuthStore = defineStore('auth', {
                 throw error;
             }
         },
-        async logout() {
+        async logout(hard: boolean = true) {
             try {
-                await axios.post('/api/v1/auth/logout');
+                if (this.token) {
+                    await axios.post('/api/v1/auth/logout').catch(() => {});
+                }
             } finally {
                 this.token = null;
                 this.user = null;
@@ -63,7 +65,8 @@ export const useAuthStore = defineStore('auth', {
                 localStorage.removeItem('auth_token');
                 delete axios.defaults.headers.common['Authorization'];
                 
-                // Also clear web session (e.g. customer login) by submitting native form
+                if (hard) {
+                    // Also clear web session (e.g. customer login) by submitting native form
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = '/logout';
@@ -79,6 +82,7 @@ export const useAuthStore = defineStore('auth', {
                 
                 document.body.appendChild(form);
                 form.submit();
+                } // end if (hard)
             }
         },
         async checkAuth() {
@@ -89,7 +93,7 @@ export const useAuthStore = defineStore('auth', {
                     this.isAuthenticated = true;
                     axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
                 } catch (error) {
-                    this.logout();
+                    this.logout(false);
                 }
             } else {
                 this.isAuthenticated = false;

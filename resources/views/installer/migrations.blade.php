@@ -19,6 +19,8 @@
             <ul class="space-y-2 text-sm text-gray-600 font-medium pl-2 border-l-2 border-indigo-200">
                 <li class="pl-2">Migrating Core Database Tables</li>
                 <li class="pl-2">Registering FlexiMyTa Theme</li>
+                <li class="pl-2">Registering FlexiWhite Theme</li>
+                <li class="pl-2">Registering FlexiDocs Theme</li>
                 <li class="pl-2">Installing CookieConsent Module</li>
                 <li class="pl-2">Installing Google2FA Module</li>
                 <li class="pl-2">Installing PaypalGateway Module</li>
