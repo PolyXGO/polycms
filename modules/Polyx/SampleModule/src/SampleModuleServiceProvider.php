@@ -518,8 +518,22 @@ class SampleModuleServiceProvider extends ServiceProvider
     protected function registerSettingsDefaults(): void
     {
         Hook::addFilter('settings.defaults', function (array $defaults, $service): array {
-            $defaults['sample_module_content_badge'] = 'no';
-            $defaults['sample_module_notes_per_page'] = '10';
+            $defaults['sample_module'] = [
+                'sample_module_content_badge' => [
+                    'key'         => 'sample_module_content_badge',
+                    'value'       => 'no',
+                    'type'        => 'string',
+                    'label'       => 'Show Reading Time Badge',
+                    'description' => 'Adds a "X min read" badge after the first heading in post content.',
+                ],
+                'sample_module_notes_per_page' => [
+                    'key'         => 'sample_module_notes_per_page',
+                    'value'       => '10',
+                    'type'        => 'number',
+                    'label'       => 'Notes Per Page',
+                    'description' => 'Pagination size for the Notes list.',
+                ],
+            ];
             return $defaults;
         }, 10, 2);
     }
