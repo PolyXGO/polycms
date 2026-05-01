@@ -85,8 +85,10 @@ class Google2FAController extends Controller
                 $settings->save();
             }
 
+            $brandName = app(\App\Services\SettingsService::class)->get('brand_name', config('app.name'));
+
             $qrCodeUrl = Google2FA::getQRCodeUrl(
-                config('app.name'),
+                $brandName,
                 $user->email,
                 $settings->google2fa_secret
             );

@@ -364,7 +364,29 @@ class ModuleController extends Controller
             $targetPath = $modulesPath . '/' . $vendor . '/' . $moduleName;
 
             if (File::exists($targetPath)) {
-                throw new \RuntimeException("Module {$moduleKey} already exists");
+                if ($request->boolean('overwrite')) {
+                    // Disable module if it's currently active before overwriting
+                    $existingModule = $this->moduleManager->getModule($moduleKey);
+                    if ($existingModule && $existingModule['enabled']) {
+                        $this->moduleManager->disableModule($moduleKey);
+                    }
+                    File::deleteDirectory($targetPath);
+                } else {
+                    // Cleanup extracted files so they don't leak
+                    if (isset($zip) && $zip instanceof ZipArchive) {
+                        try { $zip->close(); } catch (\Throwable) {}
+                    }
+                    if (File::exists($extractionPath)) {
+                        File::deleteDirectory($extractionPath);
+                    }
+                    $disk->delete($tempStoredPath);
+                    
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Module {$moduleKey} already exists. Do you want to overwrite it?",
+                        'error_code' => 'MODULE_ALREADY_EXISTS'
+                    ], 409);
+                }
             }
 
             File::ensureDirectoryExists(dirname($targetPath));

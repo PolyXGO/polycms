@@ -15,7 +15,7 @@
             </router-link>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
             <!-- Form Section -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                 <form @submit.prevent="saveBanner">
@@ -616,7 +616,7 @@
             </div>
 
             <!-- Preview Section -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 preview-sticky">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 static lg:sticky lg:top-[80px] lg:self-start lg:max-h-[calc(100vh-100px)] overflow-y-auto">
                 <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Preview</h2>
                 <div class="banner-preview-container">
                     <div v-if="form.type === 'image'" class="banner-preview-image">
@@ -1226,18 +1226,7 @@ onUnmounted(() => {
     display: inline;
 }
 
-.preview-sticky {
-    position: sticky;
-    top: 2rem;
-    align-self: flex-start;
-    max-height: calc(100vh - 4rem);
-    overflow-y: auto;
-}
 
-@media (max-width: 1024px) {
-    .preview-sticky {
-        position: static;
-        max-height: none;
-    }
-}
+
+
 </style>

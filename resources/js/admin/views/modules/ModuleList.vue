@@ -766,11 +766,18 @@ const handleUpload = async (event: Event) => {
         return;
     }
 
+    await performUpload(file, false, input);
+};
+
+const performUpload = async (file: File, overwrite: boolean, input: HTMLInputElement) => {
     uploadLoading.value = true;
 
     try {
         const formData = new FormData();
         formData.append('module', file);
+        if (overwrite) {
+            formData.append('overwrite', '1');
+        }
 
         await axios.post('/api/v1/modules/upload', formData, {
             headers: {
@@ -787,17 +794,30 @@ const handleUpload = async (event: Event) => {
         }, 300);
     } catch (error: any) {
         console.error('Error uploading module:', error);
-        const message = error.response?.data?.message || 'Failed to upload module';
-        dialog.error(message);
+        
+        if (error.response?.data?.error_code === 'MODULE_ALREADY_EXISTS') {
+            const confirmed = await dialog.confirm({
+                title: 'Module Already Exists',
+                message: error.response.data.message,
+                confirmText: 'Overwrite',
+                cancelText: 'Cancel',
+                type: 'warning'
+            });
+            
+            if (confirmed) {
+                return performUpload(file, true, input);
+            }
+        } else {
+            const message = error.response?.data?.message || 'Failed to upload module';
+            dialog.error(message);
+        }
     } finally {
-        uploadLoading.value = false;
-
-        if (input) {
-            input.value = '';
+        if (!overwrite) { // Only reset loading state if we are not recursing
+           uploadLoading.value = false;
         }
 
-        if (uploadInput.value) {
-            uploadInput.value.value = '';
+        if (input && !overwrite) {
+            input.value = '';
         }
     }
 };

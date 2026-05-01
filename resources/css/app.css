@@ -31,9 +31,9 @@ body {
     -webkit-overflow-scrolling: touch;
 }
 
-/* Prevent horizontal overflow on admin pages */
+/* Prevent horizontal overflow on admin pages without breaking position: sticky */
 #polycms-admin-app {
-    overflow-x: hidden;
+    overflow-x: clip;
     max-width: 100vw;
 }
 
