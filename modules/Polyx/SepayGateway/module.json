@@ -1,0 +1,23 @@
+{
+    "name": "SepayGateway",
+  "module": "SepayGateway",
+    "slug": "sepay-gateway",
+    "version": "1.0.0",
+    "description": "SePay QR Code Payment Gateway for Vietnamese banks",
+    "author": "PolyCMS",
+    "vendor": "Polyx",
+    "namespace": "Modules\\Polyx\\SepayGateway",
+    "provider": "Modules\\Polyx\\SepayGateway\\SepayGatewayServiceProvider",
+    "autoload": {
+        "psr-4": {
+            "Modules\\Polyx\\SepayGateway\\": ""
+        }
+    },
+    "requires": {
+        "core": ">=1.0.0"
+    },
+    "settings": {
+        "admin_menu": false
+    }
+}
+

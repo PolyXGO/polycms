@@ -1,0 +1,107 @@
+/* Shared Landing Blocks Styles */
+
+:root {
+    --block-radius: 0.75rem;
+    --block-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --block-border: #e5e7eb;
+}
+
+.dark {
+    --block-border: #374151;
+}
+
+/* Accordion / FAQ Style */
+.faq-container {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+.faq-item {
+    background: #fff;
+    border: 1px solid var(--block-border);
+    border-radius: var(--block-radius);
+    overflow: hidden;
+    box-shadow: var(--block-shadow);
+    transition: all 0.3s ease;
+}
+
+.dark .faq-item {
+    background: #1f2937;
+}
+
+.faq-question {
+    user-select: none;
+    padding: 1.125rem 1.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1rem;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    color: inherit;
+}
+
+.faq-answer {
+    padding: 0 1.5rem;
+    height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: height 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease, padding 0.3s ease;
+    font-size: 0.9375rem;
+    color: #4b5563;
+}
+
+.dark .faq-answer {
+    color: #9ca3af;
+}
+
+.faq-answer.active {
+    height: fit-content;
+    padding: 0 1.5rem 1.5rem;
+    opacity: 1;
+}
+
+/* Accordion Style Variants */
+.faq-container.style-separate {
+    gap: 1.25rem;
+}
+
+.faq-container.style-bordered {
+    border: 1px solid var(--block-border);
+    border-radius: var(--block-radius);
+    gap: 0;
+    overflow: hidden;
+    padding: 0;
+}
+
+.faq-container.style-bordered .faq-item {
+    border: none;
+    border-radius: 0;
+    margin-bottom: 0;
+    box-shadow: none;
+    border-bottom: 1px solid var(--block-border);
+}
+
+.faq-container.style-bordered .faq-item:last-child {
+    border-bottom: none;
+}
+
+.faq-container.style-standard .faq-item {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    box-shadow: none;
+    margin-bottom: 0;
+}
+
+.faq-container.style-standard .faq-item:last-child {
+    border-bottom: none;
+}

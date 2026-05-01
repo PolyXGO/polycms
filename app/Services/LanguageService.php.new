@@ -1,0 +1,401 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services;
+
+use App\Models\Language;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
+use ZipArchive;
+
+class LanguageService
+{
+        /**
+     * Compile JSON source files to PHP cache files for a locale
+     */
+    public function compileToPhp(string $locale, ?string $scope = null): bool
+    {
+        try {
+            $scopes = $this->getAvailableScopes();
+
+            foreach ($scopes as $availableScope) {
+                // If a specific scope is requested, skip others
+                if ($scope !== null && $scope !== $availableScope['id']) {
+                    continue;
+                }
+
+                $jsonFile = $availableScope['path'] . "/lang/{$locale}.json";
+                $phpFile = $availableScope['path'] . "/lang/{$locale}.php";
+                
+                $this->compileFile($jsonFile, $phpFile);
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error("Failed to compile translations for {$locale}: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Helper to read JSON and write PHP cache
+     */
+    protected function compileFile(string $jsonPath, string $phpPath): void
+    {
+        if (File::exists($jsonPath)) {
+            $data = json_decode(File::get($jsonPath), true);
+            if (is_array($data)) {
+                $content = "<?php\n\nreturn " . var_export($data, true) . ";\n";
+                $this->ensureDirectory(dirname($phpPath));
+                File::put($phpPath, $content);
+            }
+        }
+    }
+
+    /**
+     * Copy translation files from one locale to another (working on JSON source)
+     */
+    public function copyTranslations(string $from, string $to): bool
+    {
+        try {
+            $this->ensureLocaleDirectories($to);
+
+            // Copy core translations
+            $coreFrom = base_path("lang/{$from}.json");
+            $coreTo = base_path("lang/{$to}.json");
+            
+            // If JSON doesn't exist, try to convert from PHP first (migration support)
+            if (!File::exists($coreFrom) && File::exists(base_path("lang/{$from}.php"))) {
+                 $this->phpToJson(base_path("lang/{$from}.php"), $coreFrom);
+            }
+
+            if (File::exists($coreFrom)) {
+                File::copy($coreFrom, $coreTo);
+            } else {
+                // Return empty json object
+                File::put($coreTo, "{}");
+            }
+
+            // Copy module translations
+            $modulesPath = base_path("modules");
+            if (File::isDirectory($modulesPath)) {
+                $modules = File::directories($modulesPath);
+                foreach ($modules as $modulePath) {
+                    $modFrom = "{$modulePath}/lang/{$from}.json";
+                    $modTo = "{$modulePath}/lang/{$to}.json";
+                    
+                    if (!File::exists($modFrom) && File::exists("{$modulePath}/lang/{$from}.php")) {
+                        $this->phpToJson("{$modulePath}/lang/{$from}.php", $modFrom);
+                    }
+                    
+                    if (File::exists($modFrom)) {
+                        $this->ensureDirectory(dirname($modTo));
+                        File::copy($modFrom, $modTo);
+                    }
+                }
+            }
+            
+            // Copy theme translations
+            $themesPath = base_path("themes");
+            if (File::isDirectory($themesPath)) {
+                $themes = File::directories($themesPath);
+                foreach ($themes as $themePath) {
+                    $themeFrom = "{$themePath}/lang/{$from}.json";
+                    $themeTo = "{$themePath}/lang/{$to}.json";
+                    
+                    if (!File::exists($themeFrom) && File::exists("{$themePath}/lang/{$from}.php")) {
+                        $this->phpToJson("{$themePath}/lang/{$from}.php", $themeFrom);
+                    }
+
+                    if (File::exists($themeFrom)) {
+                        $this->ensureDirectory(dirname($themeTo));
+                        File::copy($themeFrom, $themeTo);
+                    }
+                }
+            }
+            
+            // Compile the new language
+            $this->compileToPhp($to);
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error("Failed to copy translations from {$from} to {$to}: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Convert PHP translation file to JSON
+     */
+    protected function phpToJson(string $phpPath, string $jsonPath): void
+    {
+        if (File::exists($phpPath)) {
+            $data = require $phpPath;
+            if (is_array($data)) {
+                 File::put($jsonPath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            }
+        }
+    }
+
+    /**
+     * Get path to Core JSON translation file (ensuring it exists)
+     */
+    public function getCoreJsonPath(string $locale): string
+    {
+        $jsonPath = base_path("lang/{$locale}.json");
+        $phpPath = base_path("lang/{$locale}.php");
+
+        // If JSON missing but PHP exists, convert it
+        if (!File::exists($jsonPath) && File::exists($phpPath)) {
+            $this->phpToJson($phpPath, $jsonPath);
+        }
+
+        // If neither exists, create empty JSON
+        if (!File::exists($jsonPath)) {
+            File::put($jsonPath, "{}");
+        }
+
+        return $jsonPath;
+    }
+
+    /**
+     * Zip all "JSON" translation files for a locale
+     */
+    public function packTranslations(string $locale): ?string
+    {
+        $zipPath = storage_path("app/translations/{$locale}.zip");
+        $this->ensureDirectory(dirname($zipPath));
+        
+        $zip = new ZipArchive();
+        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            return null;
+        }
+
+        // Ensure we have JSON files (if not, generate them from PHP)
+        $this->ensureJsonFiles($locale);
+
+        // Add core file
+        $corePath = base_path("lang/{$locale}.json");
+        if (File::exists($corePath)) {
+             // ... [rest of existing method]
+            $zip->addFile($corePath, "lang/{$locale}.json");
+        }
+
+        // Add module files
+        $modulesPath = base_path("modules");
+        if (File::isDirectory($modulesPath)) {
+            $modules = File::directories($modulesPath);
+            foreach ($modules as $modulePath) {
+                $relativePath = str_replace(base_path() . '/', '', $modulePath);
+                $langFile = "{$modulePath}/lang/{$locale}.json";
+                
+                if (File::exists($langFile)) {
+                    $zip->addFile($langFile, "{$relativePath}/lang/{$locale}.json");
+                }
+            }
+        }
+
+        // Add theme files
+        $themesPath = base_path("themes");
+        if (File::isDirectory($themesPath)) {
+            $themes = File::directories($themesPath);
+            foreach ($themes as $themePath) {
+                $relativePath = str_replace(base_path() . '/', '', $themePath);
+                $langFile = "{$themePath}/lang/{$locale}.json";
+                
+                if (File::exists($langFile)) {
+                    $zip->addFile($langFile, "{$relativePath}/lang/{$locale}.json");
+                }
+            }
+        }
+
+        $zip->close();
+        
+        return $zipPath;
+    }
+
+    /**
+     * Helper to ensure JSON files exist for a locale (converting PHP if needed)
+     */
+    protected function ensureJsonFiles(string $locale): void
+    {
+        // Core
+         $coreJson = base_path("lang/{$locale}.json");
+         $corePhp = base_path("lang/{$locale}.php");
+         if (!File::exists($coreJson) && File::exists($corePhp)) {
+             $this->phpToJson($corePhp, $coreJson);
+         }
+
+         // Modules
+         $modulesPath = base_path("modules");
+         if (File::isDirectory($modulesPath)) {
+             foreach (File::directories($modulesPath) as $modulePath) {
+                 $json = "{$modulePath}/lang/{$locale}.json";
+                 $php = "{$modulePath}/lang/{$locale}.php";
+                 if (!File::exists($json) && File::exists($php)) {
+                     $this->phpToJson($php, $json);
+                 }
+             }
+         }
+
+         // Themes
+         $themesPath = base_path("themes");
+         if (File::isDirectory($themesPath)) {
+            foreach (File::directories($themesPath) as $themePath) {
+                 $json = "{$themePath}/lang/{$locale}.json";
+                 $php = "{$themePath}/lang/{$locale}.php";
+                 if (!File::exists($json) && File::exists($php)) {
+                     $this->phpToJson($php, $json);
+                 }
+            }
+         }
+    }
+
+    /**
+     * Extract zip file containing JSON files and compile to PHP
+     */
+    public function unpackTranslations(string $locale, string $zipPath): bool
+    {
+        $zip = new ZipArchive();
+        if ($zip->open($zipPath) !== true) {
+            return false;
+        }
+
+        try {
+            // Extract to temp dir first
+            $tempDir = storage_path("app/temp/translations/{$locale}_" . time());
+            $this->ensureDirectory($tempDir);
+            $zip->extractTo($tempDir);
+            $zip->close();
+
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($tempDir, \RecursiveDirectoryIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::SELF_FIRST
+            );
+
+            foreach ($iterator as $item) {
+                if ($item->isFile()) {
+                    $relativePath = str_replace($tempDir . '/', '', $item->getPathname());
+                    
+                    // Validate path
+                    if (
+                        str_starts_with($relativePath, 'lang/') ||
+                        str_starts_with($relativePath, 'modules/') ||
+                        str_starts_with($relativePath, 'themes/')
+                    ) {
+                        // Ensure we are only writing the target locale JSON file
+                        if (str_ends_with($relativePath, "/{$locale}.json")) {
+                             $destPath = base_path($relativePath);
+                             $this->ensureDirectory(dirname($destPath));
+                             File::copy($item->getPathname(), $destPath);
+                        }
+                    }
+                }
+            }
+
+            File::deleteDirectory($tempDir);
+            
+            // Recompile to PHP after unpacking
+            $this->compileToPhp($locale);
+            
+            return true;
+        } catch (\Exception $e) {
+            Log::error("Failed to unpack translations for {$locale}: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Sync keys from default language to target language (using JSON source)
+     */
+    public function syncKeys(string $defaultLocale, string $targetLocale): int
+    {
+        // Ensure source JSONs exist
+        $this->ensureJsonFiles($defaultLocale);
+        $this->ensureJsonFiles($targetLocale);
+
+        $syncedCount = 0;
+
+        // Sync Core
+        $syncedCount += $this->syncJsonFile(
+            base_path("lang/{$defaultLocale}.json"),
+            base_path("lang/{$targetLocale}.json")
+        );
+
+        // Sync Modules
+        $modulesPath = base_path("modules");
+        if (File::isDirectory($modulesPath)) {
+            foreach (File::directories($modulesPath) as $modulePath) {
+                 $source = "{$modulePath}/lang/{$defaultLocale}.json";
+                 $target = "{$modulePath}/lang/{$targetLocale}.json";
+                 if (File::exists($source)) {
+                     $syncedCount += $this->syncJsonFile($source, $target);
+                 }
+            }
+        }
+
+        // Sync Themes
+        $themesPath = base_path("themes");
+        if (File::isDirectory($themesPath)) {
+            foreach (File::directories($themesPath) as $themePath) {
+                 $source = "{$themePath}/lang/{$defaultLocale}.json";
+                 $target = "{$themePath}/lang/{$targetLocale}.json";
+                 if (File::exists($source)) {
+                     $syncedCount += $this->syncJsonFile($source, $target);
+                 }
+            }
+        }
+        
+        // Recompile
+        $this->compileToPhp($targetLocale);
+        
+        return $syncedCount;
+    }
+
+    protected function syncJsonFile(string $sourcePath, string $targetPath): int
+    {
+        if (!File::exists($sourcePath)) {
+            return 0;
+        }
+
+        $sourceData = json_decode(File::get($sourcePath), true);
+        if (!is_array($sourceData)) {
+            return 0;
+        }
+
+        $targetData = [];
+        if (File::exists($targetPath)) {
+            $targetData = json_decode(File::get($targetPath), true);
+            if (!is_array($targetData)) {
+                $targetData = [];
+            }
+        }
+
+        $added = 0;
+        foreach ($sourceData as $key => $value) {
+            if (!array_key_exists($key, $targetData)) {
+                $targetData[$key] = $value; // Copy original value as default
+                $added++;
+            }
+        }
+        
+        if ($added > 0) {
+             File::put($targetPath, json_encode($targetData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        }
+
+        return $added;
+    }
+
+    protected function ensureLocaleDirectories(string $locale): void
+    {
+        $this->ensureDirectory(base_path("lang"));
+    }
+
+    protected function ensureDirectory(string $path): void
+    {
+        if (!File::isDirectory($path)) {
+            File::makeDirectory($path, 0755, true);
+        }
+    }
+}

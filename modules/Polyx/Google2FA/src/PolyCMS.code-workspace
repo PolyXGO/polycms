@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "../../../../.."
+		},
+		{
+			"path": "../../../../../../../../../Data/Projects/PolyCMS-projects"
+		}
+	],
+	"settings": {
+		"git.ignoreLimitWarning": true
+	}
+}

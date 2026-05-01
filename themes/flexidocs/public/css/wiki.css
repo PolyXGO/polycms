@@ -1,0 +1,258 @@
+/* {{THEME_NAME}} Styles */
+
+/* Base Styles */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    /* Dark mode styles are handled by TailwindCSS classes */
+}
+
+/* Custom Styles */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+/* Add your custom styles here */
+
+
+/* Extracted from show.blade.php */
+/* Wiki Docs Landing — Help Desk grouped layout */
+.wiki-docs-landing {
+    max-width: 100%;
+}
+
+.wiki-docs-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.wiki-docs-header__title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 0.5rem;
+    letter-spacing: -0.025em;
+}
+
+.dark .wiki-docs-header__title { color: #f1f5f9; }
+
+.wiki-docs-header__summary {
+    font-size: 1.05rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.6;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+.dark .wiki-docs-header__summary { color: #94a3b8; }
+
+.wiki-docs-header__description {
+    font-size: 0.95rem;
+    color: #475569;
+    margin-top: 0.75rem;
+    line-height: 1.7;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+.wiki-docs-header__description p {
+    margin-bottom: 0.75rem;
+}
+
+.dark .wiki-docs-header__description { color: #94a3b8; }
+
+/* Group Container */
+.wiki-group {
+    margin-bottom: 2rem;
+}
+
+.wiki-group__header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid rgba(99, 102, 241, 0.3);
+}
+
+.wiki-group__title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #6366f1;
+    margin: 0;
+}
+
+.dark .wiki-group__title { color: #818cf8; }
+
+.wiki-group__title-link {
+    text-decoration: none;
+}
+
+.wiki-group__title-link:hover .wiki-group__title {
+    color: #4f46e5;
+}
+
+.dark .wiki-group__title-link:hover .wiki-group__title {
+    color: #a5b4fc;
+}
+
+.wiki-group__count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    height: 1.25rem;
+    padding: 0 0.4rem;
+    border-radius: 9999px;
+    background: rgba(99, 102, 241, 0.12);
+    color: #6366f1;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.dark .wiki-group__count {
+    background: rgba(129, 140, 248, 0.15);
+    color: #818cf8;
+}
+
+.wiki-group__description {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin: 0 0 0.75rem;
+}
+
+.dark .wiki-group__description { color: #94a3b8; }
+
+/* Items List */
+.wiki-group__items {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: rgba(148, 163, 184, 0.1);
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+/* Single Item */
+.wiki-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1rem;
+    background: white;
+    text-decoration: none;
+    transition: background 0.15s ease;
+}
+
+.dark .wiki-item {
+    background: rgba(30, 41, 59, 0.5);
+}
+
+.wiki-item:hover {
+    background: #f8fafc;
+}
+
+.dark .wiki-item:hover {
+    background: rgba(51, 65, 85, 0.5);
+}
+
+.wiki-item__content {
+    flex: 1;
+    min-width: 0;
+}
+
+.wiki-item__title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dark .wiki-item__title { color: #e2e8f0; }
+
+.wiki-item:hover .wiki-item__title {
+    color: #6366f1;
+}
+
+.dark .wiki-item:hover .wiki-item__title {
+    color: #818cf8;
+}
+
+.wiki-item__subtitle {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin: 0.15rem 0 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dark .wiki-item__subtitle { color: #94a3b8; }
+
+.wiki-item__arrow {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    margin-left: 0.75rem;
+    color: #cbd5e1;
+    transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.dark .wiki-item__arrow { color: #475569; }
+
+.wiki-item:hover .wiki-item__arrow {
+    color: #6366f1;
+    transform: translateX(2px);
+}
+
+.dark .wiki-item:hover .wiki-item__arrow {
+    color: #818cf8;
+}
+
+/* Empty States */
+.wiki-group__empty {
+    padding: 1.5rem 1rem;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    background: rgba(148, 163, 184, 0.05);
+    border-radius: 0.5rem;
+}
+
+.wiki-docs-empty {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #94a3b8;
+}
+
+.wiki-docs-empty__icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    margin: 0 auto 1rem;
+    color: #6366f1;
+    opacity: 0.5;
+}
+
+.wiki-docs-empty h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #475569;
+    margin: 0 0 0.25rem;
+}
+
+.dark .wiki-docs-empty h2 { color: #cbd5e1; }

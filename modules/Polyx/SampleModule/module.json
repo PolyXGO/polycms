@@ -1,0 +1,16 @@
+{
+  "name": "Sample Module",
+  "module": "SampleModule",
+  "vendor": "Polyx",
+  "version": "2.0.0",
+  "description": "Comprehensive developer reference module for PolyCMS. Demonstrates all available hooks, filters, admin menu registration, settings integration, CRUD operations, Vue admin pages, permission registration, email templates, and more. Use this as your blueprint when building custom modules.",
+  "provider": "Modules\\Polyx\\SampleModule\\SampleModuleServiceProvider",
+  "tags": ["sample", "reference", "developer", "hooks", "filters", "crud"],
+  "homepage": "https://polycms.org/docs/modules/sample-module",
+  "autoload": {
+    "psr-4": {
+      "Modules\\Polyx\\SampleModule\\": "src/"
+    }
+  }
+}
+

@@ -1,0 +1,15 @@
+{
+  "name": "Cookie Consent",
+  "module": "CookieConsent",
+  "vendor": "Polyx",
+  "version": "1.0.0",
+  "description": "GDPR and CCPA compliant cookie consent banner for user tracking and data collection acknowledgment.",
+  "provider": "Polyx\\CookieConsent\\CookieConsentServiceProvider",
+  "autoload": {
+    "psr-4": {
+      "Polyx\\CookieConsent\\": "src/"
+    }
+  },
+  "sandbox": false
+}
+
