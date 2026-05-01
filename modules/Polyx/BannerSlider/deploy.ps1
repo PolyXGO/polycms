@@ -1,9 +1,9 @@
 ﻿$ErrorActionPreference = 'Stop'
 
 # ========================================
-# Google2FA Module Deploy Script
+# BannerSlider Module Deploy Script
 # ========================================
-$MODULE_NAME = "Google2FA"
+$MODULE_NAME = "BannerSlider"
 $MODULE_VENDOR = "Polyx"
 $TARGET_DEPLOY = "D:\Data\PolyCMS\Modules\$MODULE_NAME"
 
