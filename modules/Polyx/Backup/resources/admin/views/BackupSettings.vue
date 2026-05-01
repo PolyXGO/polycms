@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="p-6">
     <!-- Header -->
     <div class="flex justify-between items-center mb-6">
@@ -242,8 +242,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
-import { useDialogStore } from '@/admin/stores/dialog';
-
+import { useDialog, useDialogStore } from '@polycms';
 const dialogStore = useDialogStore();
 const activeTab = ref('general');
 const saving = ref(false);

@@ -678,9 +678,7 @@
 import { ref, computed, onMounted, onUpdated, watch, getCurrentInstance, onUnmounted, nextTick } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
-import MediaPicker from '@admin/components/MediaPicker';
-import { useDialog } from '@admin/composables/useDialog';
-import { useTranslation } from '@admin/composables/useTranslation';
+import { MediaPicker, useDialog, useTranslation } from '@polycms';
 
 const { t } = useTranslation();
 const instance = getCurrentInstance();

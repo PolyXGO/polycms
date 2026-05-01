@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="p-6">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
@@ -249,12 +249,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import axios from 'axios';
-import { useDialogStore } from '@/admin/stores/dialog';
-import { usePagination } from '@/admin/composables/usePagination';
-import { useTableSort } from '@/admin/composables/useTableSort';
-import DataPagination from '@/admin/components/table/DataPagination.vue';
-import SortableHeader from '@/admin/components/table/SortableHeader.vue';
-
+import { useDialog, useTableSort, usePagination, useDialogStore, SortableHeader, DataPagination } from '@polycms';
 interface BackupRecord {
   id: number;
   name: string;

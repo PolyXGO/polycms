@@ -60,6 +60,38 @@ class ModuleController extends Controller
     }
 
     /**
+     * Get active modules that have a pre-built frontend entry.
+     * Used by the dynamic module loader in the admin SPA.
+     * No admin check — this is called at app bootstrap before auth resolves.
+     */
+    public function activeFrontend(): JsonResponse
+    {
+        $modules = $this->moduleManager->discoverModules();
+        $result = [];
+
+        foreach ($modules as $key => $module) {
+            if (!$module['enabled']) {
+                continue;
+            }
+
+            // Check if the module ships a pre-built admin JS bundle
+            $distPath = $module['path'] . '/dist/admin.js';
+            if (File::exists($distPath)) {
+                $result[] = [
+                    'key' => $key,
+                    'name' => $module['name'],
+                    'admin_entry' => 'dist/admin.js',
+                ];
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $result,
+        ]);
+    }
+
+    /**
      * Enable a module
      */
     public function enable(Request $request, string $moduleKey): JsonResponse

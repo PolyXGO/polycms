@@ -295,6 +295,36 @@ Route::get('/themes/{themeSlug}/{path}', function (string $themeSlug, string $pa
         ->header('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
 })->where('path', '.*')->name('theme.asset');
 
+// Module dist assets route — serve pre-built module JS bundles
+Route::get('/modules/{vendor}/{module}/dist/{file}', function (string $vendor, string $module, string $file) {
+    $distPath = base_path("modules/{$vendor}/{$module}/dist/{$file}");
+
+    if (!file_exists($distPath) || !is_file($distPath)) {
+        abort(404);
+    }
+
+    // Security: prevent directory traversal
+    $realPath = realpath($distPath);
+    $allowedBase = realpath(base_path("modules/{$vendor}/{$module}/dist"));
+
+    if (!$realPath || !$allowedBase || strpos($realPath, $allowedBase) !== 0) {
+        abort(404);
+    }
+
+    $extension = pathinfo($file, PATHINFO_EXTENSION);
+    $mimeTypes = [
+        'js' => 'application/javascript',
+        'css' => 'text/css',
+        'map' => 'application/json',
+    ];
+
+    $mimeType = $mimeTypes[$extension] ?? 'application/octet-stream';
+
+    return response(file_get_contents($distPath), 200)
+        ->header('Content-Type', $mimeType)
+        ->header('Cache-Control', 'public, max-age=31536000');
+})->where('file', '.*')->name('module.dist.asset');
+
 // Admin SPA routes - Vue Router handles all routing and authentication
 Route::middleware(['web'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/appearance/layout-assets/{layoutAsset}/preview', [LayoutAssetPreviewController::class, 'show'])

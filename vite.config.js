@@ -30,6 +30,7 @@ export default defineConfig({
             '@': resolve(__dirname, 'resources/js'),
             '@admin': resolve(__dirname, 'resources/js/admin'),
             '@modules': resolve(__dirname, 'modules'),
+            '@polycms': resolve(__dirname, 'resources/js/polycms-sdk.ts'),
         },
     },
 });

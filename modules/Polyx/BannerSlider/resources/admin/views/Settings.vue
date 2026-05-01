@@ -110,8 +110,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
-import { useDialog } from '@admin/composables/useDialog';
-import { useTranslation } from '@admin/composables/useTranslation';
+import { useDialog, useTranslation } from '@polycms';
 
 const { t } = useTranslation();
 const dialog = useDialog();

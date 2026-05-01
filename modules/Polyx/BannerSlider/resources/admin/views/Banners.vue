@@ -193,8 +193,7 @@
 import { ref, onMounted, getCurrentInstance } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
-import { useDialog } from '@admin/composables/useDialog';
-import { useTranslation } from '@admin/composables/useTranslation';
+import { useDialog, useTranslation } from '@polycms';
 
 const { t } = useTranslation();
 const instance = getCurrentInstance();

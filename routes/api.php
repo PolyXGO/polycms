@@ -92,6 +92,8 @@ Route::prefix('v1')->group(function () {
     // Content Votes (public — anonymous voting)
     Route::post('/content-votes', [ContentVoteController::class, 'store'])->name('api.v1.content-votes.store');
 
+    // Module frontend manifest (public — needed at admin SPA bootstrap before auth)
+    Route::get('/modules/active-frontend', [ModuleController::class, 'activeFrontend'])->name('api.v1.modules.active-frontend');
 
 
     // Authentication endpoints
