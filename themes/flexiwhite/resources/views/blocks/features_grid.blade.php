@@ -14,7 +14,7 @@
                 <p>{{ $subheading }}</p>
             @endif
         </div>
-        <div class="lp-features-grid" style="grid-template-columns: repeat({{ $columns }}, 1fr);">
+        <div class="lp-features-grid" style="--grid-cols: {{ $columns }};">
             @foreach($features as $feature)
                 <div class="lp-feature-card">
                     @if(!empty($feature['icon']) || !empty($feature['icon_svg']))
