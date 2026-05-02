@@ -571,9 +571,28 @@ class SettingsService
             'template_defaults' => $this->getDefaultTemplateSettings(),
             'auth_appearance' => $this->getDefaultAuthAppearanceSettings(),
             'api' => $this->getDefaultApiSettings(),
+            'admin_ui' => $this->getDefaultAdminUISettings(),
         ];
 
         return Hook::applyFilters('settings.defaults', $defaults, $this);
+    }
+
+    /**
+     * Get default admin UI settings structure
+     *
+     * @return array<string, array{key: string, value: mixed, type: string, label: string, description: string}>
+     */
+    public function getDefaultAdminUISettings(): array
+    {
+        return [
+            'admin_pinned_settings' => [
+                'key' => 'admin_pinned_settings',
+                'value' => [],
+                'type' => 'array',
+                'label' => 'Pinned Settings',
+                'description' => 'User pinned settings for the admin sidebar.',
+            ],
+        ];
     }
 
     /**

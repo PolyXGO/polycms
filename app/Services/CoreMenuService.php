@@ -384,7 +384,7 @@ class CoreMenuService
             
             if ($pinnedJson && is_array($pinnedJson)) {
                 $orderOffset = 10;
-                $activeModules = array_keys(app(\App\Services\ModuleManager::class)->getEnabledModules());
+                $activeModules = app(\App\Services\ModuleManager::class)->getEnabledModules();
 
                 $legacyModuleMap = [
                     'mtoptimize' => 'Polyx.MTOptimize',
