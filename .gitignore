@@ -64,5 +64,7 @@ refactor_theme.php
 extract.php
 extracted_content.html
 check_payload.json
-page*.json
 polycms
+modules/*/dist/
+modules/Polyx/*/dist/
+themes/*/dist/
