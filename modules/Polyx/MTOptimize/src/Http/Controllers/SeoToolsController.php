@@ -148,4 +148,45 @@ class SeoToolsController extends Controller
     {
         Cache::forget('mtoptimize_redirect_' . md5($path));
     }
+
+    // ─── Physical Robots.txt Management ───────────────────────────
+
+    protected function getPotentialRobotsPaths(): array
+    {
+        return array_unique([
+            public_path('robots.txt'),
+            base_path('robots.txt'),
+            base_path('public_html/robots.txt'), // Common cPanel setup
+        ]);
+    }
+
+    public function checkPhysicalRobots(): JsonResponse
+    {
+        $exists = false;
+        foreach ($this->getPotentialRobotsPaths() as $path) {
+            if (\Illuminate\Support\Facades\File::exists($path)) {
+                $exists = true;
+                break;
+            }
+        }
+
+        return response()->json([
+            'exists' => $exists
+        ]);
+    }
+
+    public function deletePhysicalRobots(): JsonResponse
+    {
+        $deleted = false;
+        foreach ($this->getPotentialRobotsPaths() as $path) {
+            if (\Illuminate\Support\Facades\File::exists($path)) {
+                \Illuminate\Support\Facades\File::delete($path);
+                $deleted = true;
+            }
+        }
+
+        return response()->json([
+            'message' => $deleted ? 'Physical robots.txt deleted.' : 'No physical robots.txt found.'
+        ]);
+    }
 }

@@ -103,6 +103,10 @@ class MTOptimizeServiceProvider extends ServiceProvider
             $r->delete('404-logs/{id}', [$controller, 'notFoundDestroy']);
             $r->post('404-logs/clear', [$controller, 'notFoundClear']);
             $r->post('404-logs/{id}/to-redirect', [$controller, 'notFoundToRedirect']);
+
+            // Physical robots.txt
+            $r->get('physical-robots', [$controller, 'checkPhysicalRobots']);
+            $r->delete('physical-robots', [$controller, 'deletePhysicalRobots']);
         });
     }
 
