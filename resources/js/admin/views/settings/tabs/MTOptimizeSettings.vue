@@ -317,6 +317,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, getCurrentInstance } from 'vue';
+import axios from 'axios';
 import { useTranslation } from '../../../composables/useTranslation';
 
 interface SettingItem {
@@ -366,17 +367,10 @@ const deletingPhysicalRobots = ref(false);
 
 const checkPhysicalRobots = async () => {
     try {
-        const response = await fetch('/api/v1/admin/seo-tools/physical-robots', {
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-            }
-        });
-        const data = await response.json();
+        const { data } = await axios.get('/api/v1/admin/seo-tools/physical-robots');
         hasPhysicalRobots.value = data.exists || false;
     } catch (e) {
-        // ignore
+        console.error('Failed to check physical robots.txt:', e);
     }
 };
 
@@ -385,17 +379,11 @@ const deletePhysicalRobots = async () => {
     
     deletingPhysicalRobots.value = true;
     try {
-        await fetch('/api/v1/admin/seo-tools/physical-robots', {
-            method: 'DELETE',
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-            }
-        });
+        await axios.delete('/api/v1/admin/seo-tools/physical-robots');
         hasPhysicalRobots.value = false;
         refreshRobotsTxtPreview();
     } catch (e) {
+        console.error('Failed to delete physical robots.txt:', e);
         alert($t('Failed to delete physical robots.txt file.'));
     } finally {
         deletingPhysicalRobots.value = false;
