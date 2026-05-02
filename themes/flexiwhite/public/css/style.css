@@ -1488,7 +1488,7 @@ nav[role="navigation"] svg {
   }
 
   .lp-features-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, 1fr) !important;
   }
 
   .lp-stats {
@@ -1606,7 +1606,7 @@ nav[role="navigation"] svg {
   .lp-hero-subtitle { font-size: 1rem; }
 
   .lp-features-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
   }
 
   .lp-stats {

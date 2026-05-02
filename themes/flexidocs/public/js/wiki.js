@@ -2,7 +2,7 @@
 
 document.addEventListener('alpine:init', () => {
     Alpine.data('wikiToc', () => ({
-        sidebarOpen: true,
+        sidebarOpen: window.innerWidth >= 1024,
         headings: [],
         activeId: null,
         initToc() {

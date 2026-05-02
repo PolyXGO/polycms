@@ -1,0 +1,14 @@
+{
+  "name": "MTOptimize",
+  "module": "MTOptimize",
+  "vendor": "Polyx",
+  "version": "1.0.0",
+  "description": "SEO and content optimization engine for PolyCMS.",
+  "provider": "Modules\\Polyx\\MTOptimize\\MTOptimizeServiceProvider",
+  "autoload": {
+    "psr-4": {
+      "Modules\\Polyx\\MTOptimize\\": "src/"
+    }
+  }
+}
+

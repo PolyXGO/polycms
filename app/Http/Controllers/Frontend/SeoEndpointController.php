@@ -18,12 +18,22 @@ class SeoEndpointController extends Controller
             return $renderer->renderRobotsTxt();
         }
 
-        $content = implode(PHP_EOL, [
-            'User-agent: *',
-            'Allow: /',
-            'Sitemap: ' . url('/sitemap-index.xml'),
-            '',
-        ]);
+        $allowIndexing = (bool) app(\App\Services\SettingsService::class)->get('reading_search_engine_noindex', true);
+
+        if (!$allowIndexing) {
+            $content = implode(PHP_EOL, [
+                'User-agent: *',
+                'Disallow: /',
+                '',
+            ]);
+        } else {
+            $content = implode(PHP_EOL, [
+                'User-agent: *',
+                'Allow: /',
+                'Sitemap: ' . url('/sitemap-index.xml'),
+                '',
+            ]);
+        }
 
         return response($content, 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
     }

@@ -82,15 +82,19 @@
     <div class="flex flex-col lg:flex-row h-screen pt-[61px] overflow-hidden box-border bg-white dark:bg-slate-900 w-full">
         <!-- Sidebar Navigation Tree -->
         @if(!View::hasSection('hide_sidebar'))
+        <!-- Mobile Overlay -->
+        <div x-cloak x-show="sidebarOpen" x-transition.opacity @click="sidebarOpen = false" class="absolute inset-0 bg-slate-900/50 z-10 lg:hidden h-full w-full"></div>
+
         <aside 
+            x-cloak
             x-show="sidebarOpen" 
-            x-transition:enter="transition ease-out duration-200"
-            x-transition:enter-start="-translate-x-full opacity-0"
-            x-transition:enter-end="translate-x-0 opacity-100"
-            x-transition:leave="transition ease-in duration-150"
-            x-transition:leave-start="translate-x-0 opacity-100"
-            x-transition:leave-end="-translate-x-full opacity-0"
-            class="w-full lg:w-72 flex-shrink-0 border-r border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 absolute lg:static z-20 h-full flex flex-col box-border"
+            x-transition:enter="transition ease-out duration-300 transform"
+            x-transition:enter-start="-translate-x-full"
+            x-transition:enter-end="translate-x-0"
+            x-transition:leave="transition ease-in duration-200 transform"
+            x-transition:leave-start="translate-x-0"
+            x-transition:leave-end="-translate-x-full"
+            class="w-[80%] max-w-sm lg:max-w-none lg:w-72 flex-shrink-0 border-r border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 absolute lg:static z-20 h-full flex flex-col box-border shadow-2xl lg:shadow-none"
         >
             @php
                 $sidebar_title = $site_title ?? 'Documentation';
@@ -128,7 +132,7 @@
             </div>
             
             <!-- Scroll Tools -->
-            <div class="hidden lg:flex absolute right-6 top-1/2 -translate-y-1/2 flex-col gap-2 z-40 pointer-events-none">
+            <div class="flex absolute right-4 bottom-6 lg:right-6 lg:top-1/2 lg:bottom-auto lg:-translate-y-1/2 flex-col gap-2 z-40 pointer-events-none">
                 <button onclick="document.querySelector('.wiki-scroll-container').scrollTo({top: 0, behavior: 'smooth'})" class="pointer-events-auto w-9 h-9 flex items-center justify-center rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white shadow-sm hover:shadow hover:bg-slate-50 dark:hover:bg-slate-700 transition-all" aria-label="{{ _l('Scroll to top') }}" title="{{ _l('Scroll to top') }}">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
                 </button>
