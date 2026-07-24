@@ -1,0 +1,15 @@
+{
+  "name": "External Auth",
+  "module": "ExternalAuth",
+  "vendor": "Polyx",
+  "version": "1.0.0",
+  "description": "Integration module for third-party OAuth authentication (Google, Facebook, GitHub). Supports quick registration and login.",
+  "provider": "Modules\\Polyx\\ExternalAuth\\ExternalAuthServiceProvider",
+  "tags": ["oauth", "login", "register", "google", "facebook", "github"],
+  "homepage": "https://polycms.org/docs/modules/external-auth",
+  "autoload": {
+    "psr-4": {
+      "Modules\\Polyx\\ExternalAuth\\": "src/"
+    }
+  }
+}

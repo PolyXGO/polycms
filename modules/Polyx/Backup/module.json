@@ -1,0 +1,14 @@
+{
+  "name": "Backup",
+  "module": "Backup",
+  "vendor": "Polyx",
+  "version": "1.0.0",
+  "description": "Comprehensive backup & restore system for PolyCMS with cloud storage integration, maintenance mode, and rollback safety.",
+  "provider": "Modules\\Polyx\\Backup\\BackupServiceProvider",
+  "autoload": {
+    "psr-4": {
+      "Modules\\Polyx\\Backup\\": "src/"
+    }
+  }
+}
+
