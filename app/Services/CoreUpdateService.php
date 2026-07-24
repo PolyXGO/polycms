@@ -167,6 +167,7 @@ class CoreUpdateService
 
         // Check for config/app.php inside the zip to confirm it's a PolyCMS package
         $appConfig = null;
+        $packageVersion = '0.0.0';
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $name = $zip->getNameIndex($i);
             if (!$this->isSafeArchivePath($name)) {
@@ -174,21 +175,18 @@ class CoreUpdateService
                 return ['valid' => false, 'error' => 'Invalid update package: archive contains an unsafe file path.'];
             }
 
-            if (preg_match('#(^|/)config/app\.php$#', $name)) {
+            if (preg_match('#^(\./)?([^/]+/)?config/app\.php$#i', $name) && !str_contains($name, 'vendor/') && !str_contains($name, 'modules/')) {
                 $appConfig = $zip->getFromIndex($i);
-                break;
+                if (preg_match("/'version'\s*=>\s*env\('APP_VERSION',\s*'([^']+)'\)/", $appConfig, $matches)) {
+                    $packageVersion = $matches[1];
+                    break;
+                }
             }
         }
 
         if (!$appConfig) {
             $zip->close();
             return ['valid' => false, 'error' => 'Invalid PolyCMS package: config/app.php not found in archive.'];
-        }
-
-        // Extract version from the package's config/app.php
-        $packageVersion = '0.0.0';
-        if (preg_match("/'version'\s*=>\s*env\('APP_VERSION',\s*'([^']+)'\)/", $appConfig, $matches)) {
-            $packageVersion = $matches[1];
         }
 
         $currentVersion = $this->getCurrentVersion();
