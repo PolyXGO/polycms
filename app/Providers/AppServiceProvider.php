@@ -580,9 +580,16 @@ class AppServiceProvider extends ServiceProvider
             window.addEventListener("load", function() {
                 setTimeout(function() {
                     var perf = performance.getEntriesByType("navigation")[0];
-                    if (perf && perf.duration) {
-                        var rawMs = parseFloat(perf.duration);
-                        var pageMs = isNaN(rawMs) ? "0.00" : rawMs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    if (perf) {
+                        var rawMs = 0;
+                        if (perf.domContentLoadedEventEnd && perf.domContentLoadedEventEnd > 0) {
+                            rawMs = perf.domContentLoadedEventEnd - (perf.activationStart || perf.startTime || 0);
+                        } else if (perf.domInteractive && perf.domInteractive > 0) {
+                            rawMs = perf.domInteractive - (perf.activationStart || perf.startTime || 0);
+                        } else {
+                            rawMs = perf.duration || 0;
+                        }
+                        var pageMs = isNaN(rawMs) || rawMs <= 0 ? "0.00" : parseFloat(rawMs).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                         document.querySelectorAll(".execution-time-badge").forEach(function(badge) {
                             var serverMs = badge.getAttribute("data-server-ms") || "";
                             var boltSvg = \'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 0.68rem; height: 0.68rem; display: inline-block; vertical-align: -1px; margin-right: 2px; color: var(--geist-accents-5, #888);"><path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.265-.723l1.992-7.289H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" /></svg>\';
