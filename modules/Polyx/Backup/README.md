@@ -33,3 +33,22 @@ Located under **Settings > Backups** in the admin panel.
 ## Version
 
 1.0.0
+
+
+---
+
+## Live Demo
+
+Explore PolyCMS with a ready-to-use live demo and walk through the admin dashboard, customer portal, content tools, e-commerce flows, theme system, and module features.
+
+- **Admin demo**: [https://polycms.org/admin/login](https://polycms.org/admin/login)
+- **Customer demo**: [https://polycms.org/account/login](https://polycms.org/account/login)
+
+Try the demo, review the workflows, and see how PolyCMS can accelerate your next content, commerce, or SaaS project.
+
+## 🌐 Resources & Links
+
+- 🌐 **Official Website**: [https://polycms.org](https://polycms.org)
+- 📚 **Documentation**: [https://headrandom.com/_EpBecN8](https://headrandom.com/_EpBecN8)
+- 🐙 **GitHub Repository**: [https://github.com/PolyXGO/polycms](https://github.com/PolyXGO/polycms)
+- 🐛 **Issue Tracker**: [https://github.com/PolyXGO/polycms/issues](https://github.com/PolyXGO/polycms/issues)
