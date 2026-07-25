@@ -106,6 +106,29 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Global Fail-Safe Redis Protection Guard
+        try {
+            $defaultStore = config('cache.default', 'file');
+            if ($defaultStore === 'redis') {
+                $hasPhpRedis = extension_loaded('redis') || class_exists(\Redis::class);
+                $hasPredis = class_exists(\Predis\Client::class);
+                if (!$hasPhpRedis && !$hasPredis) {
+                    config(['cache.default' => 'file']);
+                    \Illuminate\Support\Facades\Log::warning('PolyCMS Redis Guard: Neither phpredis extension nor predis package is installed in this PHP environment. Automatically falling back to File Cache.');
+                } else {
+                    // Test Redis connection ping to prevent connection refused crashes
+                    try {
+                        \Illuminate\Support\Facades\Redis::connection()->ping();
+                    } catch (\Throwable $ex) {
+                        config(['cache.default' => 'file']);
+                        \Illuminate\Support\Facades\Log::warning('PolyCMS Redis Guard: Cannot connect to Redis server. Automatically falling back to File Cache: ' . $ex->getMessage());
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            config(['cache.default' => 'file']);
+        }
+
         // Global system cache toggle (Bật/Tắt tính năng Cache trên toàn hệ thống)
         try {
             if (file_exists(storage_path('installed.lock')) && \Illuminate\Support\Facades\Schema::hasTable('settings')) {
