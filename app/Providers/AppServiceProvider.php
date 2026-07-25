@@ -108,21 +108,21 @@ class AppServiceProvider extends ServiceProvider
     {
         // Global Fail-Safe Redis Protection Guard
         try {
-            $defaultStore = config('cache.default', 'file');
-            if ($defaultStore === 'redis') {
-                $hasPhpRedis = extension_loaded('redis') || class_exists(\Redis::class);
-                $hasPredis = class_exists(\Predis\Client::class);
-                if (!$hasPhpRedis && !$hasPredis) {
+            $hasPhpRedis = extension_loaded('redis') || class_exists(\Redis::class);
+            $hasPredis = class_exists(\Predis\Client::class);
+
+            if (!$hasPhpRedis && !$hasPredis) {
+                if (config('cache.default') === 'redis') {
                     config(['cache.default' => 'file']);
-                    \Illuminate\Support\Facades\Log::warning('PolyCMS Redis Guard: Neither phpredis extension nor predis package is installed in this PHP environment. Automatically falling back to File Cache.');
-                } else {
-                    // Test Redis connection ping to prevent connection refused crashes
-                    try {
+                }
+            } else if (config('cache.default') === 'redis') {
+                try {
+                    if ($hasPhpRedis) {
                         \Illuminate\Support\Facades\Redis::connection()->ping();
-                    } catch (\Throwable $ex) {
-                        config(['cache.default' => 'file']);
-                        \Illuminate\Support\Facades\Log::warning('PolyCMS Redis Guard: Cannot connect to Redis server. Automatically falling back to File Cache: ' . $ex->getMessage());
                     }
+                } catch (\Throwable $ex) {
+                    config(['cache.default' => 'file']);
+                    \Illuminate\Support\Facades\Log::warning('PolyCMS Redis Guard: Cannot connect to Redis server. Automatically falling back to File Cache: ' . $ex->getMessage());
                 }
             }
         } catch (\Throwable $e) {

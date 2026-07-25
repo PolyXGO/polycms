@@ -280,7 +280,7 @@ $registerFrontendRoutes = function () use (
 };
 
 // 1. Get active non-default locales
-$activeLocales = cache()->remember('active_languages_non_default', 3600, function () {
+$activeLocales = \App\Support\ResilientCache::remember('active_languages_non_default', 3600, function () {
     if (app()->runningUnitTests()) {
         return ['vi', 'zh'];
     }
@@ -297,7 +297,7 @@ $activeLocales = cache()->remember('active_languages_non_default', 3600, functio
     }
 });
 
-$defaultLocale = cache()->remember('default_language_code', 3600, function () {
+$defaultLocale = \App\Support\ResilientCache::remember('default_language_code', 3600, function () {
     try {
         if (!\Illuminate\Support\Facades\Schema::hasTable('languages')) {
             return 'en';

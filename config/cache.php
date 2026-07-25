@@ -2,6 +2,15 @@
 
 use Illuminate\Support\Str;
 
+$requestedCacheStore = env('CACHE_STORE', 'database');
+if ($requestedCacheStore === 'redis') {
+    $hasPhpRedis = extension_loaded('redis') || class_exists(\Redis::class);
+    $hasPredis = class_exists(\Predis\Client::class);
+    if (!$hasPhpRedis && !$hasPredis) {
+        $requestedCacheStore = 'file';
+    }
+}
+
 return [
 
     /*
@@ -15,7 +24,7 @@ return [
     |
     */
 
-    'default' => file_exists(dirname(__DIR__) . '/storage/installed.lock') ? env('CACHE_STORE', 'database') : 'file',
+    'default' => file_exists(dirname(__DIR__) . '/storage/installed.lock') ? $requestedCacheStore : 'file',
 
     /*
     |--------------------------------------------------------------------------

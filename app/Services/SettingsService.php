@@ -414,7 +414,7 @@ class SettingsService
         $suffix = substr($key, $lastUnderscore + 1);
 
         if ($this->activeLocalesCached === null) {
-            $this->activeLocalesCached = cache()->remember('active_languages_non_default', 3600, function () {
+            $this->activeLocalesCached = ResilientCache::remember('active_languages_non_default', 3600, function () {
                 try {
                     if (!\Illuminate\Support\Facades\Schema::hasTable('languages')) {
                         return [];

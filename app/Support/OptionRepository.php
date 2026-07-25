@@ -30,7 +30,7 @@ class OptionRepository
             // Ignore during early bootstrap
         }
 
-        $settings = Cache::remember(
+        $settings = ResilientCache::remember(
             self::CACHE_PREFIX . $group,
             now()->addMinutes(30),
             fn () => self::loadGroup($group)
@@ -40,7 +40,7 @@ class OptionRepository
             $settingsService = app(\App\Services\SettingsService::class);
             if ($settingsService->isTranslatableKey($key)) {
                 $locale = app()->getLocale();
-                $defaultLocale = cache()->remember('default_language_code', 3600, function () {
+                $defaultLocale = ResilientCache::remember('default_language_code', 3600, function () {
                     try {
                         if (!\Illuminate\Support\Facades\Schema::hasTable('languages')) {
                             return 'en';
