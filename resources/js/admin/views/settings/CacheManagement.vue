@@ -1050,31 +1050,31 @@
             <div id="guide-topic-server-tuning" class="space-y-2 p-4 rounded-xl border border-admin-theme-border/60 bg-admin-theme-base/20">
               <h4 class="font-bold text-admin-theme-primary flex items-center gap-1.5 text-base">
                 <WrenchScrewdriverIcon class="w-5 h-5 text-emerald-500 flex-shrink-0" />
-                {{ t('8. Hướng Dẫn Tối Ưu Tiến Trình PHP-FPM & Server Tuning (High Concurrency)') }}
+                {{ t('8. PHP-FPM Process Pool & Server Tuning Guide (High Concurrency)') }}
               </h4>
               <div class="space-y-3 text-xs leading-relaxed text-admin-theme-text-secondary">
                 <p>
-                  {{ t('Khi website có lượng truy cập đồng thời lớn (High Concurrency Stress), độ trễ hàng đợi (Queueing Latency) phụ thuộc vào số lượng tiến trình ngầm PHP-FPM Process Pool / Worker Limit của Server. Để tránh nghẽn hàng đợi, bạn nên điều chỉnh thông số trên Control Panel của VPS/Server:') }}
+                  {{ t('When experiencing high concurrent traffic, queueing latency depends on the PHP-FPM Process Pool / Worker Limit on your server. To prevent worker bottlenecks, adjust the settings in your Web Control Panel:') }}
                 </p>
                 <div class="p-3 bg-admin-theme-surface rounded-lg border border-admin-theme-border space-y-2">
-                  <p><strong class="text-admin-theme-text font-bold">{{ t('Ví dụ 1: CyberPanel / OpenLiteSpeed WebAdmin Panel:') }}</strong></p>
+                  <p><strong class="text-admin-theme-text font-bold">{{ t('Example 1: CyberPanel / OpenLiteSpeed WebAdmin Panel:') }}</strong></p>
                   <ul class="list-disc list-inside space-y-1 pl-1 text-[11px]">
-                    <li>{{ t('Truy cập WebAdmin Panel (VD: https://your-vps:7080).') }}</li>
-                    <li>{{ t('Vào Server Configuration → External App → lsphp82.') }}</li>
-                    <li>{{ t('Tăng Max Connections từ 10-20 lên 50 - 100.') }}</li>
-                    <li>{{ t('Bật LSCache Module ở cấp độ Web Server để OpenLiteSpeed phục vụ trực tiếp HTML từ RAM.') }}</li>
+                    <li>{{ t('Access WebAdmin Panel (e.g. https://your-vps:7080).') }}</li>
+                    <li>{{ t('Navigate to Server Configuration → External App → lsphp82.') }}</li>
+                    <li>{{ t('Increase Max Connections from 10-20 up to 50 - 100.') }}</li>
+                    <li>{{ t('Enable LSCache Module at the Web Server level to serve cached HTML directly from RAM.') }}</li>
                   </ul>
                 </div>
                 <div class="p-3 bg-admin-theme-surface rounded-lg border border-admin-theme-border space-y-2">
-                  <p><strong class="text-admin-theme-text font-bold">{{ t('Ví dụ 2: Nginx / cPanel / DirectAdmin / Plesk (Standard PHP-FPM):') }}</strong></p>
+                  <p><strong class="text-admin-theme-text font-bold">{{ t('Example 2: Nginx / cPanel / DirectAdmin / Plesk (Standard PHP-FPM):') }}</strong></p>
                   <ul class="list-disc list-inside space-y-1 pl-1 text-[11px]">
-                    <li>{{ t('Mở file cấu hình pool /etc/php-fpm.d/www.conf hoặc cài đặt PHP FPM Pool của Panel.') }}</li>
-                    <li>{{ t('Tăng pm.max_children từ 10-15 lên 50 - 100 (Tùy theo dung lượng RAM VPS).') }}</li>
-                    <li>{{ t('Tăng pm.max_requests lên 1000 để tự dọn dẹp bộ nhớ RAM.') }}</li>
+                    <li>{{ t('Open pool config /etc/php-fpm.d/www.conf or your Panels PHP FPM Pool settings.') }}</li>
+                    <li>{{ t('Increase pm.max_children from 10-15 up to 50 - 100 (depending on VPS RAM).') }}</li>
+                    <li>{{ t('Set pm.max_requests to 1000 for automatic memory cleanup.') }}</li>
                   </ul>
                 </div>
                 <p class="text-[11px] italic text-admin-theme-text-muted">
-                  * {{ t('LƯU Ý: Tên gọi giao diện tùy chỉnh sẽ phụ thuộc vào Web Control Panel bạn đang sử dụng (CyberPanel, cPanel, DirectAdmin, Plesk, AAPanel, HestiaCP,...).') }}
+                  * {{ t('NOTE: Setting names may vary depending on your Web Control Panel (CyberPanel, cPanel, DirectAdmin, Plesk, AAPanel, HestiaCP, etc.).') }}
                 </p>
               </div>
             </div>
