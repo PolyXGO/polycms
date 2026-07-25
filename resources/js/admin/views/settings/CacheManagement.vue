@@ -306,30 +306,62 @@
             {{ t('Guide') }}
           </button>
         </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-bold text-admin-theme-text-secondary mb-1.5">{{ t('Cached Route Allowlist') }}</label>
-            <input
-              type="text"
-              v-model="configForm.cache_allowlist_routes"
-              class="w-full px-3 py-2 text-xs border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text focus:outline-none focus:ring-1 focus:ring-admin-theme-primary font-mono"
-              placeholder="home, page.show, post.show, category.show, product.show..."
-            />
-            <p class="text-[11px] text-admin-theme-text-muted mt-1">
-              {{ t('Comma-separated route names permitted for HTML page caching.') }}
-            </p>
+        <div class="space-y-4">
+          <!-- Preset Checkboxes by Data Type & Module -->
+          <div class="p-3.5 bg-admin-theme-surface/80 rounded-xl border border-admin-theme-border space-y-3">
+            <label class="block text-xs font-bold text-admin-theme-text flex items-center justify-between">
+              <span>{{ t('Nhanh chọn loại dữ liệu được phép Cache (Route Presets Checklist)') }}</span>
+              <span class="text-[11px] font-normal text-admin-theme-text-muted">PolyCMS Core & Integrated Modules</span>
+            </label>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div v-for="group in predefinedRouteGroups" :key="group.name" class="p-2.5 bg-admin-theme-base/40 rounded-lg border border-admin-theme-border/60">
+                <h4 class="text-[11px] font-bold text-admin-theme-primary mb-2 border-b border-admin-theme-border/40 pb-1 flex items-center justify-between">
+                  <span>{{ group.name }}</span>
+                </h4>
+                <div class="space-y-1.5">
+                  <label v-for="rt in group.routes" :key="rt.key" class="flex items-center gap-2 text-xs text-admin-theme-text cursor-pointer hover:text-admin-theme-primary transition-colors">
+                    <input
+                      type="checkbox"
+                      :checked="isRouteChecked(rt.key)"
+                      @change="togglePredefinedRoute(rt.key, $event.target.checked)"
+                      class="rounded border-admin-theme-border text-admin-theme-primary focus:ring-admin-theme-primary"
+                    />
+                    <span class="truncate" :title="rt.label">{{ rt.label }}</span>
+                  </label>
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <label class="block text-xs font-bold text-admin-theme-text-secondary mb-1.5">{{ t('Bypassed Path Blocklist') }}</label>
-            <input
-              type="text"
-              v-model="configForm.cache_blacklisted_paths"
-              class="w-full px-3 py-2 text-xs border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text focus:outline-none focus:ring-1 focus:ring-admin-theme-primary font-mono"
-              placeholder="admin, api, cart, checkout, account, logout..."
-            />
-            <p class="text-[11px] text-admin-theme-text-muted mt-1">
-              {{ t('Comma-separated path prefixes that MUST ALWAYS bypass page cache.') }}
-            </p>
+
+          <!-- Manual Custom Allowlist Text Field & Bypass Blocklist -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-admin-theme-text-secondary mb-1.5">
+                {{ t('Cached Route Allowlist (Chuỗi Route Tùy Chỉnh / Nhập Tay)') }}
+              </label>
+              <input
+                type="text"
+                v-model="configForm.cache_allowlist_routes"
+                class="w-full px-3 py-2 text-xs border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text focus:outline-none focus:ring-1 focus:ring-admin-theme-primary font-mono"
+                placeholder="home, page.show, post.show, category.show, product.show, projects.show..."
+              />
+              <p class="text-[11px] text-admin-theme-text-muted mt-1">
+                {{ t('Tự động đồng bộ với Checkbox trên. Bạn có thể tự do gõ bổ sung các route tùy chỉnh của module cá nhân tại đây.') }}
+              </p>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-admin-theme-text-secondary mb-1.5">{{ t('Bypassed Path Blocklist') }}</label>
+              <input
+                type="text"
+                v-model="configForm.cache_blacklisted_paths"
+                class="w-full px-3 py-2 text-xs border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text focus:outline-none focus:ring-1 focus:ring-admin-theme-primary font-mono"
+                placeholder="admin, api, cart, checkout, account, logout..."
+              />
+              <p class="text-[11px] text-admin-theme-text-muted mt-1">
+                {{ t('Comma-separated path prefixes that MUST ALWAYS bypass page cache.') }}
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -1101,9 +1133,109 @@ const configForm = reactive({
   database_cache_max_total_mb: 512,
   cache_integrity_mode: 'sha256',
   durable_view_counter_enabled: 'yes',
-  cache_allowlist_routes: 'home, page.show, post.show, category.show, product.show, projects.show',
+  cache_allowlist_routes: 'home, posts.index, posts.archive, post.show, posts.show, page.show, pages.show, category.show, categories.show, products.index, products.archive, product.show, products.show, product-categories.show, projects.index, projects.archive, project.show, projects.show',
   cache_blacklisted_paths: 'admin, api, cart, checkout, account, logout, login, register, password, livewire',
 });
+
+const predefinedRouteGroups = [
+  {
+    name: 'Bài Viết & Blog (Posts Core)',
+    routes: [
+      { key: 'home', label: 'Trang chủ (home)' },
+      { key: 'posts.index', label: 'Danh sách Blog (posts.index)' },
+      { key: 'post.show', label: 'Chi tiết Bài viết (post.show)' },
+      { key: 'category.show', label: 'Danh mục Bài viết (category.show)' },
+      { key: 'tag.show', label: 'Thẻ Bài viết (tag.show)' },
+    ]
+  },
+  {
+    name: 'Trang Tĩnh (Pages Core)',
+    routes: [
+      { key: 'page.show', label: 'Trang đơn / Tĩnh (page.show)' }
+    ]
+  },
+  {
+    name: 'Sản Phẩm (Ecommerce)',
+    routes: [
+      { key: 'products.index', label: 'Trang Cửa hàng (products.index)' },
+      { key: 'product.show', label: 'Chi tiết Sản phẩm (product.show)' },
+      { key: 'product-categories.show', label: 'Danh mục Sản phẩm (product-categories.show)' },
+      { key: 'product-brands.show', label: 'Thương hiệu (product-brands.show)' },
+      { key: 'product-tags.show', label: 'Thẻ Sản phẩm (product-tags.show)' },
+    ]
+  },
+  {
+    name: 'Mô-đun Tích Hợp (ProjectHub, Docs...)',
+    routes: [
+      { key: 'projects.index', label: 'Danh sách Dự án (projects.index)' },
+      { key: 'project.show', label: 'Chi tiết Dự án (project.show)' },
+      { key: 'releases.show', label: 'Release Notes (releases.show)' },
+      { key: 'docs.show', label: 'Tài liệu (docs.show)' },
+    ]
+  }
+];
+
+function isRouteChecked(routeName: string): boolean {
+  if (!configForm.cache_allowlist_routes) return false;
+  const currentRoutes = configForm.cache_allowlist_routes
+    .split(',')
+    .map(r => r.trim())
+    .filter(Boolean);
+  
+  if (routeName === 'posts.index') {
+    return currentRoutes.includes('posts.index') || currentRoutes.includes('posts.archive');
+  }
+  if (routeName === 'post.show') {
+    return currentRoutes.includes('post.show') || currentRoutes.includes('posts.show');
+  }
+  if (routeName === 'category.show') {
+    return currentRoutes.includes('category.show') || currentRoutes.includes('categories.show');
+  }
+  if (routeName === 'page.show') {
+    return currentRoutes.includes('page.show') || currentRoutes.includes('pages.show');
+  }
+  if (routeName === 'products.index') {
+    return currentRoutes.includes('products.index') || currentRoutes.includes('products.archive');
+  }
+  if (routeName === 'product.show') {
+    return currentRoutes.includes('product.show') || currentRoutes.includes('products.show');
+  }
+  if (routeName === 'project.show') {
+    return currentRoutes.includes('project.show') || currentRoutes.includes('projects.show');
+  }
+  return currentRoutes.includes(routeName);
+}
+
+function togglePredefinedRoute(routeName: string, checked: boolean) {
+  let currentRoutes = (configForm.cache_allowlist_routes || '')
+    .split(',')
+    .map(r => r.trim())
+    .filter(Boolean);
+
+  const aliases: Record<string, string[]> = {
+    'posts.index': ['posts.index', 'posts.archive'],
+    'post.show': ['post.show', 'posts.show'],
+    'category.show': ['category.show', 'categories.show'],
+    'page.show': ['page.show', 'pages.show'],
+    'products.index': ['products.index', 'products.archive'],
+    'product.show': ['product.show', 'products.show'],
+    'project.show': ['project.show', 'projects.show'],
+  };
+
+  const toModify = aliases[routeName] || [routeName];
+
+  if (checked) {
+    toModify.forEach(r => {
+      if (!currentRoutes.includes(r)) {
+        currentRoutes.push(r);
+      }
+    });
+  } else {
+    currentRoutes = currentRoutes.filter(r => !toModify.includes(r));
+  }
+
+  configForm.cache_allowlist_routes = currentRoutes.join(', ');
+}
 
 const showHelpGuide = ref(false);
 const activeGuideTopic = ref<string | null>(null);
