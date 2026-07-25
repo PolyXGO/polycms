@@ -317,6 +317,15 @@ PolyCMS Community Edition is open-source software licensed under the [MIT Licens
   Made with ❤️ by <a href="https://polycms.org">PolyXGO</a>
 </p>
 
+## 🌐 Resources & Links
+
+- 🌐 **Official Website**: [https://polycms.org](https://polycms.org)
+- 📚 **Documentation**: [https://headrandom.com/_EpBecN8](https://headrandom.com/_EpBecN8)
+- 🐙 **GitHub Repository**: [https://github.com/PolyXGO/polycms](https://github.com/PolyXGO/polycms)
+- 🐛 **Issue Tracker**: [https://github.com/PolyXGO/polycms/issues](https://github.com/PolyXGO/polycms/issues)
+
+---
+
 <!-- HeraSpec Section -->
 ## HeraSpec Development
 
