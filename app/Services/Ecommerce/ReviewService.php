@@ -43,13 +43,20 @@ class ReviewService
 
         // 3. Check external_claims table if present
         if (\Illuminate\Support\Facades\Schema::hasTable('external_claims')) {
-            $hasClaim = DB::table('external_claims')
-                ->where('user_id', $user->id)
-                ->where('product_id', $product->id)
-                ->where('status', 'approved')
-                ->exists();
-            if ($hasClaim) {
-                return true;
+            $itemIds = array_filter([
+                data_get($product->settings, 'envato_item_id'),
+                data_get($product->settings, 'codecanyon_item_id'),
+                data_get($product->settings, 'themeforest_item_id'),
+            ]);
+
+            if (!empty($itemIds)) {
+                $hasClaim = DB::table('external_claims')
+                    ->where('user_id', $user->id)
+                    ->whereIn('item_id', $itemIds)
+                    ->exists();
+                if ($hasClaim) {
+                    return true;
+                }
             }
         }
 

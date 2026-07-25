@@ -14,8 +14,12 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
+    # Map /storage/ URLs to public/storage/ (Laravel storage:link symlink)
+    RewriteRule ^storage/(.*)$ public/storage/$1 [L]
+
     # Route asset requests to public directory
-    RewriteCond %{REQUEST_URI} \.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|mp4|webm|json|txt|xml|zip|pdf)$ [NC]
+    RewriteCond %{REQUEST_URI} \.(css|js|png|jpg|jpeg|gif|ico|svg|webp|avif|woff|woff2|ttf|eot|mp4|webm|json|txt|xml|zip|pdf)$ [NC]
+    RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^(.*)$ public/$1 [L]
 
     # Send Requests To Front Controller...
@@ -23,3 +27,4 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
