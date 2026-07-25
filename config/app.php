@@ -14,7 +14,7 @@ return [
     */
 
     'name' => env('APP_NAME', 'PolyCMS'),
-    'version' => env('APP_VERSION', '1.4.0'),
+    'version' => env('APP_VERSION', '1.5.0'),
 
     /*
     |--------------------------------------------------------------------------
