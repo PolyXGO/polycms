@@ -49,56 +49,19 @@
                 </p>
             @endif
             
-            <div class="mt-6 flex items-center text-sm text-slate-500 dark:text-slate-400 flex-wrap gap-3">
+            <div class="mt-6 flex items-center text-sm text-slate-500 dark:text-slate-400 flex-wrap gap-4">
                 <span class="flex items-center">
                     <svg class="w-4 h-4 mr-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                     {{ _l('Last updated on') }} {{ format_post_date($post->updated_at, 'M j, Y g:i A') }}
                 </span>
 
-                <!-- Cache Acceleration Meta Indicator Badge -->
-                <span id="flexidocs-cache-meta-badge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-sm transition-all duration-300">
-                    <svg class="w-3.5 h-3.5 mr-1 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                    </svg>
-                    <span id="flexidocs-cache-status-text">⚡ Cache: HIT</span>
+                @php
+                    $execMs = defined('LARAVEL_START') ? number_format((microtime(true) - LARAVEL_START) * 1000, 2, '.', ',') : '0.00';
+                @endphp
+                <span class="execution-time-badge" data-server-ms="{{ $execMs }}" style="font-size: 0.75rem; font-weight: 500; color: var(--geist-accents-5, #888); white-space: nowrap; display: inline-flex; align-items: center;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 0.72rem; height: 0.72rem; display: inline-block; vertical-align: -1px; margin-right: 3px; color: var(--geist-accents-5, #888);"><path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.265-.723l1.992-7.289H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" /></svg>{{ $execMs }} ms (Server)
                 </span>
             </div>
-
-            <script>
-            (function() {
-                document.addEventListener('DOMContentLoaded', function() {
-                    var badge = document.getElementById('flexidocs-cache-meta-badge');
-                    var text = document.getElementById('flexidocs-cache-status-text');
-                    if (!badge || !text) return;
-
-                    var timing = performance.getEntriesByType('navigation')[0];
-                    var duration = timing ? Math.round(timing.responseEnd - timing.requestStart) : 0;
-
-                    fetch(window.location.href, { method: 'HEAD', headers: { 'X-Cache-Check': '1' } })
-                        .then(function(res) {
-                            var cacheHeader = (res.headers.get('X-PolyCMS-Cache') || res.headers.get('x-polycms-cache') || 'HIT').toUpperCase();
-                            
-                            if (cacheHeader === 'HIT') {
-                                badge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-sm';
-                                text.innerHTML = '⚡ Cache: HIT' + (duration > 0 ? ' (' + duration + 'ms)' : '');
-                            } else if (cacheHeader === 'STALE') {
-                                badge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 shadow-sm';
-                                text.innerHTML = '⚡ Cache: STALE';
-                            } else if (cacheHeader === 'BYPASS') {
-                                badge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/30 shadow-sm';
-                                text.innerHTML = '⚡ Cache: BYPASS';
-                            } else {
-                                badge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30 shadow-sm';
-                                text.innerHTML = '⚡ Cache: MISS' + (duration > 0 ? ' (' + duration + 'ms)' : '');
-                            }
-                        })
-                        .catch(function() {
-                            badge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-sm';
-                            text.innerHTML = '⚡ Cache: HIT';
-                        });
-                });
-            })();
-            </script>
         </div>
 
         {!! render_dynamic_blocks($renderedContent ?? ($post->content_html ?? '')) !!}
