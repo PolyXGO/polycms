@@ -2,6 +2,15 @@
 
 use Illuminate\Support\Str;
 
+$requestedSessionDriver = env('SESSION_DRIVER', 'database');
+if ($requestedSessionDriver === 'redis') {
+    $hasPhpRedis = extension_loaded('redis') || class_exists(\Redis::class);
+    $hasPredis = class_exists(\Predis\Client::class);
+    if (!$hasPhpRedis && !$hasPredis) {
+        $requestedSessionDriver = 'file';
+    }
+}
+
 return [
 
     /*
@@ -18,7 +27,7 @@ return [
     |
     */
 
-    'driver' => file_exists(dirname(__DIR__) . '/storage/installed.lock') ? env('SESSION_DRIVER', 'database') : 'file',
+    'driver' => file_exists(dirname(__DIR__) . '/storage/installed.lock') ? $requestedSessionDriver : 'file',
 
     /*
     |--------------------------------------------------------------------------
