@@ -26,7 +26,7 @@ class ProductController extends FrontendController
      */
     public function index(Request $request): View
     {
-        $query = Product::with(['categories', 'tags'])
+        $query = Product::with(['categories', 'tags', 'media'])
             ->where('status', 'published');
 
         // Hide test products for non-admin users

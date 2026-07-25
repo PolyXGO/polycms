@@ -62,7 +62,24 @@ class PageCacheMiddleware
                     }
 
                     if ($entry->isStaleAllowed()) {
-                        // Serve stale response, background lock will rebuild
+                        // Serve stale response immediately, background terminating callback rebuilds fresh cache
+                        $lockKey = 'polycms_swr_lock_' . md5($cacheKey);
+                        if (Cache::add($lockKey, '1', 30)) {
+                            app()->terminating(function () use ($request, $next, $cacheKey) {
+                                try {
+                                    $genBefore = $this->generationStore->getForRequest($request);
+                                    $response = $next($request);
+                                    if ($this->eligibility->allowsResponse($request, $response)) {
+                                        $genAfter = $this->generationStore->getForRequest($request);
+                                        if ($genBefore === $genAfter) {
+                                            $this->storeResponseInCache($cacheKey, $response);
+                                        }
+                                    }
+                                } catch (\Throwable $e) {
+                                    report($e);
+                                }
+                            });
+                        }
                         return $this->toResponse($entry, 'STALE');
                     }
                 }
