@@ -19,10 +19,19 @@ class CacheEligibilityPolicy
      */
     protected array $defaultAllowlistRoutes = [
         'home',
+        'posts.index',
+        'posts.archive',
+        'posts.show',
         'page.show',
-        'post.show',
+        'pages.show',
+        'categories.show',
         'category.show',
-        'product.show',
+        'products.index',
+        'products.archive',
+        'products.show',
+        'product-categories.show',
+        'projects.index',
+        'projects.show',
     ];
 
     /**
@@ -124,15 +133,21 @@ class CacheEligibilityPolicy
             return false;
         }
 
-        // 2. Check Set-Cookie header (Shared cache must not store session cookies)
-        if ($response->headers->has('Set-Cookie')) {
+        // 2. Check Cache-Control directives (only reject if explicitly no-store)
+        $cacheControl = (string) $response->headers->get('Cache-Control', '');
+        if (str_contains($cacheControl, 'no-store')) {
             return false;
         }
 
-        // 3. Check Cache-Control directives (private or no-store)
-        $cacheControl = (string) $response->headers->get('Cache-Control', '');
-        if (str_contains($cacheControl, 'private') || str_contains($cacheControl, 'no-store')) {
-            return false;
+        // 3. Check Set-Cookie headers: Allow standard guest framework cookies (XSRF-TOKEN, polycms-session), reject custom session/user cookies
+        if ($response->headers->has('Set-Cookie')) {
+            $cookieHeaders = $response->headers->all('set-cookie');
+            foreach ($cookieHeaders as $cookieStr) {
+                $cookieStr = (string) $cookieStr;
+                if (!str_contains($cookieStr, 'XSRF-TOKEN') && !str_contains($cookieStr, 'polycms-session') && !str_contains($cookieStr, 'polycms_session')) {
+                    return false;
+                }
+            }
         }
 
         // 4. Content-Type check (HTML only)
