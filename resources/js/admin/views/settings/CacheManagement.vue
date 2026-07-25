@@ -197,6 +197,224 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Card 1: URL Query Canonicalization & Tracking Strategy -->
+      <div class="md:col-span-3 p-4 bg-admin-theme-base/40 rounded-xl border border-admin-theme-border space-y-4">
+        <h3 class="text-xs font-black uppercase tracking-widest text-admin-theme-text flex items-center justify-between">
+          <span class="flex items-center gap-1.5">
+            <AdjustmentsHorizontalIcon class="w-4 h-4 text-admin-theme-primary" />
+            {{ t('URL Canonicalization & Query Parameter Strategy') }}
+          </span>
+          <button
+            type="button"
+            @click="openTopicGuide('canonicalization')"
+            class="text-admin-theme-text-muted hover:text-admin-theme-primary transition-colors p-1 flex items-center gap-1 text-[11px] font-semibold bg-admin-theme-primary/10 rounded-md"
+            title="Help & details on query canonicalization"
+          >
+            <QuestionMarkCircleIcon class="w-4 h-4 text-admin-theme-primary" />
+            {{ t('Guide') }}
+          </button>
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-admin-theme-text-secondary mb-1.5">{{ t('Query Parameter Strategy') }}</label>
+            <select
+              v-model="configForm.cache_query_param_strategy"
+              class="w-full px-3 py-2 text-xs border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text focus:outline-none focus:ring-1 focus:ring-admin-theme-primary"
+            >
+              <option value="ignore_known_tracking">Ignore Known Tracking (Recommended: Strips utm_*, fbclid, etc.)</option>
+              <option value="strip_all_query">Strip All Query Parameters (Highest Cache Hit Ratio)</option>
+              <option value="preserve_all_query">Preserve All Query Parameters (Strict Unique URL Key)</option>
+            </select>
+            <p class="text-[11px] text-admin-theme-text-muted mt-1">
+              {{ t('Strips tracking query parameters while preserving content filters. Reordered parameters are auto-sorted (ksort).') }}
+            </p>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-admin-theme-text-secondary mb-1.5">{{ t('Ignored Tracking Parameters') }}</label>
+            <input
+              type="text"
+              v-model="configForm.cache_ignored_query_params"
+              class="w-full px-3 py-2 text-xs border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text focus:outline-none focus:ring-1 focus:ring-admin-theme-primary font-mono"
+              placeholder="utm_source, utm_medium, fbclid, gclid..."
+            />
+            <p class="text-[11px] text-admin-theme-text-muted mt-1">
+              {{ t('Comma-separated parameters to strip automatically. Wildcards supported (e.g., utm_*, fb_*).') }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Cache TTL & Stale-While-Revalidate Window -->
+      <div class="md:col-span-3 p-4 bg-admin-theme-base/40 rounded-xl border border-admin-theme-border space-y-4">
+        <h3 class="text-xs font-black uppercase tracking-widest text-admin-theme-text flex items-center justify-between">
+          <span class="flex items-center gap-1.5">
+            <ClockIcon class="w-4 h-4 text-amber-500" />
+            {{ t('Cache Life Cycle & Stale-While-Revalidate TTL') }}
+          </span>
+          <button
+            type="button"
+            @click="openTopicGuide('ttl')"
+            class="text-admin-theme-text-muted hover:text-amber-600 dark:hover:text-amber-400 transition-colors p-1 flex items-center gap-1 text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-md"
+            title="Help & details on TTL and SWR"
+          >
+            <QuestionMarkCircleIcon class="w-4 h-4 text-amber-500" />
+            {{ t('Guide') }}
+          </button>
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-admin-theme-text-secondary mb-1.5">{{ t('Server Response Cache TTL (Seconds)') }}</label>
+            <input
+              type="number"
+              v-model="configForm.response_cache_ttl"
+              class="w-full px-3 py-2 text-xs border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text focus:outline-none focus:ring-1 focus:ring-admin-theme-primary"
+              placeholder="60"
+            />
+            <p class="text-[11px] text-admin-theme-text-muted mt-1">
+              {{ t('Fresh lifetime in seconds for compiled HTML responses.') }}
+            </p>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-admin-theme-text-secondary mb-1.5">{{ t('Stale-While-Revalidate Window TTL (Seconds)') }}</label>
+            <input
+              type="number"
+              v-model="configForm.page_cache_swr_ttl"
+              class="w-full px-3 py-2 text-xs border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text focus:outline-none focus:ring-1 focus:ring-admin-theme-primary"
+              placeholder="600"
+            />
+            <p class="text-[11px] text-admin-theme-text-muted mt-1">
+              {{ t('Window during which stale cached pages are instantly served while refreshing in background.') }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Route Allowlist & Bypass Blocklist -->
+      <div class="md:col-span-3 p-4 bg-admin-theme-base/40 rounded-xl border border-admin-theme-border space-y-4">
+        <h3 class="text-xs font-black uppercase tracking-widest text-admin-theme-text flex items-center justify-between">
+          <span class="flex items-center gap-1.5">
+            <MapIcon class="w-4 h-4 text-emerald-500" />
+            {{ t('Route Allowlist & Critical Flow Blocklist') }}
+          </span>
+          <button
+            type="button"
+            @click="openTopicGuide('routes')"
+            class="text-admin-theme-text-muted hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors p-1 flex items-center gap-1 text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-md"
+            title="Help & details on route allowlists and bypass blocklists"
+          >
+            <QuestionMarkCircleIcon class="w-4 h-4 text-emerald-500" />
+            {{ t('Guide') }}
+          </button>
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-admin-theme-text-secondary mb-1.5">{{ t('Cached Route Allowlist') }}</label>
+            <input
+              type="text"
+              v-model="configForm.cache_allowlist_routes"
+              class="w-full px-3 py-2 text-xs border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text focus:outline-none focus:ring-1 focus:ring-admin-theme-primary font-mono"
+              placeholder="home, page.show, post.show, category.show, product.show..."
+            />
+            <p class="text-[11px] text-admin-theme-text-muted mt-1">
+              {{ t('Comma-separated route names permitted for HTML page caching.') }}
+            </p>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-admin-theme-text-secondary mb-1.5">{{ t('Bypassed Path Blocklist') }}</label>
+            <input
+              type="text"
+              v-model="configForm.cache_blacklisted_paths"
+              class="w-full px-3 py-2 text-xs border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text focus:outline-none focus:ring-1 focus:ring-admin-theme-primary font-mono"
+              placeholder="admin, api, cart, checkout, account, logout..."
+            />
+            <p class="text-[11px] text-admin-theme-text-muted mt-1">
+              {{ t('Comma-separated path prefixes that MUST ALWAYS bypass page cache.') }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4: Capacities, Integrity & Decoupled View Counter -->
+      <div class="md:col-span-3 p-4 bg-admin-theme-base/40 rounded-xl border border-admin-theme-border space-y-4">
+        <h3 class="text-xs font-black uppercase tracking-widest text-admin-theme-text flex items-center justify-between">
+          <span class="flex items-center gap-1.5">
+            <ShieldCheckIcon class="w-4 h-4 text-purple-500" />
+            {{ t('Capacity Limits, Data Integrity & Analytics Counter') }}
+          </span>
+          <button
+            type="button"
+            @click="openTopicGuide('integrity')"
+            class="text-admin-theme-text-muted hover:text-purple-600 dark:hover:text-purple-400 transition-colors p-1 flex items-center gap-1 text-[11px] font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-md"
+            title="Help & details on DB limits, integrity & view counter"
+          >
+            <QuestionMarkCircleIcon class="w-4 h-4 text-purple-500" />
+            {{ t('Guide') }}
+          </button>
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-admin-theme-text-secondary mb-1.5">{{ t('DB Entry Max Size (KB)') }}</label>
+            <input
+              type="number"
+              v-model="configForm.database_cache_max_entry_kb"
+              class="w-full px-3 py-2 text-xs border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text focus:outline-none focus:ring-1 focus:ring-admin-theme-primary"
+              placeholder="512"
+            />
+            <p class="text-[11px] text-admin-theme-text-muted mt-1">{{ t('Max KB for single DB entry.') }}</p>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-admin-theme-text-secondary mb-1.5">{{ t('DB Total Limit (MB)') }}</label>
+            <input
+              type="number"
+              v-model="configForm.database_cache_max_total_mb"
+              class="w-full px-3 py-2 text-xs border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text focus:outline-none focus:ring-1 focus:ring-admin-theme-primary"
+              placeholder="512"
+            />
+            <p class="text-[11px] text-admin-theme-text-muted mt-1">{{ t('Total DB capacity cap.') }}</p>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-admin-theme-text-secondary mb-1.5">{{ t('Integrity Verification') }}</label>
+            <select
+              v-model="configForm.cache_integrity_mode"
+              class="w-full px-3 py-2 text-xs border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text focus:outline-none focus:ring-1 focus:ring-admin-theme-primary"
+            >
+              <option value="sha256">SHA-256 Checksum (Default)</option>
+              <option value="hmac_sha256">HMAC-SHA256 Signed Signature</option>
+              <option value="disabled">Disabled</option>
+            </select>
+            <p class="text-[11px] text-admin-theme-text-muted mt-1">{{ t('Payload verification mode.') }}</p>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-admin-theme-text-secondary mb-1.5">{{ t('Decoupled View Counter') }}</label>
+            <select
+              v-model="configForm.durable_view_counter_enabled"
+              class="w-full px-3 py-2 text-xs border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text focus:outline-none focus:ring-1 focus:ring-admin-theme-primary"
+            >
+              <option value="yes">Enabled (Bucket Batching)</option>
+              <option value="no">Disabled</option>
+            </select>
+            <p class="text-[11px] text-admin-theme-text-muted mt-1">{{ t('Prevent cache purge on view.') }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Store Driver Connections Header -->
+      <h3 class="text-xs font-black uppercase tracking-widest text-admin-theme-text flex items-center justify-between md:col-span-3 pt-2 border-t border-admin-theme-border/40">
+        <span class="flex items-center gap-1.5">
+          <ServerStackIcon class="w-4 h-4 text-indigo-500" />
+          {{ t('Store Driver Connections & Memory Storage') }}
+        </span>
+        <button
+          type="button"
+          @click="openTopicGuide('stores')"
+          class="text-admin-theme-text-muted hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors p-1 flex items-center gap-1 text-[11px] font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-md"
+          title="Help & details on Cache Drivers"
+        >
+          <QuestionMarkCircleIcon class="w-4 h-4 text-indigo-500" />
+          {{ t('Guide') }}
+        </button>
+      </h3>
+
       <!-- Default Cache Store -->
       <div>
         <label class="block text-xs font-bold uppercase tracking-wider text-admin-theme-text-secondary mb-2">{{ t('Default Cache Store') }}</label>
@@ -682,82 +900,122 @@
          </div>
 
          <!-- Modal Body -->
-         <div class="flex-1 overflow-y-auto px-6 py-5 space-y-6 text-sm text-admin-theme-text">
-           <!-- Section 1: Presets -->
-           <div class="space-y-2">
-             <h4 class="font-bold text-admin-theme-primary flex items-center gap-1.5 text-base">
-               <SparklesIcon class="w-5 h-5 text-admin-theme-primary flex-shrink-0" />
-               {{ t('Optimization Presets') }}
-             </h4>
-             <div class="space-y-3 bg-admin-theme-base/40 p-4 rounded-xl border border-admin-theme-border text-xs leading-relaxed">
-               <div>
-                 <strong class="text-admin-theme-text block mb-0.5">1. Ultra Instant 0ms (Recommended)</strong>
-                 <p class="text-admin-theme-text-muted">Combines Client Hover Prefetch + Chrome Speculation Rules + Server HTML Cache + Browser Cache. When hovering over links, pages are pre-loaded into RAM before clicking, giving instant 0ms transitions.</p>
-               </div>
-               <div>
-                 <strong class="text-admin-theme-text block mb-0.5">2. Balanced Mode</strong>
-                 <p class="text-admin-theme-text-muted">Enables Hover Prefetch & Browser HTTP Cache headers. Uses minimal server RAM/disk while keeping page loads snappy.</p>
-               </div>
-               <div>
-                 <strong class="text-admin-theme-text block mb-0.5">3. Custom Control</strong>
-                 <p class="text-admin-theme-text-muted">Allows full manual toggling of individual components to match specific hosting environments.</p>
-               </div>
-             </div>
-           </div>
+          <div class="flex-1 overflow-y-auto px-6 py-5 space-y-6 text-sm text-admin-theme-text">
+            <!-- Section 1: Presets -->
+            <div id="guide-topic-presets" class="space-y-2 p-4 rounded-xl border border-admin-theme-border/60 bg-admin-theme-base/20">
+              <h4 class="font-bold text-admin-theme-primary flex items-center gap-1.5 text-base">
+                <SparklesIcon class="w-5 h-5 text-amber-500 flex-shrink-0" />
+                {{ t('1. Optimization Presets & Instant Acceleration') }}
+              </h4>
+              <div class="space-y-3 text-xs leading-relaxed text-admin-theme-text-secondary">
+                <p>
+                  <strong class="text-admin-theme-text font-bold">Ultra Instant 0ms (Recommended):</strong> {{ t('Combines Client Hover Prefetch + Chrome Speculation Rules + Server HTML Cache + Browser Cache. When hovering over links, target HTML is preloaded in under 100ms before click, delivering instant 0ms visual transitions.') }}
+                </p>
+                <p>
+                  <strong class="text-admin-theme-text font-bold">Balanced Mode:</strong> {{ t('Enables Hover Prefetch and Browser HTTP Cache headers while skipping server HTML storage. Ideal for environments with tight disk/RAM constraints.') }}
+                </p>
+                <p>
+                  <strong class="text-admin-theme-text font-bold">Custom Control:</strong> {{ t('Grants full granular control to toggle individual prefetch and response caching layers below.') }}
+                </p>
+              </div>
+            </div>
 
-           <!-- Section 2: Component Breakdown -->
-           <div class="space-y-2">
-             <h4 class="font-bold text-admin-theme-primary flex items-center gap-1.5 text-base">
-               <AdjustmentsHorizontalIcon class="w-5 h-5 text-admin-theme-primary flex-shrink-0" />
-               {{ t('Component Breakdown') }}
-             </h4>
-             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-               <div class="bg-admin-theme-base/40 p-3 rounded-xl border border-admin-theme-border">
-                 <strong class="text-admin-theme-text flex items-center gap-1 mb-1">
-                   <BoltIcon class="w-4 h-4 text-amber-500 flex-shrink-0" />
-                   {{ t('Hover Prefetch (Client)') }}
-                 </strong>
-                 <p class="text-admin-theme-text-muted">Detects mouse hover on links and prefetches target HTML 100-200ms before click. Zero JS conflicts with themes.</p>
-               </div>
-               <div class="bg-admin-theme-base/40 p-3 rounded-xl border border-admin-theme-border">
-                 <strong class="text-admin-theme-text flex items-center gap-1 mb-1">
-                   <SparklesIcon class="w-4 h-4 text-indigo-500 flex-shrink-0" />
-                   {{ t('Speculation Rules (Browser)') }}
-                 </strong>
-                 <p class="text-admin-theme-text-muted">Modern Chrome API for background pre-rendering. Automatically prerenders high-priority routes safely.</p>
-               </div>
-               <div class="bg-admin-theme-base/40 p-3 rounded-xl border border-admin-theme-border">
-                 <strong class="text-admin-theme-text flex items-center gap-1 mb-1">
-                   <CircleStackIcon class="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                   {{ t('Server HTML Cache') }}
-                 </strong>
-                 <p class="text-admin-theme-text-muted">Caches compiled Blade responses on server for GET requests. Drops server response time from 100ms to 2ms.</p>
-               </div>
-               <div class="bg-admin-theme-base/40 p-3 rounded-xl border border-admin-theme-border">
-                 <strong class="text-admin-theme-text flex items-center gap-1 mb-1">
-                   <GlobeAltIcon class="w-4 h-4 text-blue-500 flex-shrink-0" />
-                   {{ t('Browser HTTP Cache') }}
-                 </strong>
-                 <p class="text-admin-theme-text-muted">Sends Stale-While-Revalidate headers to browsers so client disk caches static assets for instant re-visits.</p>
-               </div>
-             </div>
-           </div>
+            <!-- Section 2: Canonicalization & Query Strategy -->
+            <div id="guide-topic-canonicalization" class="space-y-2 p-4 rounded-xl border border-admin-theme-border/60 bg-admin-theme-base/20">
+              <h4 class="font-bold text-admin-theme-primary flex items-center gap-1.5 text-base">
+                <AdjustmentsHorizontalIcon class="w-5 h-5 text-admin-theme-primary flex-shrink-0" />
+                {{ t('2. URL Canonicalization & Query Parameter Strategy') }}
+              </h4>
+              <div class="space-y-3 text-xs leading-relaxed text-admin-theme-text-secondary">
+                <p>
+                  <strong class="text-admin-theme-text font-bold">RFC 3986 Path Case Preservation:</strong> {{ t('PolyCMS strictly preserves URL path letter case (e.g. /Products/Laptop vs /products/laptop) to comply with RFC 3986 standards and prevent cache collisions.') }}
+                </p>
+                <p>
+                  <strong class="text-admin-theme-text font-bold">Ignore Known Tracking (Default):</strong> {{ t('Automatically strips marketing parameters (utm_source, utm_medium, fbclid, gclid, _ga, ref, etc.) so ad clicks hit the main cached page while preserving real filter parameters.') }}
+                </p>
+                <p>
+                  <strong class="text-admin-theme-text font-bold">Alphabetical Query Sorting (ksort):</strong> {{ t('Parameters like ?color=blue&size=M and ?size=M&color=blue are automatically sorted alphabetically to map to the exact same cache key.') }}
+                </p>
+              </div>
+            </div>
 
-           <!-- Section 3: Cache Store Compatibility -->
-           <div class="space-y-2">
-             <h4 class="font-bold text-admin-theme-primary flex items-center gap-1.5 text-base">
-               <ServerStackIcon class="w-5 h-5 text-admin-theme-primary flex-shrink-0" />
-               {{ t('Store Driver Compatibility (File, Redis, Database)') }}
-             </h4>
-             <div class="bg-admin-theme-base/40 p-4 rounded-xl border border-admin-theme-border text-xs space-y-2 leading-relaxed">
-               <p><strong class="text-emerald-500">File Store (Default):</strong> Works out of the box on all servers. Perfect for standard hosting shared environments.</p>
-               <p><strong class="text-amber-500">Database Store:</strong> Persists cache entries in PostgreSQL/MySQL. Ideal for multi-server setups without Redis.</p>
-               <p><strong class="text-purple-500">Redis Store (High Performance):</strong> In-memory storage with zero disk I/O latency. Recommended for high-traffic sites with thousands of daily visitors.</p>
-             </div>
-           </div>
-         </div>
+            <!-- Section 3: TTL & SWR Window -->
+            <div id="guide-topic-ttl" class="space-y-2 p-4 rounded-xl border border-admin-theme-border/60 bg-admin-theme-base/20">
+              <h4 class="font-bold text-admin-theme-primary flex items-center gap-1.5 text-base">
+                <ClockIcon class="w-5 h-5 text-amber-500 flex-shrink-0" />
+                {{ t('3. Server Response TTL & Stale-While-Revalidate (SWR)') }}
+              </h4>
+              <div class="space-y-3 text-xs leading-relaxed text-admin-theme-text-secondary">
+                <p>
+                  <strong class="text-admin-theme-text font-bold">Fresh Response TTL:</strong> {{ t('Defines how long a compiled HTML response remains completely fresh before revalidation is required (Default: 60s).') }}
+                </p>
+                <p>
+                  <strong class="text-admin-theme-text font-bold">Stale-While-Revalidate (SWR Window):</strong> {{ t('When an entry expires, PolyCMS serves the stale cache entry instantly (2-5ms) to incoming visitors while silently queueing an asynchronous background refresh to update the cache envelope.') }}
+                </p>
+              </div>
+            </div>
 
-         <!-- Modal Footer -->
+            <!-- Section 4: Route Allowlist & Bypass Blocklist -->
+            <div id="guide-topic-routes" class="space-y-2 p-4 rounded-xl border border-admin-theme-border/60 bg-admin-theme-base/20">
+              <h4 class="font-bold text-admin-theme-primary flex items-center gap-1.5 text-base">
+                <MapIcon class="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                {{ t('4. Route Allowlist & Critical Bypass Blocklist') }}
+              </h4>
+              <div class="space-y-3 text-xs leading-relaxed text-admin-theme-text-secondary">
+                <p>
+                  <strong class="text-admin-theme-text font-bold">Route Allowlist:</strong> {{ t('Only named public routes (e.g. home, page.show, post.show, category.show, product.show, projects.show) are eligible for server HTML caching.') }}
+                </p>
+                <p>
+                  <strong class="text-admin-theme-text font-bold">Automatic Critical Flow Bypass:</strong> {{ t('Shopping cart (/cart), Checkout (/checkout), Account (/account), Authentication (/login, /logout), Admin panel (/admin), REST API (/api/v1/*), Inertia requests (X-Inertia), and requests with Set-Cookie or private headers are ALWAYS 100% BYPASSED for security.') }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Section 5: Capacity, Integrity & View Counter -->
+            <div id="guide-topic-integrity" class="space-y-2 p-4 rounded-xl border border-admin-theme-border/60 bg-admin-theme-base/20">
+              <h4 class="font-bold text-admin-theme-primary flex items-center gap-1.5 text-base">
+                <ShieldCheckIcon class="w-5 h-5 text-purple-500 flex-shrink-0" />
+                {{ t('5. Capacity Limits, Payload Integrity & View Counter') }}
+              </h4>
+              <div class="space-y-3 text-xs leading-relaxed text-admin-theme-text-secondary">
+                <p>
+                  <strong class="text-admin-theme-text font-bold">Database Store Capacity Caps:</strong> {{ t('When using Database Cache Mode on SMB/shared hosting, single entries are capped at 512KB and total storage is capped at 512MB to prevent database bloat.') }}
+                </p>
+                <p>
+                  <strong class="text-admin-theme-text font-bold">SHA-256 Checksum Verification:</strong> {{ t('Every cached HTML payload is checksum-verified upon retrieval to prevent corrupted cache responses from reaching users.') }}
+                </p>
+                <p>
+                  <strong class="text-admin-theme-text font-bold">Decoupled View Counter:</strong> {{ t('Page views for products/posts are buffered into post_view_buckets without invalidating HTML page cache on every visit.') }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Section 6: Cache Stores -->
+            <div id="guide-topic-stores" class="space-y-2 p-4 rounded-xl border border-admin-theme-border/60 bg-admin-theme-base/20">
+              <h4 class="font-bold text-admin-theme-primary flex items-center gap-1.5 text-base">
+                <ServerStackIcon class="w-5 h-5 text-indigo-500 flex-shrink-0" />
+                {{ t('6. Store Driver Compatibility (File, Database, Redis)') }}
+              </h4>
+              <div class="space-y-3 text-xs leading-relaxed text-admin-theme-text-secondary">
+                <p><strong class="text-emerald-500 font-bold">File Store (Default):</strong> {{ t('Works out of the box on standard web hosting without external software requirements.') }}</p>
+                <p><strong class="text-amber-500 font-bold">Database Store:</strong> {{ t('Stores cache entries in MySQL/PostgreSQL. Excellent for multi-server VPS setups sharing a central database.') }}</p>
+                <p><strong class="text-purple-500 font-bold">Redis Store (High Performance):</strong> {{ t('In-memory cache with sub-millisecond response latency. Recommended for high-traffic sites with thousands of active visitors.') }}</p>
+              </div>
+            </div>
+
+            <!-- Section 7: Redis Config -->
+            <div id="guide-topic-redis" class="space-y-2 p-4 rounded-xl border border-admin-theme-border/60 bg-admin-theme-base/20">
+              <h4 class="font-bold text-admin-theme-primary flex items-center gap-1.5 text-base">
+                <ServerStackIcon class="w-5 h-5 text-admin-theme-primary flex-shrink-0" />
+                {{ t('7. Redis Server Configuration & Testing') }}
+              </h4>
+              <div class="space-y-3 text-xs leading-relaxed text-admin-theme-text-secondary">
+                <p>{{ t('Specify Host (127.0.0.1), Port (6379), Password (optional), and Database Index (default: 1). Use the "Test Redis Connection" button to verify server responsiveness before saving.') }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modal Footer -->
          <div class="flex justify-end gap-3 px-6 py-3 border-t border-admin-theme-border flex-shrink-0">
            <button @click="showHelpGuide = false" class="px-4 py-2 text-sm font-medium text-white bg-admin-theme-primary hover:bg-admin-theme-primary/90 rounded-lg transition-colors">
              {{ t('Got it, thanks!') }}
@@ -800,7 +1058,10 @@ import {
   ScaleIcon,
   GlobeAltIcon,
   RocketLaunchIcon,
-} from'@heroicons/vue/24/outline';
+  ClockIcon,
+  ShieldCheckIcon,
+  QuestionMarkCircleIcon,
+} from '@heroicons/vue/24/outline';
 
 const { t } = useTranslation();
 const dialog = useDialog();
@@ -833,13 +1094,36 @@ const configForm = reactive({
   response_html_cache_enabled: 'yes',
   browser_http_cache_enabled: 'yes',
   response_cache_ttl: 60,
+  page_cache_swr_ttl: 600,
+  cache_query_param_strategy: 'ignore_known_tracking',
+  cache_ignored_query_params: 'utm_source, utm_medium, utm_campaign, utm_term, utm_content, fbclid, gclid, msclkid, ttclid, ref, _ga, _gl',
+  database_cache_max_entry_kb: 512,
+  database_cache_max_total_mb: 512,
+  cache_integrity_mode: 'sha256',
+  durable_view_counter_enabled: 'yes',
+  cache_allowlist_routes: 'home, page.show, post.show, category.show, product.show, projects.show',
+  cache_blacklisted_paths: 'admin, api, cart, checkout, account, logout, login, register, password, livewire',
 });
 
 const showHelpGuide = ref(false);
+const activeGuideTopic = ref<string | null>(null);
 const savingConfig = ref(false);
 const testingRedis = ref(false);
 const redisTestResult = ref<string | null>(null);
 const redisTestSuccess = ref(false);
+
+function openTopicGuide(topicKey?: string) {
+  activeGuideTopic.value = topicKey || null;
+  showHelpGuide.value = true;
+  if (topicKey) {
+    setTimeout(() => {
+      const el = document.getElementById('guide-topic-' + topicKey);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 150);
+  }
+}
 
 const isRedisEnabled = computed(() => {
   return configForm.cache_store === 'redis' || 
@@ -882,6 +1166,15 @@ async function loadConfig() {
     configForm.response_html_cache_enabled = settings.response_html_cache_enabled?.value || 'yes';
     configForm.browser_http_cache_enabled = settings.browser_http_cache_enabled?.value || 'yes';
     configForm.response_cache_ttl = settings.response_cache_ttl?.value !== undefined ? Number(settings.response_cache_ttl.value) : 60;
+    configForm.page_cache_swr_ttl = settings.page_cache_swr_ttl?.value !== undefined ? Number(settings.page_cache_swr_ttl.value) : 600;
+    configForm.cache_query_param_strategy = settings.cache_query_param_strategy?.value || 'ignore_known_tracking';
+    configForm.cache_ignored_query_params = settings.cache_ignored_query_params?.value || 'utm_source, utm_medium, utm_campaign, utm_term, utm_content, fbclid, gclid, msclkid, ttclid, ref, _ga, _gl';
+    configForm.database_cache_max_entry_kb = settings.database_cache_max_entry_kb?.value !== undefined ? Number(settings.database_cache_max_entry_kb.value) : 512;
+    configForm.database_cache_max_total_mb = settings.database_cache_max_total_mb?.value !== undefined ? Number(settings.database_cache_max_total_mb.value) : 512;
+    configForm.cache_integrity_mode = settings.cache_integrity_mode?.value || 'sha256';
+    configForm.durable_view_counter_enabled = settings.durable_view_counter_enabled?.value || 'yes';
+    configForm.cache_allowlist_routes = settings.cache_allowlist_routes?.value || 'home, page.show, post.show, category.show, product.show, projects.show';
+    configForm.cache_blacklisted_paths = settings.cache_blacklisted_paths?.value || 'admin, api, cart, checkout, account, logout, login, register, password, livewire';
   } catch (e) {
     console.error('Failed to load cache configuration settings:', e);
   }
@@ -908,6 +1201,15 @@ async function saveConfig() {
         response_html_cache_enabled: { value: configForm.response_html_cache_enabled, type: 'string', group: 'cache_optimization' },
         browser_http_cache_enabled: { value: configForm.browser_http_cache_enabled, type: 'string', group: 'cache_optimization' },
         response_cache_ttl: { value: configForm.response_cache_ttl, type: 'number', group: 'cache_optimization' },
+        page_cache_swr_ttl: { value: configForm.page_cache_swr_ttl, type: 'number', group: 'cache_optimization' },
+        cache_query_param_strategy: { value: configForm.cache_query_param_strategy, type: 'string', group: 'cache_optimization' },
+        cache_ignored_query_params: { value: configForm.cache_ignored_query_params, type: 'string', group: 'cache_optimization' },
+        database_cache_max_entry_kb: { value: configForm.database_cache_max_entry_kb, type: 'number', group: 'cache_optimization' },
+        database_cache_max_total_mb: { value: configForm.database_cache_max_total_mb, type: 'number', group: 'cache_optimization' },
+        cache_integrity_mode: { value: configForm.cache_integrity_mode, type: 'string', group: 'cache_optimization' },
+        durable_view_counter_enabled: { value: configForm.durable_view_counter_enabled, type: 'string', group: 'cache_optimization' },
+        cache_allowlist_routes: { value: configForm.cache_allowlist_routes, type: 'string', group: 'cache_optimization' },
+        cache_blacklisted_paths: { value: configForm.cache_blacklisted_paths, type: 'string', group: 'cache_optimization' },
       }
     });
     dialog.success(t('Cache configuration saved successfully!'));
