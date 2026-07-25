@@ -552,6 +552,30 @@ class AppServiceProvider extends ServiceProvider
                 </script>' . PHP_EOL;
             }
 
+            echo '<style>
+            .execution-time-badge {
+                font-size: 0.8125rem;
+                font-weight: 500;
+                color: var(--geist-accents-5, #888);
+                white-space: nowrap;
+                display: inline-flex;
+                align-items: center;
+            }
+            @media (max-width: 640px) {
+                .execution-time-badge {
+                    font-size: 0.54rem !important;
+                    letter-spacing: -0.02em !important;
+                    max-width: calc(100vw - 110px);
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+                .execution-time-badge svg {
+                    width: 0.52rem !important;
+                    height: 0.52rem !important;
+                }
+            }
+            </style>' . PHP_EOL;
+
             echo '<script>
             window.addEventListener("load", function() {
                 setTimeout(function() {
