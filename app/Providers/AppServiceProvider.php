@@ -500,26 +500,25 @@ class AppServiceProvider extends ServiceProvider
             $settingsService = app(\App\Services\SettingsService::class);
             if ($settingsService->get('polycms_cache_enabled', 'yes') === 'yes' &&
                 $settingsService->get('speculation_rules_enabled', 'yes') === 'yes') {
-                echo '<script type="speculationrules">
-                {
-                  "prefetch": [
-                    {
-                      "source": "document",
-                      "where": {
-                        "and": [
-                          { "href_matches": "/*" },
-                          { "not": { "href_matches": "/admin/*" } },
-                          { "not": { "href_matches": "/*logout*" } },
-                          { "not": { "href_matches": "/*cart*" } },
-                          { "not": { "href_matches": "/*checkout*" } },
-                          { "not": { "href_matches": "/*\\?*" } }
+                $rules = [
+                    'prefetch' => [
+                        [
+                            'source' => 'document',
+                            'where' => [
+                                'and' => [
+                                    ['href_matches' => '/*'],
+                                    ['not' => ['href_matches' => '/admin/*']],
+                                    ['not' => ['href_matches' => '/*logout*']],
+                                    ['not' => ['href_matches' => '/*cart*']],
+                                    ['not' => ['href_matches' => '/*checkout*']],
+                                    ['not' => ['href_matches' => '/*?*']],
+                                ]
+                            ],
+                            'eagerness' => 'conservative'
                         ]
-                      },
-                      "eagerness": "conservative"
-                    }
-                  ]
-                }
-                </script>' . PHP_EOL;
+                    ]
+                ];
+                echo '<script type="speculationrules">' . json_encode($rules, JSON_UNESCAPED_SLASHES) . '</script>' . PHP_EOL;
             }
         });
 
@@ -1820,7 +1819,28 @@ class AppServiceProvider extends ServiceProvider
                 config(['cache.prefix' => $redisCachePrefix]);
             }
 
-            // 4. Override cache/session/queue config
+            // 4. Guard Redis drivers if extension/server unavailable
+            $hasPhpRedis = extension_loaded('redis') || class_exists(\Redis::class);
+            $hasPredis = class_exists(\Predis\Client::class);
+
+            if ($cacheStore === 'redis' && !$hasPhpRedis && !$hasPredis) {
+                $cacheStore = 'file';
+            }
+            if ($sessionDriver === 'redis' && !$hasPhpRedis && !$hasPredis) {
+                $sessionDriver = 'file';
+            }
+
+            if (($cacheStore === 'redis' || $sessionDriver === 'redis') && $hasPhpRedis) {
+                try {
+                    \Illuminate\Support\Facades\Redis::connection()->ping();
+                } catch (\Throwable $ex) {
+                    if ($cacheStore === 'redis') $cacheStore = 'file';
+                    if ($sessionDriver === 'redis') $sessionDriver = 'file';
+                    \Illuminate\Support\Facades\Log::warning('PolyCMS Redis Guard: Cannot connect to Redis server in configureCache(). Falling back to File: ' . $ex->getMessage());
+                }
+            }
+
+            // 5. Override cache/session/queue config
             config(['cache.default' => $cacheStore]);
             config(['session.driver' => $sessionDriver]);
             config(['queue.default' => $queueConnection]);
