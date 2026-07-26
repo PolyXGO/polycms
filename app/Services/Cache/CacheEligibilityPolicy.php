@@ -139,12 +139,20 @@ class CacheEligibilityPolicy
             return false;
         }
 
-        // 3. Check Set-Cookie headers: Allow standard guest framework cookies (XSRF-TOKEN, polycms-session), reject custom session/user cookies
+        // 3. Check Set-Cookie headers: Allow standard framework and guest tracking cookies (XSRF-TOKEN, polycms-session, viewed_product, viewed_post, consent), reject custom session/user cookies
         if ($response->headers->has('Set-Cookie')) {
             $cookieHeaders = $response->headers->all('set-cookie');
             foreach ($cookieHeaders as $cookieStr) {
                 $cookieStr = (string) $cookieStr;
-                if (!str_contains($cookieStr, 'XSRF-TOKEN') && !str_contains($cookieStr, 'polycms-session') && !str_contains($cookieStr, 'polycms_session')) {
+                $isAllowedCookie = str_contains($cookieStr, 'XSRF-TOKEN')
+                    || str_contains($cookieStr, 'polycms-session')
+                    || str_contains($cookieStr, 'polycms_session')
+                    || str_contains($cookieStr, 'viewed_product')
+                    || str_contains($cookieStr, 'viewed_post')
+                    || str_contains($cookieStr, 'viewed_')
+                    || str_contains($cookieStr, 'polycms_consent');
+
+                if (!$isAllowedCookie) {
                     return false;
                 }
             }
