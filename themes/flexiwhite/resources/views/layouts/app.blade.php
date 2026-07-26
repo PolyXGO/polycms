@@ -213,8 +213,10 @@
         </div>
     </div>
 
+    @if(file_exists(public_path('vendor/mtx-flow/mtx-flow.bundle.min.js')))
     <!-- MTxFlow Core Library -->
     <script src="{{ asset('vendor/mtx-flow/mtx-flow.bundle.min.js') }}"></script>
+    @endif
 
     <!-- Theme Scripts -->
     <script src="{{ theme_asset('js/main.js') }}?v={{ time() }}"></script>
