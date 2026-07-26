@@ -194,13 +194,31 @@ class CacheEligibilityPolicy
     public function getCacheableRoutes(): array
     {
         $customAllowlist = $this->settingsService->get('cache_allowlist_routes', null);
+        $routes = [];
         if (is_string($customAllowlist) && trim($customAllowlist) !== '') {
-            return array_filter(array_map('trim', explode(',', $customAllowlist)));
+            $routes = array_filter(array_map('trim', explode(',', $customAllowlist)));
+        } elseif (is_array($customAllowlist)) {
+            $routes = $customAllowlist;
         }
-        if (is_array($customAllowlist)) {
-            return $customAllowlist;
+
+        if (empty($routes)) {
+            return $this->defaultAllowlistRoutes;
         }
-        return $this->defaultAllowlistRoutes;
+
+        return array_values(array_unique(array_merge($routes, [
+            'home',
+            'posts.index',
+            'posts.archive',
+            'posts.show',
+            'page.show',
+            'pages.show',
+            'categories.show',
+            'category.show',
+            'products.index',
+            'products.archive',
+            'products.show',
+            'product-categories.show',
+        ])));
     }
 
     /**
