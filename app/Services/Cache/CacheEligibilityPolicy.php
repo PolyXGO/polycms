@@ -90,9 +90,9 @@ class CacheEligibilityPolicy
             return false;
         }
 
-        // 6. Bypass Client Reload requests (no-cache / no-store)
+        // 6. Bypass Client Reload requests (only if explicitly no-store)
         $cacheControl = (string) $request->headers->get('Cache-Control', '');
-        if (str_contains($cacheControl, 'no-cache') || str_contains($cacheControl, 'no-store')) {
+        if (str_contains($cacheControl, 'no-store')) {
             return false;
         }
 
@@ -139,7 +139,7 @@ class CacheEligibilityPolicy
             return false;
         }
 
-        // 3. Check Set-Cookie headers: Allow standard framework and guest tracking cookies, reject sensitive auth cookies
+        // 3. Check Set-Cookie headers: Allow standard framework and guest tracking cookies, reject custom session/user cookies
         if ($response->headers->has('Set-Cookie')) {
             $sessionCookieName = (string) config('session.cookie', 'session');
             $cookieHeaders = $response->headers->all('set-cookie');
@@ -147,13 +147,16 @@ class CacheEligibilityPolicy
                 $cookieStr = (string) $cookieStr;
 
                 // Reject if setting sensitive user authentication cookies
-                if (str_contains($cookieStr, 'remember_web_') || str_contains($cookieStr, 'auth_token')) {
+                if (str_contains($cookieStr, 'remember_web_')
+                    || str_contains($cookieStr, 'remember_admin_')
+                    || str_contains($cookieStr, 'auth_token')) {
                     return false;
                 }
 
                 $isAllowedCookie = str_contains($cookieStr, 'XSRF-TOKEN')
                     || str_contains($cookieStr, 'xsrf-token')
                     || str_contains($cookieStr, $sessionCookieName)
+                    || (str_contains($cookieStr, 'session') && !str_contains($cookieStr, 'session_id'))
                     || str_contains($cookieStr, 'viewed_')
                     || str_contains($cookieStr, 'consent')
                     || str_contains($cookieStr, 'adminer')
