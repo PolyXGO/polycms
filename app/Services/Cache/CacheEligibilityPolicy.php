@@ -139,18 +139,26 @@ class CacheEligibilityPolicy
             return false;
         }
 
-        // 3. Check Set-Cookie headers: Allow standard framework and guest tracking cookies (XSRF-TOKEN, polycms-session, viewed_product, viewed_post, consent), reject custom session/user cookies
+        // 3. Check Set-Cookie headers: Allow standard framework and guest tracking cookies, reject sensitive auth cookies
         if ($response->headers->has('Set-Cookie')) {
+            $sessionCookieName = (string) config('session.cookie', 'session');
             $cookieHeaders = $response->headers->all('set-cookie');
             foreach ($cookieHeaders as $cookieStr) {
                 $cookieStr = (string) $cookieStr;
+
+                // Reject if setting sensitive user authentication cookies
+                if (str_contains($cookieStr, 'remember_web_') || str_contains($cookieStr, 'auth_token')) {
+                    return false;
+                }
+
                 $isAllowedCookie = str_contains($cookieStr, 'XSRF-TOKEN')
-                    || str_contains($cookieStr, 'polycms-session')
-                    || str_contains($cookieStr, 'polycms_session')
-                    || str_contains($cookieStr, 'viewed_product')
-                    || str_contains($cookieStr, 'viewed_post')
+                    || str_contains($cookieStr, 'xsrf-token')
+                    || str_contains($cookieStr, $sessionCookieName)
                     || str_contains($cookieStr, 'viewed_')
-                    || str_contains($cookieStr, 'polycms_consent');
+                    || str_contains($cookieStr, 'consent')
+                    || str_contains($cookieStr, 'adminer')
+                    || str_contains($cookieStr, 'staff_lang')
+                    || str_contains($cookieStr, 'locale');
 
                 if (!$isAllowedCookie) {
                     return false;
