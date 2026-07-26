@@ -508,10 +508,10 @@ class AppServiceProvider extends ServiceProvider
                                 'and' => [
                                     ['href_matches' => '/*'],
                                     ['not' => ['href_matches' => '/admin/*']],
+                                    ['not' => ['href_matches' => '/api/*']],
                                     ['not' => ['href_matches' => '/*logout*']],
                                     ['not' => ['href_matches' => '/*cart*']],
                                     ['not' => ['href_matches' => '/*checkout*']],
-                                    ['not' => ['href_matches' => '/*?*']],
                                 ]
                             ],
                             'eagerness' => 'conservative'
