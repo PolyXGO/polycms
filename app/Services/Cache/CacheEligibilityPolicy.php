@@ -26,12 +26,20 @@ class CacheEligibilityPolicy
         'pages.show',
         'categories.show',
         'category.show',
+        'tags.show',
+        'product-tags.show',
+        'authors.show',
         'products.index',
         'products.archive',
         'products.show',
         'product-categories.show',
+        'product-brands.show',
         'projects.index',
+        'projects.archive',
         'projects.show',
+        'projects.show.page',
+        'projects.category',
+        'project.show',
     ];
 
     /**
@@ -214,10 +222,20 @@ class CacheEligibilityPolicy
             'pages.show',
             'categories.show',
             'category.show',
+            'tags.show',
+            'product-tags.show',
+            'authors.show',
             'products.index',
             'products.archive',
             'products.show',
             'product-categories.show',
+            'product-brands.show',
+            'projects.index',
+            'projects.archive',
+            'projects.show',
+            'projects.show.page',
+            'projects.category',
+            'project.show',
         ])));
     }
 
