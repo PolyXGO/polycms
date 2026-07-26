@@ -599,15 +599,16 @@ class AppServiceProvider extends ServiceProvider
             </style>' . PHP_EOL;
 
             echo '<script>
-            window.addEventListener("load", function() {
+            document.addEventListener("DOMContentLoaded", function() {
                 setTimeout(function() {
                     var perf = performance.getEntriesByType("navigation")[0];
                     if (perf) {
                         var rawMs = 0;
-                        if (perf.domContentLoadedEventEnd && perf.domContentLoadedEventEnd > 0) {
-                            rawMs = perf.domContentLoadedEventEnd - (perf.activationStart || perf.startTime || 0);
-                        } else if (perf.domInteractive && perf.domInteractive > 0) {
-                            rawMs = perf.domInteractive - (perf.activationStart || perf.startTime || 0);
+                        var start = perf.activationStart || perf.requestStart || perf.startTime || 0;
+                        if (perf.responseEnd && perf.responseEnd > 0 && perf.responseEnd > start) {
+                            rawMs = perf.responseEnd - start;
+                        } else if (perf.domInteractive && perf.domInteractive > 0 && perf.domInteractive > start) {
+                            rawMs = perf.domInteractive - start;
                         } else {
                             rawMs = perf.duration || 0;
                         }
@@ -619,7 +620,7 @@ class AppServiceProvider extends ServiceProvider
                             badge.innerHTML = boltSvg + serverMs + " ms (Server) <span style=\"opacity: 0.4; margin: 0 3px;\">|</span> " + rocketSvg + pageMs + " ms (Page)";
                         });
                     }
-                }, 60);
+                }, 10);
             });
             </script>' . PHP_EOL;
         });
