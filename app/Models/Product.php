@@ -132,15 +132,27 @@ class Product extends Model
     }
 
     /**
-     * Get the total sales count of the product
+     * Get the total sales count of the product (aggregated across all language translations)
      */
     public function getSalesCountAttribute(): int
     {
-        $localSales = (int) $this->orderItems()
-            ->whereHas('order', function ($query) {
-                $query->whereNotIn('status', ['cancelled', 'failed']);
-            })
-            ->sum('quantity');
+        if ($this->translation_group_id) {
+            $productIds = static::withoutGlobalScope('locale')
+                ->where('translation_group_id', $this->translation_group_id)
+                ->pluck('id');
+
+            $localSales = (int) \App\Models\Ecommerce\OrderItem::whereIn('product_id', $productIds)
+                ->whereHas('order', function ($query) {
+                    $query->whereNotIn('status', ['cancelled', 'failed']);
+                })
+                ->sum('quantity');
+        } else {
+            $localSales = (int) $this->orderItems()
+                ->whereHas('order', function ($query) {
+                    $query->whereNotIn('status', ['cancelled', 'failed']);
+                })
+                ->sum('quantity');
+        }
 
         $externalSales = (int) data_get($this->settings, 'external_sales', 0);
         $salesOffset = (int) data_get($this->settings, 'sales_offset', 0);
