@@ -328,7 +328,7 @@ class Product extends Model
     public function getEffectivePriceAttribute(): float
     {
         $price = $this->sale_price ?? $this->price;
-        return (float) $price;
+        return (float) \App\Facades\Hook::applyFilters('product.effective_price', $price, $this);
     }
 
     /**

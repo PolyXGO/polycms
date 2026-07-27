@@ -599,8 +599,95 @@
   {{ $t('Only one tab can be active by default. Global tab content is managed in Settings Hub > Global Tabs.') }}
   </p>
   </div>
- </div>
-</template>
+  </div>
+
+  <!-- CommerceOffers Suite (Dynamic Pricing, Tiers, Bundles & Order Thresholds) -->
+  <div class="rounded-xl border border-admin-theme-border/70 bg-admin-theme-card p-4 space-y-4 shadow-sm">
+    <div class="flex items-center justify-between border-b border-admin-theme-border pb-3">
+      <div>
+        <h3 class="text-sm font-semibold text-admin-theme-text flex items-center gap-2">
+          <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          {{ $t('CommerceOffers Suite (Dynamic Pricing, N-Tiers & Bundles)') }}
+        </h3>
+        <p class="text-xs text-admin-theme-text-muted">
+          {{ $t('Configure escalation pricing tiers by sales count, volume discounts, and add-on product threshold deals.') }}
+        </p>
+      </div>
+      <button
+        type="button"
+        class="px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors flex items-center gap-1"
+        :disabled="isSavingOffers"
+        @click="saveCommerceOffers"
+      >
+        <span v-if="isSavingOffers" class="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></span>
+        {{ isSavingOffers ? $t('Saving...') : $t('Save Offers Rules') }}
+      </button>
+    </div>
+
+    <!-- Tiered Pricing Rules (Escalation by sales_count) -->
+    <div class="space-y-3">
+      <div class="flex items-center justify-between">
+        <label class="text-xs font-bold uppercase tracking-wider text-admin-theme-text-secondary">
+          1. {{ $t('Tiered Escalation Pricing (By Sales Count)') }}
+        </label>
+        <button
+          type="button"
+          class="text-xs text-emerald-600 hover:text-emerald-500 font-medium"
+          @click="addTieredRule"
+        >
+          + {{ $t('Add Sales Tier') }}
+        </button>
+      </div>
+
+      <div v-if="tieredRules.length === 0" class="text-xs text-admin-theme-text-muted italic">
+        {{ $t('No sales threshold tiers configured yet. Baseline product price will be used.') }}
+      </div>
+
+      <div v-for="(rule, idx) in tieredRules" :key="idx" class="flex items-center gap-2 bg-admin-theme-base p-2 rounded-lg border border-admin-theme-border/60">
+        <input v-model.number="rule.min_sales" type="number" min="0" class="w-24 px-2 py-1 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text" :placeholder="$t('Min Sales')" />
+        <span class="text-xs text-admin-theme-text-muted">-</span>
+        <input v-model.number="rule.max_sales" type="number" min="0" class="w-24 px-2 py-1 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text" :placeholder="$t('Max (Empty = ∞)')" />
+        <input v-model.number="rule.price" type="number" step="0.01" min="0" class="w-28 px-2 py-1 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text font-bold" :placeholder="$t('Tier Price ($)')" />
+        <input v-model="rule.label" type="text" class="flex-1 px-2 py-1 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text" :placeholder="$t('Label (e.g. Early Bird)')" />
+        <button type="button" class="text-xs text-red-500 hover:text-red-700 px-2 py-1" @click="tieredRules.splice(idx, 1)">✕</button>
+      </div>
+    </div>
+
+    <!-- Volume Discounts Rules (Bulk Qty) -->
+    <div class="space-y-3 pt-3 border-t border-admin-theme-border/50">
+      <div class="flex items-center justify-between">
+        <label class="text-xs font-bold uppercase tracking-wider text-admin-theme-text-secondary">
+          2. {{ $t('Volume Bulk Quantity Discounts') }}
+        </label>
+        <button
+          type="button"
+          class="text-xs text-emerald-600 hover:text-emerald-500 font-medium"
+          @click="addVolumeRule"
+        >
+          + {{ $t('Add Volume Tier') }}
+        </button>
+      </div>
+
+      <div v-if="volumeRules.length === 0" class="text-xs text-admin-theme-text-muted italic">
+        {{ $t('No quantity discount tiers configured.') }}
+      </div>
+
+      <div v-for="(rule, idx) in volumeRules" :key="idx" class="flex items-center gap-2 bg-admin-theme-base p-2 rounded-lg border border-admin-theme-border/60">
+        <input v-model.number="rule.min_qty" type="number" min="1" class="w-20 px-2 py-1 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text" :placeholder="$t('Min Qty')" />
+        <span class="text-xs text-admin-theme-text-muted">-</span>
+        <input v-model.number="rule.max_qty" type="number" min="1" class="w-20 px-2 py-1 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text" :placeholder="$t('Max Qty')" />
+        <select v-model="rule.discount_type" class="px-2 py-1 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text">
+          <option value="percentage">% Discount</option>
+          <option value="fixed_amount">$ Fixed Off</option>
+          <option value="fixed_price">Set Fixed Price</option>
+        </select>
+        <input v-model.number="rule.discount_value" type="number" step="0.01" min="0" class="w-24 px-2 py-1 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text font-bold" :placeholder="$t('Value')" />
+        <input v-model="rule.label" type="text" class="flex-1 px-2 py-1 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text" :placeholder="$t('Label')" />
+        <button type="button" class="text-xs text-red-500 hover:text-red-700 px-2 py-1" @click="volumeRules.splice(idx, 1)">✕</button>
+      </div>
+    </div>
+  </div>
+ </template>
 
 <script setup lang="ts">
 import { computed, inject, isRef, ref, nextTick, getCurrentInstance, onMounted, watch } from'vue';
@@ -689,6 +776,15 @@ if (typeof form.value.settings.demo_url !=='string') {
 }
 if (typeof form.value.settings.envato_item_id !=='string') {
   form.value.settings.envato_item_id ='';
+}
+if (typeof form.value.settings.external_sales !== 'number') {
+  form.value.settings.external_sales = Number(form.value.settings.external_sales || 0);
+}
+if (typeof form.value.settings.external_rating !== 'number') {
+  form.value.settings.external_rating = Number(form.value.settings.external_rating || 0);
+}
+if (typeof form.value.settings.external_rating_count !== 'number') {
+  form.value.settings.external_rating_count = Number(form.value.settings.external_rating_count || 0);
 }
 if (typeof form.value.settings.preview_direct !== 'boolean') {
   form.value.settings.preview_direct = true;
@@ -1222,6 +1318,63 @@ const handleSlugInput = (event: Event) => {
  helpers.onSlugInput?.(event);
  form.value.slug = target.value;
 };
+
+// CommerceOffers Manager State
+const isSavingOffers = ref(false);
+const tieredRules = ref<any[]>([]);
+const volumeRules = ref<any[]>([]);
+const bundleRules = ref<any[]>([]);
+
+const addTieredRule = () => {
+  tieredRules.value.push({ min_sales: 0, max_sales: null, price: form.value?.price || 0, label: '' });
+};
+
+const addVolumeRule = () => {
+  volumeRules.value.push({ min_qty: 1, max_qty: null, discount_type: 'percentage', discount_value: 10, label: '' });
+};
+
+const fetchCommerceOffers = async () => {
+  const productId = form.value?.id;
+  if (!productId) return;
+  try {
+    const res = await axios.get(`/api/v1/commerce-offers/products/${productId}`);
+    if (res.data?.success) {
+      tieredRules.value = res.data.data?.tiered_prices || [];
+      volumeRules.value = res.data.data?.volume_discounts || [];
+      bundleRules.value = res.data.data?.bundle_items || [];
+    }
+  } catch (e) {}
+};
+
+const saveCommerceOffers = async () => {
+  const productId = form.value?.id;
+  if (!productId) {
+    showError($t('Please save the product first before configuring offer rules.'));
+    return;
+  }
+  isSavingOffers.value = true;
+  try {
+    const res = await axios.post(`/api/v1/commerce-offers/products/${productId}`, {
+      tiered_prices: tieredRules.value,
+      volume_discounts: volumeRules.value,
+      bundle_items: bundleRules.value,
+    });
+    if (res.data?.success) {
+      showSuccess(res.data.message || $t('Offer rules saved successfully.'));
+    }
+  } catch (e: any) {
+    showError(e.response?.data?.message || $t('Failed to save offer rules.'));
+  } finally {
+    isSavingOffers.value = false;
+  }
+};
+
+onMounted(() => {
+  fetchCommerceOffers();
+});
+watch(() => form.value?.id, () => {
+  fetchCommerceOffers();
+});
 </script>
 
 <style scoped>

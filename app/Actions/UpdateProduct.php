@@ -87,6 +87,14 @@ class UpdateProduct
                 if (trim($data['description_html']) === '' || trim($data['description_html']) === '<p></p>' || trim($data['description_html']) === '<p><br></p>') {
                     $data['description_html'] = null;
                 }
+            // Preserve external sales & rating stats in settings if present on model
+            if (isset($data['settings']) && is_array($data['settings'])) {
+                $existingSettings = $product->settings ?? [];
+                foreach (['external_sales', 'external_rating', 'external_rating_count'] as $statKey) {
+                    if (isset($existingSettings[$statKey]) && (!isset($data['settings'][$statKey]) || $data['settings'][$statKey] === 0 || $data['settings'][$statKey] === '0')) {
+                        $data['settings'][$statKey] = $existingSettings[$statKey];
+                    }
+                }
             }
 
             $product->update($this->filterPersistableProductData($data));
