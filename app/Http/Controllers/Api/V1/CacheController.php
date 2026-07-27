@@ -36,11 +36,13 @@ class CacheController extends Controller
     public function clear(Request $request): JsonResponse
     {
         $request->validate([
-            'types'   => 'required|array|min:1',
-            'types.*' => 'string',
+            'types'       => 'required|array|min:1',
+            'types.*'     => 'string',
+            'current_url' => 'nullable|string',
         ]);
 
-        $results = $this->cacheService->clear($request->input('types'));
+        $currentUrl = $request->input('current_url');
+        $results = $this->cacheService->clear($request->input('types'), $currentUrl);
 
         $allSuccess = !in_array('failed', $results, true);
 

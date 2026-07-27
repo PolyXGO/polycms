@@ -115,6 +115,13 @@ class CacheService
                 'group'       => 'polycms',
                 'clearable'   => true,
             ],
+            [
+                'key'         => 'page_current',
+                'label'       => 'Current Page Cache',
+                'description' => 'Invalidate cache for the currently active page and bump page generation',
+                'group'       => 'polycms',
+                'clearable'   => true,
+            ],
             // Server caches
             [
                 'key'         => 'opcache',
@@ -171,7 +178,7 @@ class CacheService
      * @param  string[]  $types  Cache type keys to clear.  Pass ['all'] to clear everything.
      * @return array  Per-type results: ['type' => 'success'|'failed'|'skipped', ...]
      */
-    public function clear(array $types): array
+    public function clear(array $types, ?string $currentUrl = null): array
     {
         $allTypes = collect($this->getTypes())->pluck('key')->all();
 
@@ -197,12 +204,12 @@ class CacheService
             try {
                 if ($handler) {
                     // Module-claimed: let the module's hook handle it
-                    Hook::doAction('cache.clear.' . $type);
+                    Hook::doAction('cache.clear.' . $type, $currentUrl);
                 } else {
                     // Core handles it
-                    $this->clearType($type);
+                    $this->clearType($type, $currentUrl);
                     // Also fire the hook in case someone wants to piggyback
-                    Hook::doAction('cache.clear.' . $type);
+                    Hook::doAction('cache.clear.' . $type, $currentUrl);
                 }
 
                 $results[$type] = 'success';
@@ -367,21 +374,42 @@ class CacheService
     /**
      * Core clearing logic per type.
      */
-    private function clearType(string $type): void
+    private function clearType(string $type, ?string $currentUrl = null): void
     {
         match ($type) {
-            'application' => Artisan::call('cache:clear'),
-            'view'        => Artisan::call('view:clear'),
-            'config'      => $this->clearConfigCache(),
-            'route'       => $this->clearRouteCache(),
-            'event'       => $this->clearEventCache(),
-            'theme'       => $this->clearThemeCache(),
-            'module'      => $this->clearModuleCache(),
-            'settings'    => $this->clearSettingsCache(),
-            'template'    => $this->clearTemplateCache(),
-            'opcache'     => $this->clearOpcache(),
-            default       => null,
+            'page_current' => $this->clearCurrentPageCache($currentUrl),
+            'application'  => Artisan::call('cache:clear'),
+            'view'         => Artisan::call('view:clear'),
+            'config'       => $this->clearConfigCache(),
+            'route'        => $this->clearRouteCache(),
+            'event'        => $this->clearEventCache(),
+            'theme'        => $this->clearThemeCache(),
+            'module'       => $this->clearModuleCache(),
+            'settings'     => $this->clearSettingsCache(),
+            'template'     => $this->clearTemplateCache(),
+            'opcache'      => $this->clearOpcache(),
+            default        => null,
         };
+    }
+
+    private function clearCurrentPageCache(?string $currentUrl = null): void
+    {
+        // 1. Bump global site & page generation to invalidate cache for all clients
+        try {
+            $genStore = app(\App\Services\Cache\CacheGenerationStore::class);
+            $genStore->bump('page', 'global');
+            $genStore->bump('site', 'global');
+        } catch (\Throwable $e) {}
+
+        // 2. If a specific URL is provided, calculate and purge its exact cache key
+        if (!empty($currentUrl)) {
+            try {
+                $path = parse_url($currentUrl, PHP_URL_PATH) ?? '/';
+                $fakeReq = \Illuminate\Http\Request::create($path, 'GET');
+                $key = app(\App\Services\Cache\CacheKeyBuilder::class)->buildKey($fakeReq);
+                Cache::forget($key);
+            } catch (\Throwable $e) {}
+        }
     }
 
     private function clearConfigCache(): void

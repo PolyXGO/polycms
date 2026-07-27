@@ -89,13 +89,47 @@
       <label class="block text-sm font-medium text-admin-theme-text-secondary mb-1" for="product-envato-item-id">
         {{ $t('Envato Item ID (for sync sales)') }}
       </label>
-      <input
-        id="product-envato-item-id"
-        v-model="form.settings.envato_item_id"
-        type="text"
-        class="w-full px-3 py-2 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text placeholder-admin-theme-text-muted focus:ring-admin-theme-primary focus:border-admin-theme-primary"
-        placeholder="e.g. 12345678"
-      />
+      <div class="flex items-center gap-2">
+        <input
+          id="product-envato-item-id"
+          v-model="form.settings.envato_item_id"
+          type="text"
+          class="flex-1 px-3 py-2 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text placeholder-admin-theme-text-muted focus:ring-admin-theme-primary focus:border-admin-theme-primary"
+          placeholder="e.g. 12345678"
+        />
+        <button
+          type="button"
+          :disabled="!form.settings.envato_item_id || isSyncingEnvato"
+          class="px-3.5 py-2 text-xs font-semibold rounded-lg border transition-all inline-flex items-center gap-1.5 shrink-0"
+          :class="[
+            form.settings.envato_item_id && !isSyncingEnvato
+              ? 'bg-sky-600 hover:bg-sky-700 text-white border-sky-600 shadow-sm cursor-pointer dark:bg-sky-500 dark:hover:bg-sky-600'
+              : 'bg-admin-theme-border text-admin-theme-text-muted border-admin-theme-border cursor-not-allowed opacity-60'
+          ]"
+          @click="syncEnvatoSales"
+        >
+          <svg
+            v-if="isSyncingEnvato"
+            class="animate-spin h-3.5 w-3.5 text-current"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <svg
+            v-else
+            class="w-3.5 h-3.5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          <span>{{ isSyncingEnvato ? $t('Syncing...') : $t('Sync Sales') }}</span>
+        </button>
+      </div>
     </div>
 
     <div>
@@ -571,9 +605,10 @@
 <script setup lang="ts">
 import { computed, inject, isRef, ref, nextTick, getCurrentInstance, onMounted, watch } from'vue';
 import axios from'axios';
+import { showSuccess, showError } from '@/admin/utils/dialog';
 
 const instance = getCurrentInstance();
-const $t = instance?.appContext.config.globalProperties.$t;
+const $t = instance?.appContext.config.globalProperties.$t || ((s: string) => s);
 import TiptapEditor from'../../../TiptapEditor.ts';
 import { EditorContextKey } from'../../../../editor/context';
 
@@ -584,6 +619,46 @@ if (!context) {
 
 const form = context.form;
 const helpers = context.helpers ?? {};
+
+const isSyncingEnvato = ref(false);
+
+const syncEnvatoSales = async () => {
+  const itemId = (form.value?.settings?.envato_item_id || '').toString().trim();
+  if (!itemId) {
+    showError($t('Please enter an Envato Item ID first.'));
+    return;
+  }
+
+  isSyncingEnvato.value = true;
+  try {
+    const res = await axios.post('/api/v1/market/sync-product-sales', {
+      product_id: form.value?.id || null,
+      platform: 'envato',
+      item_id: itemId,
+    });
+
+    if (res.data && res.data.success) {
+      const stats = res.data.data || {};
+      if (stats.external_sales !== undefined && form.value?.settings) {
+        form.value.settings.external_sales = stats.external_sales;
+      }
+      if (stats.external_rating !== undefined && form.value?.settings) {
+        form.value.settings.external_rating = stats.external_rating;
+      }
+      if (stats.external_rating_count !== undefined && form.value?.settings) {
+        form.value.settings.external_rating_count = stats.external_rating_count;
+      }
+      showSuccess(res.data.message || $t('Sales data synced successfully from Envato!'));
+    } else {
+      showError(res.data?.message || $t('Failed to sync sales data.'));
+    }
+  } catch (err: any) {
+    const msg = err.response?.data?.message || err.message || $t('Error syncing sales data.');
+    showError(msg);
+  } finally {
+    isSyncingEnvato.value = false;
+  }
+};
 
 if (!form.value) {
  form.value = {

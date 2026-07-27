@@ -702,6 +702,40 @@ class AppServiceProvider extends ServiceProvider
         Hook::addAction('theme.listing.after_title', $renderBadgeCallback);
         Hook::addAction('theme.wiki.single.after_title', $renderBadgeCallback);
         Hook::addAction('project.single.after_title', $renderBadgeCallback);
+
+        // Register ModelCacheInvalidationObserver for all core content models
+        $modelsToObserve = [
+            \App\Models\Product::class,
+            \App\Models\ProductCategory::class,
+            \App\Models\ProductBrand::class,
+            \App\Models\ProductTag::class,
+            \App\Models\Post::class,
+            \App\Models\Category::class,
+            \App\Models\Tag::class,
+            \App\Models\PostTag::class,
+            \App\Models\Page::class,
+            \App\Models\Setting::class,
+            \App\Models\Menu::class,
+            \App\Models\MenuItem::class,
+            \App\Models\Language::class,
+            \App\Models\Theme::class,
+        ];
+
+        foreach ($modelsToObserve as $modelClass) {
+            if (class_exists($modelClass)) {
+                try {
+                    $modelClass::observe(\App\Observers\ModelCacheInvalidationObserver::class);
+                } catch (\Throwable $e) {}
+            }
+        }
+
+        Hook::addAction('content.saved', function ($model) {
+            if ($model instanceof \Illuminate\Database\Eloquent\Model) {
+                try {
+                    app(\App\Observers\ModelCacheInvalidationObserver::class)->saved($model);
+                } catch (\Throwable $e) {}
+            }
+        });
     }
 
     /**

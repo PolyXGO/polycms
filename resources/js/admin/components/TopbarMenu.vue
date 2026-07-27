@@ -130,6 +130,16 @@
     {{ $t('Clear Individual Caches') }}
   </div>
   
+  <button class="setting-item w-full text-left cursor-pointer" @click="clearSpecificCache('page_current')" :disabled="clearingSpecific === 'page_current'">
+  <div class="setting-label">
+  <span class="setting-title" style="color: #3b82f6;">{{ $t('Clear Current Page Cache') }}</span>
+  <span class="setting-desc">{{ $t('Purge page cache for current URL & bump generation') }}</span>
+  </div>
+  <div class="setting-action" v-if="clearingSpecific === 'page_current'">
+  <div class="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+  </div>
+  </button>
+
   <button class="setting-item w-full text-left" @click="clearSpecificCache('application')" :disabled="clearingSpecific === 'application'">
   <div class="setting-label">
   <span class="setting-title">{{ $t('Application Cache') }}</span>
@@ -375,8 +385,15 @@ const fixPermissions = async () => {
 const clearSpecificCache = async (type: string) => {
   clearingSpecific.value = type;
   try {
-    await axios.post('/api/v1/system/cache/clear', { types: [type] });
+    const payload: any = { types: [type] };
+    if (type === 'page_current') {
+      payload.current_url = window.location.href;
+    }
+    await axios.post('/api/v1/system/cache/clear', payload);
     dialog.success($t('Cache cleared successfully!'));
+    if (type === 'page_current') {
+      setTimeout(() => window.location.reload(), 600);
+    }
   } catch (e) {
     dialog.error($t('Failed to clear cache.'));
   } finally {

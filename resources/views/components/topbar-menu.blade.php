@@ -158,6 +158,10 @@ $isLoginPage = request()->is('admin/login', 'account/login', 'login', 'register'
                         <div style="padding: 4px 12px; font-size: 10px; font-weight: bold; color: var(--poly-tb-text-muted); text-transform: uppercase;">Clear Specific</div>
                         
                         <!-- Individual Caches -->
+                        <button class="topbar-switcher-item" onclick="triggerFrontendClearCache('page_current')" style="width: 100%; text-align: left; padding: 8px 12px; display: flex; align-items: center; gap: 6px; color: #3b82f6 !important; font-weight: 500;">
+                            {!! \App\Support\IconRegistry::render('refresh-cw', 'w-3.5 h-3.5') !!}
+                            <span>Clear Current Page Cache</span>
+                        </button>
                         <button class="topbar-switcher-item" onclick="triggerFrontendClearCache('application')" style="width: 100%; text-align: left; padding: 8px 12px; display: flex; align-items: center; color: var(--poly-tb-text);">
                             <span>Application Cache</span>
                         </button>
@@ -909,14 +913,21 @@ $isLoginPage = request()->is('admin/login', 'account/login', 'login', 'register'
                 : '/api/v1/system/cache/clear';
                 
             const method = 'POST';
+            const payloadData = { types: [type] };
+            if (type === 'page_current') {
+                payloadData.current_url = window.location.href;
+            }
             const body = type === 'fix-permissions' 
                 ? null 
-                : JSON.stringify({ types: [type] });
+                : JSON.stringify(payloadData);
 
             fetch(url, { method, headers, body })
                 .then(res => res.json())
                 .then(data => {
                     showTopbarToast(data.message || 'Action completed successfully.', 'success');
+                    if (type === 'page_current') {
+                        setTimeout(() => window.location.reload(), 600);
+                    }
                 })
                 .catch(err => {
                     console.error('Action failed:', err);
