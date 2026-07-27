@@ -204,6 +204,15 @@ class CacheEligibilityPolicy
      */
     public function getCacheableRoutes(): array
     {
+        $defaultRoutes = $this->defaultAllowlistRoutes;
+        if (class_exists(\App\Facades\Hook::class)) {
+            try {
+                $defaultRoutes = \App\Facades\Hook::applyFilters('cache.cacheable_routes', $defaultRoutes);
+            } catch (\Throwable $e) {
+                // Fail gracefully if facade is not bound during CLI or early boot
+            }
+        }
+
         $customAllowlist = $this->settingsService->get('cache_allowlist_routes', null);
         $routes = [];
         if (is_string($customAllowlist) && trim($customAllowlist) !== '') {
@@ -213,36 +222,10 @@ class CacheEligibilityPolicy
         }
 
         if (empty($routes)) {
-            return $this->defaultAllowlistRoutes;
+            return array_values(array_unique((array) $defaultRoutes));
         }
 
-        return array_values(array_unique(array_merge($routes, [
-            'home',
-            'posts.index',
-            'posts.archive',
-            'posts.show',
-            'page.show',
-            'pages.show',
-            'categories.show',
-            'category.show',
-            'tags.show',
-            'product-tags.show',
-            'authors.show',
-            'products.index',
-            'products.archive',
-            'products.show',
-            'product-categories.show',
-            'product-brands.show',
-            'projects.index',
-            'projects.archive',
-            'projects.show',
-            'projects.show.page',
-            'projects.category',
-            'project.show',
-            // FlexiDocs theme custom routes
-            'theme.flexidocs.show',
-            'theme.flexidocs.category',
-        ])));
+        return array_values(array_unique(array_merge($routes, (array) $defaultRoutes)));
     }
 
     /**

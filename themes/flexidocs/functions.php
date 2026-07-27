@@ -482,3 +482,23 @@ Hook::addAction('admin.menu.build', function () {
         'order' => 10,
     ]);
 });
+
+/**
+ * Register FlexiDocs cacheable routes & UI route group for PolyCMS Cache Management.
+ */
+Hook::addFilter('cache.cacheable_routes', function (array $routes) {
+    $routes[] = 'theme.flexidocs.show';
+    $routes[] = 'theme.flexidocs.category';
+    return array_values(array_unique($routes));
+});
+
+Hook::addFilter('cache.registered_route_groups', function (array $groups) {
+    $groups[] = [
+        'name' => 'FlexiDocs Documentation Wiki (Theme)',
+        'routes' => [
+            ['key' => 'theme.flexidocs.show', 'label' => 'Wiki Bài viết / Chi tiết (theme.flexidocs.show)'],
+            ['key' => 'theme.flexidocs.category', 'label' => 'Wiki Danh mục / Tổng quan (theme.flexidocs.category)'],
+        ],
+    ];
+    return $groups;
+});

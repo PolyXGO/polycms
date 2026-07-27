@@ -324,7 +324,7 @@
             </label>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div v-for="group in predefinedRouteGroups" :key="group.name" class="p-2.5 bg-admin-theme-base/40 rounded-lg border border-admin-theme-border/60">
+              <div v-for="group in registeredRouteGroups" :key="group.name" class="p-2.5 bg-admin-theme-base/40 rounded-lg border border-admin-theme-border/60">
                 <h4 class="text-[11px] font-bold text-admin-theme-primary mb-2 border-b border-admin-theme-border/40 pb-1 flex items-center justify-between">
                   <span>{{ group.name }}</span>
                 </h4>
@@ -1180,7 +1180,7 @@ const configForm = reactive({
   cache_blacklisted_paths: 'admin, api, cart, checkout, account, logout, login, register, password, livewire',
 });
 
-const predefinedRouteGroups = [
+const registeredRouteGroups = ref<Array<{ name: string; routes: Array<{ key: string; label: string }> }>>([
   {
     name: 'Bài Viết & Blog (Posts Core)',
     routes: [
@@ -1208,15 +1208,26 @@ const predefinedRouteGroups = [
     ]
   },
   {
-    name: 'Mô-đun Tích Hợp (ProjectHub, Docs...)',
+    name: 'Mô-đun Tích Hợp (ProjectHub, FlexiDocs...)',
     routes: [
       { key: 'projects.index', label: 'Danh sách Dự án (projects.index)' },
       { key: 'project.show', label: 'Chi tiết Dự án (project.show)' },
-      { key: 'releases.show', label: 'Release Notes (releases.show)' },
-      { key: 'docs.show', label: 'Tài liệu (docs.show)' },
+      { key: 'theme.flexidocs.show', label: 'Wiki Bài viết (theme.flexidocs.show)' },
+      { key: 'theme.flexidocs.category', label: 'Wiki Danh mục (theme.flexidocs.category)' },
     ]
   }
-];
+]);
+
+async function loadRegisteredRoutes() {
+  try {
+    const res = await axios.get('/api/v1/system/cache/routes');
+    if (res.data?.data?.groups && Array.isArray(res.data.data.groups)) {
+      registeredRouteGroups.value = res.data.data.groups;
+    }
+  } catch (e) {
+    console.error('Failed to load registered route groups:', e);
+  }
+}
 
 function isRouteChecked(routeName: string): boolean {
   if (!configForm.cache_allowlist_routes) return false;
@@ -1599,6 +1610,7 @@ function formatSize(bytes: number): string {
 onMounted(() => {
   loadStatus();
   loadConfig();
+  loadRegisteredRoutes();
 });
 </script>
 

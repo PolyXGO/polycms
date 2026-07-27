@@ -82,4 +82,18 @@ class CacheController extends Controller
             'data' => $this->cacheService->getTypeDetail($type),
         ]);
     }
+
+    /**
+     * GET /api/v1/system/cache/routes
+     *
+     * Return registered route groups for cache allowlist selection (includes core + active theme/module registered routes).
+     */
+    public function routes(): JsonResponse
+    {
+        return response()->json([
+            'data' => [
+                'groups' => $this->cacheService->getRegisteredRouteGroups(),
+            ],
+        ]);
+    }
 }

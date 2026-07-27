@@ -365,6 +365,7 @@ Route::prefix('v1')->group(function () {
 
                 // Cache Management
                 Route::get('/cache/status', [CacheController::class, 'status'])->name('cache.status');
+                Route::get('/cache/routes', [CacheController::class, 'routes'])->name('cache.routes');
                 Route::get('/cache/detail/{type}', [CacheController::class, 'detail'])->name('cache.detail');
                 Route::post('/cache/clear', [CacheController::class, 'clear'])->name('cache.clear');
                 Route::post('/cache/fix-permissions', [CacheController::class, 'fixPermissions'])->name('cache.fix-permissions');

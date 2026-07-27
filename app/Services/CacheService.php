@@ -737,4 +737,62 @@ class CacheService
             return ['enabled' => false, 'error' => $e->getMessage()];
         }
     }
+
+    /**
+     * Get all registered route groups for the cache allowlist checklist.
+     * Core provides standard route groups; Themes & Modules register custom groups
+     * via the `cache.registered_route_groups` hook filter.
+     *
+     * @return array<int, array{name: string, routes: array<int, array{key: string, label: string}>}>
+     */
+    public function getRegisteredRouteGroups(): array
+    {
+        $coreGroups = [
+            [
+                'name' => 'Bài Viết & Blog (Posts Core)',
+                'routes' => [
+                    ['key' => 'home', 'label' => 'Trang chủ (home)'],
+                    ['key' => 'posts.index', 'label' => 'Danh sách Blog (posts.index)'],
+                    ['key' => 'post.show', 'label' => 'Chi tiết Bài viết (post.show)'],
+                    ['key' => 'category.show', 'label' => 'Danh mục Bài viết (category.show)'],
+                    ['key' => 'tag.show', 'label' => 'Thẻ Bài viết (tag.show)'],
+                ],
+            ],
+            [
+                'name' => 'Trang Tĩnh (Pages Core)',
+                'routes' => [
+                    ['key' => 'page.show', 'label' => 'Trang đơn / Tĩnh (page.show)'],
+                ],
+            ],
+            [
+                'name' => 'Sản Phẩm (Ecommerce)',
+                'routes' => [
+                    ['key' => 'products.index', 'label' => 'Trang Cửa hàng (products.index)'],
+                    ['key' => 'product.show', 'label' => 'Chi tiết Sản phẩm (product.show)'],
+                    ['key' => 'product-categories.show', 'label' => 'Danh mục Sản phẩm (product-categories.show)'],
+                    ['key' => 'product-brands.show', 'label' => 'Thương hiệu (product-brands.show)'],
+                    ['key' => 'product-tags.show', 'label' => 'Thẻ Sản phẩm (product-tags.show)'],
+                ],
+            ],
+            [
+                'name' => 'Dự Án & Release (ProjectHub)',
+                'routes' => [
+                    ['key' => 'projects.index', 'label' => 'Danh sách Dự án (projects.index)'],
+                    ['key' => 'projects.show', 'label' => 'Chi tiết Dự án (projects.show)'],
+                    ['key' => 'projects.show.page', 'label' => 'Trang con Dự án (projects.show.page)'],
+                    ['key' => 'projects.category', 'label' => 'Danh mục Dự án (projects.category)'],
+                ],
+            ],
+        ];
+
+        if (class_exists(\App\Facades\Hook::class)) {
+            try {
+                return Hook::applyFilters('cache.registered_route_groups', $coreGroups);
+            } catch (\Throwable $e) {
+                // Fail gracefully
+            }
+        }
+
+        return $coreGroups;
+    }
 }
