@@ -137,7 +137,19 @@ class PageCacheMiddleware
      */
     protected function toResponse(PageCacheEntry $entry, string $cacheState): Response
     {
-        $response = response($entry->body, $entry->status);
+        $body = $entry->body;
+
+        // Dynamically update execution time badge in cached HTML to reflect true real-time Cache HIT server latency
+        if (defined('LARAVEL_START') && (str_contains($body, 'execution-time-badge') || str_contains($body, 'data-server-ms'))) {
+            $hitMs = number_format((microtime(true) - LARAVEL_START) * 1000, 2, '.', ',');
+            $body = preg_replace(
+                '/(<span[^>]*class="[^"]*execution-time-badge[^"]*"[^>]*data-server-ms=")[^"]*("[^>]*>).*?(<\/span>)/i',
+                '${1}' . $hitMs . '${2}' . $hitMs . ' ms${3}',
+                $body
+            ) ?? $body;
+        }
+
+        $response = response($body, $entry->status);
 
         foreach ($entry->headers as $name => $value) {
             $response->headers->set($name, $value);
