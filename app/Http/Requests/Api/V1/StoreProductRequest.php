@@ -55,7 +55,18 @@ class StoreProductRequest extends FormRequest
             ],
             'locale' => ['nullable', 'string', 'max:10'],
             'translation_group_id' => ['nullable', 'string', 'max:36'],
-            'sku' => ['nullable', 'string', 'max:255', 'unique:products,sku'],
+            'sku' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('products', 'sku')->where(function ($query) {
+                    $translationGroupId = $this->input('translation_group_id');
+                    if ($translationGroupId) {
+                        $query->where('translation_group_id', '!=', $translationGroupId);
+                    }
+                    return $query;
+                }),
+            ],
             'short_description' => ['nullable', 'string', 'max:1000'],
             'description_blocks' => ['nullable', 'array'],
             'description_html' => ['nullable', 'string'],

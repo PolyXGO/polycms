@@ -319,17 +319,8 @@ class ProductController extends Controller
             $counter++;
         }
 
-        // SKU should not be duplicated because SKU is unique across all products
-        if ($product->sku) {
-            $newProduct->sku = $product->sku . '-' . strtoupper($targetLocale);
-            // Ensure sku is unique
-            $baseSku = $newProduct->sku;
-            $skuCounter = 1;
-            while (Product::where('sku', $newProduct->sku)->exists()) {
-                $newProduct->sku = $baseSku . '-' . $skuCounter;
-                $skuCounter++;
-            }
-        }
+        // Product SKU is synchronized across all translations of the same product
+        $newProduct->sku = $product->sku;
 
         $newProduct->save();
 

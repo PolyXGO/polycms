@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('name');
             $table->string('slug')->unique();
-            $table->string('sku')->unique()->nullable();
+            $table->string('sku')->nullable();
             $table->text('short_description')->nullable();
             $table->json('description_blocks')->nullable(); // Block-based editor content
             $table->longText('description_html')->nullable(); // Rendered HTML

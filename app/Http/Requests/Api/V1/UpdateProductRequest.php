@@ -58,7 +58,24 @@ class UpdateProductRequest extends FormRequest
             ],
             'locale' => ['nullable', 'string', 'max:10'],
             'translation_group_id' => ['nullable', 'string', 'max:36'],
-            'sku' => ['nullable', 'string', 'max:255', Rule::unique('products', 'sku')->ignore($productId instanceof \Illuminate\Database\Eloquent\Model ? $productId->id : $productId)],
+            'sku' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('products', 'sku')->where(function ($query) use ($productId) {
+                    $product = $productId instanceof \Illuminate\Database\Eloquent\Model
+                        ? $productId
+                        : \App\Models\Product::find($productId);
+
+                    $translationGroupId = $this->input('translation_group_id', $product?->translation_group_id);
+                    if ($translationGroupId) {
+                        $query->where('translation_group_id', '!=', $translationGroupId);
+                    } elseif ($product) {
+                        $query->where('id', '!=', $product->id);
+                    }
+                    return $query;
+                }),
+            ],
             'short_description' => ['nullable', 'string', 'max:1000'],
             'description_blocks' => ['nullable', 'array'],
             'description_html' => ['nullable', 'string'],
