@@ -98,8 +98,8 @@ class PostController extends FrontendController
 
         $post = $query->firstOrFail();
 
-        // Only increment views for published posts or when admin is viewing
-        if ($post->status === 'published' || $isAdmin) {
+        // Only increment views for published posts or when admin is viewing (ignore prefetch requests)
+        if (($post->status === 'published' || $isAdmin) && !is_prefetch_request()) {
             $post->increment('views');
         }
 

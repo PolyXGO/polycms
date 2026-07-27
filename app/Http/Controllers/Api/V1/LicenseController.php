@@ -541,6 +541,7 @@ class LicenseController extends Controller
                             now()->addMinutes(15),
                             [
                                 'release_id' => $latestRelease->id,
+                                'download_type' => 'free',
                             ]
                         );
                     } else {
@@ -564,10 +565,22 @@ class LicenseController extends Controller
                                     'release_id'  => $latestRelease->id,
                                     'license_key' => $licenseKey,
                                     'domain'      => $domain,
+                                    'download_type' => 'paid',
                                 ]
                             );
                         } else {
-                            $downloadUrl = ''; // Paid module requires valid active license key
+                            if (!empty($latestRelease->free_download_url)) {
+                                $downloadUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+                                    'api.v1.licenses.download-release-public',
+                                    now()->addMinutes(15),
+                                    [
+                                        'release_id' => $latestRelease->id,
+                                        'download_type' => 'free',
+                                    ]
+                                );
+                            } else {
+                                $downloadUrl = ''; // Paid module requires valid active license key
+                            }
                         }
                     }
                 }
@@ -605,6 +618,7 @@ class LicenseController extends Controller
         $licenseKey = trim((string) $request->input('license_key', ''));
         $domain = strtolower((string) $request->input('domain', $request->getHost()));
         $releaseId = (int) $request->input('release_id', 0);
+        $downloadType = $request->input('download_type', 'paid');
 
         if ($releaseId <= 0) {
             return response()->json(['success' => false, 'message' => 'Invalid release ID.'], 400);
@@ -616,7 +630,7 @@ class LicenseController extends Controller
         $linkedProduct = $project?->products()?->first();
         $isFree = !$linkedProduct || (float) $linkedProduct->price <= 0;
 
-        if (!$isFree) {
+        if (!$isFree && $downloadType === 'paid') {
             if (empty($licenseKey)) {
                 return response()->json(['success' => false, 'message' => 'Active license key required to download paid release.'], 403);
             }
@@ -625,12 +639,15 @@ class LicenseController extends Controller
             if (method_exists($licenseManager, 'verifyLicense')) {
                 $verified = $licenseManager->verifyLicense($licenseKey, $domain);
                 if (empty($verified['valid'])) {
-                    return response()->json(['success' => false, 'message' => $verified['message'] ?? 'Invalid or expired license key.'], 403);
+                     return response()->json(['success' => false, 'message' => $verified['message'] ?? 'Invalid or expired license key.'], 403);
                 }
             }
+
+            $rawUrl = $release->download_url;
+        } else {
+            $rawUrl = $release->free_download_url ?: $release->download_url ?: '';
         }
 
-        $rawUrl = $release->download_url ?: $release->free_download_url ?: '';
         if (empty($rawUrl)) {
             return response()->json(['success' => false, 'message' => 'Release download file not configured on server.'], 404);
         }

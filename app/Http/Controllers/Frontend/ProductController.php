@@ -110,8 +110,8 @@ class ProductController extends FrontendController
             abort(404);
         }
 
-        // Only increment views for published products or when admin is viewing
-        if ($product->status === 'published' || $isAdmin) {
+        // Only increment views for published products or when admin is viewing (ignore prefetch requests)
+        if (($product->status === 'published' || $isAdmin) && !is_prefetch_request()) {
             $trackingMode = \App\Support\OptionRepository::get('product_views_tracking_mode', 'every_visit');
             if ($trackingMode === 'unique_24h') {
                 $cookieName = 'viewed_product_' . $product->id;

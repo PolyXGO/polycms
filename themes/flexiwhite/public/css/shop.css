@@ -463,3 +463,37 @@ html:not(.dark) body:not(.dark) .product-gallery-thumb {
         height: 16px !important;
     }
 }
+
+/* -------------------------------------------------------------------------- */
+/* PolyCMS FlexiWhite - Group Media (MTxFlow Connection Diagram) Dark/Light Mode   */
+/* -------------------------------------------------------------------------- */
+
+/* Light Mode overrides for hardcoded dark/white elements in the diagrams */
+.landing-group-media h2.text-white {
+    color: var(--theme-heading-color, #111827) !important;
+}
+.landing-group-media p.text-slate-300,
+.landing-group-media p.text-slate-400 {
+    color: var(--theme-body-muted-color, #4b5563) !important;
+}
+.mtx-flow-label {
+    background-color: var(--geist-background, #ffffff) !important;
+    color: var(--geist-foreground, #1f2937) !important;
+    border: 1px solid var(--color-border, #e5e7eb) !important;
+}
+
+/* Dark Mode restoration */
+html.dark .landing-group-media h2.text-white {
+    color: #ffffff !important;
+}
+html.dark .landing-group-media p.text-slate-300 {
+    color: #cbd5e1 !important; /* text-slate-300 */
+}
+html.dark .landing-group-media p.text-slate-400 {
+    color: #94a3b8 !important; /* text-slate-400 */
+}
+html.dark .mtx-flow-label {
+    background-color: rgba(15, 23, 42, 0.95) !important; /* bg-slate-900 */
+    color: #f1f5f9 !important; /* text-slate-100 */
+    border: 1px solid rgba(51, 65, 85, 0.6) !important; /* border-slate-700 */
+}

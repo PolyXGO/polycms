@@ -535,6 +535,11 @@ class AppServiceProvider extends ServiceProvider
                         if (!link || !link.href) return;
                         if (!link.href.startsWith(location.origin)) return;
 
+                        // Exclude prefetching the current active page
+                        var cleanLinkHref = link.href.split("#")[0].split("?")[0];
+                        var cleanCurrentHref = location.href.split("#")[0].split("?")[0];
+                        if (cleanLinkHref === cleanCurrentHref) return;
+
                         var href = link.getAttribute("href") || "";
                         
                         // 1. Explicit no-prefetch flags
@@ -573,56 +578,57 @@ class AppServiceProvider extends ServiceProvider
                 })();
                 </script>' . PHP_EOL;
             }
-
-            echo '<style>
-            .execution-time-badge {
-                font-size: 0.8125rem;
-                font-weight: 500;
-                color: var(--geist-accents-5, #888);
-                white-space: nowrap;
-                display: inline-flex;
-                align-items: center;
-            }
-            @media (max-width: 640px) {
+            if (show_execution_time_badge()) {
+                echo '<style>
                 .execution-time-badge {
-                    font-size: 0.54rem !important;
-                    letter-spacing: -0.02em !important;
-                    max-width: calc(100vw - 110px);
-                    overflow: hidden;
-                    text-overflow: ellipsis;
+                    font-size: 0.8125rem;
+                    font-weight: 500;
+                    color: var(--geist-accents-5, #888);
+                    white-space: nowrap;
+                    display: inline-flex;
+                    align-items: center;
                 }
-                .execution-time-badge svg {
-                    width: 0.52rem !important;
-                    height: 0.52rem !important;
-                }
-            }
-            </style>' . PHP_EOL;
-
-            echo '<script>
-            document.addEventListener("DOMContentLoaded", function() {
-                setTimeout(function() {
-                    var perf = performance.getEntriesByType("navigation")[0];
-                    if (perf) {
-                        var rawMs = 0;
-                        var start = perf.activationStart || perf.requestStart || perf.startTime || 0;
-                        if (perf.responseEnd && perf.responseEnd > 0 && perf.responseEnd > start) {
-                            rawMs = perf.responseEnd - start;
-                        } else if (perf.domInteractive && perf.domInteractive > 0 && perf.domInteractive > start) {
-                            rawMs = perf.domInteractive - start;
-                        } else {
-                            rawMs = perf.duration || 0;
-                        }
-                        var pageMs = isNaN(rawMs) || rawMs <= 0 ? "0.00" : parseFloat(rawMs).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                        document.querySelectorAll(".execution-time-badge").forEach(function(badge) {
-                            var serverMs = badge.getAttribute("data-server-ms") || "";
-                            var boltSvg = \'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 0.68rem; height: 0.68rem; display: inline-block; vertical-align: -1px; margin-right: 2px; color: var(--geist-accents-5, #888);"><path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.265-.723l1.992-7.289H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" /></svg>\';
-                            var rocketSvg = \'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 0.68rem; height: 0.68rem; display: inline-block; vertical-align: -1px; margin-right: 2px; color: var(--geist-accents-5, #888);"><path d="M10.5 1.5a.75.75 0 0 0-.75.75v1.5h-1.5a.75.75 0 0 0 0 1.5h1.5v1.5a.75.75 0 0 0 1.5 0V5.25h1.5a.75.75 0 0 0 0-1.5h-1.5V2.25a.75.75 0 0 0-.75-.75ZM6 6a.75.75 0 0 0-.75.75v3h-3a.75.75 0 0 0 0 1.5h3v3a.75.75 0 0 0 1.5 0v-3h3a.75.75 0 0 0 0-1.5h-3v-3A.75.75 0 0 0 6 6Zm12 1.5a.75.75 0 0 0-.75.75v3h-3a.75.75 0 0 0 0 1.5h3v3a.75.75 0 0 0 1.5 0v-3h3a.75.75 0 0 0 0-1.5h-3v-3A.75.75 0 0 0 18 7.5Z"/></svg>\';
-                            badge.innerHTML = boltSvg + serverMs + " ms (Server) <span style=\"opacity: 0.4; margin: 0 3px;\">|</span> " + rocketSvg + pageMs + " ms (Page)";
-                        });
+                @media (max-width: 640px) {
+                    .execution-time-badge {
+                        font-size: 0.54rem !important;
+                        letter-spacing: -0.02em !important;
+                        max-width: calc(100vw - 110px);
+                        overflow: hidden;
+                        text-overflow: ellipsis;
                     }
-                }, 10);
-            });
-            </script>' . PHP_EOL;
+                    .execution-time-badge svg {
+                        width: 0.52rem !important;
+                        height: 0.52rem !important;
+                    }
+                }
+                </style>' . PHP_EOL;
+
+                echo '<script>
+                document.addEventListener("DOMContentLoaded", function() {
+                    setTimeout(function() {
+                        var perf = performance.getEntriesByType("navigation")[0];
+                        if (perf) {
+                            var rawMs = 0;
+                            var start = perf.activationStart || perf.requestStart || perf.startTime || 0;
+                            if (perf.responseEnd && perf.responseEnd > 0 && perf.responseEnd > start) {
+                                rawMs = perf.responseEnd - start;
+                            } else if (perf.domInteractive && perf.domInteractive > 0 && perf.domInteractive > start) {
+                                rawMs = perf.domInteractive - start;
+                            } else {
+                                rawMs = perf.duration || 0;
+                            }
+                            var pageMs = isNaN(rawMs) || rawMs <= 0 ? "0.00" : parseFloat(rawMs).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                            document.querySelectorAll(".execution-time-badge").forEach(function(badge) {
+                                var serverMs = badge.getAttribute("data-server-ms") || "";
+                                var boltSvg = \'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 0.68rem; height: 0.68rem; display: inline-block; vertical-align: -1px; margin-right: 2px; color: var(--geist-accents-5, #888);"><path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.265-.723l1.992-7.289H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" /></svg>\';
+                                var rocketSvg = \'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 0.68rem; height: 0.68rem; display: inline-block; vertical-align: -1px; margin-right: 2px; color: var(--geist-accents-5, #888);"><path d="M10.5 1.5a.75.75 0 0 0-.75.75v1.5h-1.5a.75.75 0 0 0 0 1.5h1.5v1.5a.75.75 0 0 0 1.5 0V5.25h1.5a.75.75 0 0 0 0-1.5h-1.5V2.25a.75.75 0 0 0-.75-.75ZM6 6a.75.75 0 0 0-.75.75v3h-3a.75.75 0 0 0 0 1.5h3v3a.75.75 0 0 0 1.5 0v-3h3a.75.75 0 0 0 0-1.5h-3v-3A.75.75 0 0 0 6 6Zm12 1.5a.75.75 0 0 0-.75.75v3h-3a.75.75 0 0 0 0 1.5h3v3a.75.75 0 0 0 1.5 0v-3h3a.75.75 0 0 0 0-1.5h-3v-3A.75.75 0 0 0 18 7.5Z"/></svg>\';
+                                badge.innerHTML = boltSvg + serverMs + " ms (Server) <span style=\"opacity: 0.4; margin: 0 3px;\">|</span> " + rocketSvg + pageMs + " ms (Page)";
+                            });
+                        }
+                    }, 10);
+                });
+                </script>' . PHP_EOL;
+            }
         });
 
         // Auto-update menu item URLs when permalink settings change
@@ -670,6 +676,32 @@ class AppServiceProvider extends ServiceProvider
                 \App\Support\ResilientCache::put('polycms.admin_menu.version', time());
             } catch (\Throwable $e) {}
         });
+
+        // Register settings defaults via hook filter to avoid modifying core definitions
+        Hook::addFilter('settings.defaults', function (array $defaults): array {
+            $defaults['cache_optimization']['execution_time_badge_enabled'] = [
+                'key' => 'execution_time_badge_enabled',
+                'value' => 'yes',
+                'type' => 'string',
+                'label' => 'Show Execution Time Badge',
+                'description' => 'Toggle displaying the server and page rendering execution time badge on frontend themes.',
+            ];
+            return $defaults;
+        });
+
+        // Register execution time badge rendering action listeners
+        $renderBadgeCallback = function ($entity = null) {
+            if (show_execution_time_badge()) {
+                $execMs = defined('LARAVEL_START') ? number_format((microtime(true) - LARAVEL_START) * 1000, 2, '.', ',') : '0.00';
+                echo '<span class="execution-time-badge" data-server-ms="' . $execMs . '" style="font-size: 0.72rem; font-weight: 500; color: var(--geist-accents-5, #888); white-space: nowrap; display: inline-flex; align-items: center; margin-right: 0.25rem;">' . $execMs . ' ms</span>';
+            }
+        };
+
+        Hook::addAction('theme.post.single.after_title', $renderBadgeCallback);
+        Hook::addAction('theme.product.single.after_title', $renderBadgeCallback);
+        Hook::addAction('theme.listing.after_title', $renderBadgeCallback);
+        Hook::addAction('theme.wiki.single.after_title', $renderBadgeCallback);
+        Hook::addAction('project.single.after_title', $renderBadgeCallback);
     }
 
     /**

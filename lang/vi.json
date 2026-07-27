@@ -607,5 +607,8 @@
     "For secondary languages, click \"Sync current scope\" to automatically fetch new or missing translation keys from the primary English locale.": "Đối với các ngôn ngữ phụ, bấm \"Đồng bộ Scope hiện tại\" để tự động nạp các khóa bản dịch mới hoặc bị thiếu từ ngôn ngữ Tiếng Anh mặc định.",
     "Variables & Dynamic Placeholders": "Biến & Tham số động",
     "Preserve variable placeholders like :count, :name, {0}, or %s exactly as they appear in the original string. The system replaces these placeholders with dynamic data at runtime.": "Giữ nguyên các tham số biến như :count, :name, {0}, hoặc %s đúng như chuỗi gốc. Hệ thống sẽ tự động thay thế các biến này bằng dữ liệu thực tế khi chạy.",
-    "Got it, thanks!": "Đã hiểu, cảm ơn!"
+    "Got it, thanks!": "Đã hiểu, cảm ơn!",
+    "Group Media is a PRO feature. Please activate your License Key to use it.": "Group Media là tính năng PRO. Vui lòng kích hoạt License Key để sử dụng.",
+    "Parallax Visual Effect is a PRO feature. Please activate your License Key to use it.": "Hiệu ứng Parallax Visual là tính năng PRO. Vui lòng kích hoạt License Key để sử dụng.",
+    "Lucky Spin Wheel is a PRO feature. Please activate your License Key to use it.": "Vòng quay may mắn là tính năng PRO. Vui lòng kích hoạt License Key để sử dụng."
 }

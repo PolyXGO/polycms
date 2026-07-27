@@ -50,20 +50,27 @@ class CacheGenerationStore
             return $siteGen;
         }
 
-        // Check if route has an id parameter (e.g. post, product, category)
+        $routeName = $route->getName() ?? '';
         $parameters = $route->parameters();
         $entityType = 'page';
         $entityId = 'global';
 
-        if (isset($parameters['product']) || isset($parameters['id']) && str_contains($request->path(), 'product')) {
+        // Resolve entity type from route name (reliable) instead of path string (fragile)
+        if (str_starts_with($routeName, 'products.') || str_starts_with($routeName, 'product-categories.') || str_starts_with($routeName, 'product-brands.')) {
             $entityType = 'product';
-            $entityId = is_object($parameters['product'] ?? null) ? $parameters['product']->id : ($parameters['id'] ?? 'global');
-        } elseif (isset($parameters['post']) || isset($parameters['id']) && str_contains($request->path(), 'post')) {
+            $entityId = is_object($parameters['product'] ?? null) ? $parameters['product']->id : ($parameters['id'] ?? $parameters['slug'] ?? 'global');
+        } elseif (str_starts_with($routeName, 'posts.') || str_starts_with($routeName, 'post.')) {
             $entityType = 'post';
-            $entityId = is_object($parameters['post'] ?? null) ? $parameters['post']->id : ($parameters['id'] ?? 'global');
-        } elseif (isset($parameters['category']) || isset($parameters['slug']) && str_contains($request->path(), 'category')) {
+            $entityId = is_object($parameters['post'] ?? null) ? $parameters['post']->id : ($parameters['id'] ?? $parameters['slug'] ?? 'global');
+        } elseif (str_starts_with($routeName, 'categories.') || str_starts_with($routeName, 'category.') || str_starts_with($routeName, 'product-tags.')) {
             $entityType = 'category';
-            $entityId = is_object($parameters['category'] ?? null) ? $parameters['category']->id : ($parameters['slug'] ?? 'global');
+            $entityId = is_object($parameters['category'] ?? null) ? $parameters['category']->id : ($parameters['slug'] ?? $parameters['id'] ?? 'global');
+        } elseif (str_starts_with($routeName, 'projects.') || str_starts_with($routeName, 'project.')) {
+            $entityType = 'project';
+            $entityId = is_object($parameters['project'] ?? null) ? $parameters['project']->id : ($parameters['id'] ?? $parameters['slug'] ?? 'global');
+        } elseif (str_starts_with($routeName, 'pages.') || str_starts_with($routeName, 'page.')) {
+            $entityType = 'page';
+            $entityId = is_object($parameters['page'] ?? null) ? $parameters['page']->id : ($parameters['slug'] ?? $parameters['id'] ?? 'global');
         }
 
         $entityGen = $this->get($entityType, $entityId);

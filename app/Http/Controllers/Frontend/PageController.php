@@ -71,8 +71,8 @@ class PageController extends FrontendController
             }
         }
 
-        // Increment views
-        if ($post->status === 'published' || $isAdmin) {
+        // Increment views (ignore prefetch requests)
+        if (($post->status === 'published' || $isAdmin) && !is_prefetch_request()) {
             $post->increment('views');
         }
 

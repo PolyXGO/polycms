@@ -329,14 +329,7 @@
                         <h1 class="post-title" style="margin-bottom: 0.25rem;">
                             {{ $product->name }}
                         </h1>
-                        @php
-                            $execMs = defined('LARAVEL_START') ? number_format((microtime(true) - LARAVEL_START) * 1000, 2, '.', ',') : '0.00';
-                        @endphp
-                        <div style="margin-bottom: 0.75rem;">
-                            <span class="execution-time-badge" data-server-ms="{{ $execMs }}" style="font-size: 0.72rem; font-weight: 500; color: var(--geist-accents-5, #888); white-space: nowrap;">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 0.68rem; height: 0.68rem; display: inline-block; vertical-align: -1px; margin-right: 2px; color: var(--geist-accents-5, #888);"><path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.265-.723l1.992-7.289H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" /></svg>{{ $execMs }} ms
-                            </span>
-                        </div>
+                        {!! \App\Facades\Hook::doAction('theme.product.single.after_title', $product) !!}
 
                         @php
                             $hasSale = !empty($product->sale_price) && (float)$product->sale_price !== (float)$product->price;
@@ -745,6 +738,102 @@
                             @endif
                         </div>
 
+                        @php
+                            $projectHubFreeRelease = null;
+                            $freeDownloadRequiresAuth = true;
+                            $freeDownloadUrl = null;
+
+                            if (class_exists('\Modules\Polyx\ProjectHub\Models\Project')) {
+                                $projectHubProject = \Modules\Polyx\ProjectHub\Models\Project::whereHas('products', function ($q) use ($product) {
+                                    $q->where('products.id', $product->id);
+                                })->first();
+                                
+                                if ($projectHubProject) {
+                                    $projectHubFreeRelease = $projectHubProject->releases()
+                                        ->where('status', 'published')
+                                        ->whereNotNull('free_download_url')
+                                        ->where('free_download_url', '!=', '')
+                                        ->orderByDesc('released_at')
+                                        ->first();
+                                        
+                                    $freeDownloadRequiresAuth = (data_get($projectHubProject->settings, 'free_download_requires_auth', true) !== false);
+                                    
+                                    if ($projectHubFreeRelease) {
+                                        $freeDownloadUrl = $projectHubFreeRelease->free_download_url;
+                                        if ($freeDownloadUrl && (str_starts_with($freeDownloadUrl, 'http://') || str_starts_with($freeDownloadUrl, 'https://'))) {
+                                            $parsedUrl = parse_url($freeDownloadUrl);
+                                            if (isset($parsedUrl['path']) && str_starts_with($parsedUrl['path'], '/storage/')) {
+                                                $freeDownloadUrl = $parsedUrl['path'];
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        @endphp
+
+                        @if($projectHubFreeRelease)
+                             <!-- 1. Download Button (Visible when logged in OR when auth is not required) -->
+                             <div id="free-download-button-wrapper" style="width: 100%; max-width: 340px; margin-top: 12px; margin-bottom: 8px; display: {{ (!$freeDownloadRequiresAuth || auth()->check()) ? 'block' : 'none' }};">
+                                 <a id="free-download-link"
+                                    href="{{ $freeDownloadRequiresAuth ? route('projects.download-free', $projectHubFreeRelease->id) : $freeDownloadUrl }}" 
+                                    class="btn" 
+                                    style="display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 12px; font-weight: 600; font-size: 0.875rem; border-radius: 6px; background-color: #10b981; color: #fff; transition: all 0.2s ease; border: 1px solid #10b981; text-decoration: none;"
+                                    onmouseover="this.style.backgroundColor='#059669'; this.style.borderColor='#059669'"
+                                    onmouseout="this.style.backgroundColor='#10b981'; this.style.borderColor='#10b981'"
+                                    {{ !$freeDownloadRequiresAuth ? 'download' : '' }}>
+                                     <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right: 8px; display: inline-block; vertical-align: middle;">
+                                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                     </svg>
+                                     {{ _l('Download Free Version') }}
+                                 </a>
+                             </div>
+
+                             <!-- 2. Register/Login Button (Visible only when auth is required AND user is guest) -->
+                             @if($freeDownloadRequiresAuth && !auth()->check())
+                                 <div id="free-login-button-wrapper" style="width: 100%; max-width: 340px; margin-top: 12px; margin-bottom: 8px; display: block;">
+                                     <a href="{{ route('register') }}?redirect={{ urlencode(request()->fullUrl()) }}" 
+                                        class="btn btn-secondary" 
+                                        style="display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 12px; font-weight: 600; font-size: 0.875rem; border-radius: 6px; text-decoration: none; border-style: solid; border-width: 1px;">
+                                         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right: 8px; display: inline-block; vertical-align: middle;">
+                                             <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                                         </svg>
+                                         {{ _l('Register / Login to Download Free') }}
+                                     </a>
+                                 </div>
+                             @endif
+
+                             <!-- 3. Client-side authentication check script (covers both web session & Sanctum localstorage) -->
+                             <script>
+                                 (function() {
+                                     function checkClientAuth() {
+                                         const hasAuthToken = !!localStorage.getItem('auth_token');
+                                         const downloadBtn = document.getElementById('free-download-button-wrapper');
+                                         const loginBtn = document.getElementById('free-login-button-wrapper');
+                                         
+                                         if (hasAuthToken) {
+                                             if (loginBtn) loginBtn.style.display = 'none';
+                                             if (downloadBtn) {
+                                                 downloadBtn.style.display = 'block';
+                                                 // Update link for admin to bypass web middleware if not web-session authenticated
+                                                 const downloadLink = document.getElementById('free-download-link');
+                                                 if (downloadLink) {
+                                                     downloadLink.setAttribute('href', '{{ $freeDownloadUrl }}');
+                                                     downloadLink.setAttribute('download', '');
+                                                 }
+                                             }
+                                         }
+                                     }
+                                     
+                                     // Check immediately and on DOMContentLoaded
+                                     checkClientAuth();
+                                     document.addEventListener('DOMContentLoaded', checkClientAuth);
+                                     
+                                     // Listen for Inertia navigation success to re-check
+                                     document.addEventListener('inertia:success', checkClientAuth);
+                                 })();
+                             </script>
+                        @endif
+
                         <div class="single-product-meta">
                             @if(!empty($product->sku))
                                 <div class="single-product-meta-row">
@@ -865,7 +954,7 @@
                         @if($hasDescriptionTab)
                             <div id="description" class="single-product-tab-panel">
                                 <div class="prose">
-                                    {!! filter_content_lazy_images($descriptionHtml) !!}
+                                     {!! filter_content_lazy_images(\App\Facades\Hook::applyFilters('post.content.render', render_dynamic_blocks($descriptionHtml), $product)) !!}
                                 </div>
                             </div>
                         @endif

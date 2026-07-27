@@ -1466,3 +1466,25 @@ if (!function_exists('get_brand_svg')) {
         return '';
     }
 }
+
+if (!function_exists('show_execution_time_badge')) {
+    function show_execution_time_badge(): bool
+    {
+        $settings = app(\App\Services\SettingsService::class);
+        $enabledSetting = $settings->get('execution_time_badge_enabled', 'yes') === 'yes';
+
+        return (bool) \App\Facades\Hook::applyFilters('theme.show_execution_time_badge', $enabledSetting);
+    }
+}
+
+if (!function_exists('is_prefetch_request')) {
+    function is_prefetch_request(): bool
+    {
+        $request = request();
+        return $request->header('Purpose') === 'prefetch' ||
+               $request->header('Sec-Purpose') === 'prefetch' ||
+               $request->header('X-Purpose') === 'prefetch' ||
+               ($request->headers->has('X-Moz') && $request->header('X-Moz') === 'prefetch');
+    }
+}
+

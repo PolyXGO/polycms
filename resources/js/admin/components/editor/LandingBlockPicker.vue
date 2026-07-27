@@ -86,9 +86,19 @@
  v-for="block in blocks" 
  :key="block.key"
  @click="selectBlock(block)"
- class="landing-picker-card group"
+ class="landing-picker-card group relative"
  :class="{'landing-picker-card--pattern': block.isPattern }"
  >
+ <!-- Premium unlock badge -->
+ <div 
+ v-if="block.isPremium" 
+ class="absolute top-2 right-2 px-1.5 py-0.5 text-[8px] font-black tracking-wider text-purple-400 bg-purple-500/15 border border-purple-500/30 rounded uppercase z-20 hover:bg-purple-600 hover:text-white transition-all cursor-pointer"
+ title="Unlock PRO Element"
+ @click.stop="redirectToActivation"
+ >
+ Unlock PRO
+ </div>
+
  <div v-if="block.isPattern" class="landing-picker-pattern" :class="`landing-picker-pattern--${block.key}`">
  <template v-if="block.key ==='hero_section'">
  <span class="landing-picker-pattern__hero-title"></span>
@@ -333,6 +343,10 @@ const close = () => {
  show.value = false;
  presetTargetBlock.value = null;
  selectedRowPreset.value = DEFAULT_ROW_LAYOUT_PRESET;
+};
+
+const redirectToActivation = () => {
+  window.location.href = '/admin/mtelements/settings';
 };
 
 const selectBlock = (block: LandingBlockDefinition) => {

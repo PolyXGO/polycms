@@ -157,41 +157,50 @@
       </div>
 
       <!-- Individual Component Toggles -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-admin-theme-surface/70 rounded-xl border border-admin-theme-border">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 p-4 bg-admin-theme-surface/70 rounded-xl border border-admin-theme-border">
         <!-- Instant Prefetch on Hover -->
         <div>
-          <div class="flex items-center justify-between mb-1">
-            <span class="text-xs font-semibold text-admin-theme-text">{{ t('Hover Prefetch (Client)') }}</span>
+          <label class="flex items-center gap-2 mb-1 cursor-pointer">
             <input type="checkbox" :checked="configForm.instant_prefetch_enabled === 'yes'" @change="configForm.instant_prefetch_enabled = ($event.target.checked ? 'yes' : 'no'); configForm.cache_preset = 'custom'" class="rounded border-admin-theme-border text-admin-theme-primary focus:ring-admin-theme-primary">
-          </div>
+            <span class="text-xs font-semibold text-admin-theme-text">{{ t('Hover Prefetch (Client)') }}</span>
+          </label>
           <p class="text-[10px] text-admin-theme-text-muted">{{ t('Prefetches HTML when mouse hovers over link.') }}</p>
         </div>
 
         <!-- Speculation Rules API -->
         <div>
-          <div class="flex items-center justify-between mb-1">
-            <span class="text-xs font-semibold text-admin-theme-text">{{ t('Speculation Rules (Browser)') }}</span>
+          <label class="flex items-center gap-2 mb-1 cursor-pointer">
             <input type="checkbox" :checked="configForm.speculation_rules_enabled === 'yes'" @change="configForm.speculation_rules_enabled = ($event.target.checked ? 'yes' : 'no'); configForm.cache_preset = 'custom'" class="rounded border-admin-theme-border text-admin-theme-primary focus:ring-admin-theme-primary">
-          </div>
+            <span class="text-xs font-semibold text-admin-theme-text">{{ t('Speculation Rules (Browser)') }}</span>
+          </label>
           <p class="text-[10px] text-admin-theme-text-muted">{{ t('Background pre-render via Chrome API.') }}</p>
         </div>
 
         <!-- Server Response HTML Cache -->
         <div>
-          <div class="flex items-center justify-between mb-1">
-            <span class="text-xs font-semibold text-admin-theme-text">{{ t('Server HTML Cache') }}</span>
+          <label class="flex items-center gap-2 mb-1 cursor-pointer">
             <input type="checkbox" :checked="configForm.response_html_cache_enabled === 'yes'" @change="configForm.response_html_cache_enabled = ($event.target.checked ? 'yes' : 'no'); configForm.cache_preset = 'custom'" class="rounded border-admin-theme-border text-admin-theme-primary focus:ring-admin-theme-primary">
-          </div>
+            <span class="text-xs font-semibold text-admin-theme-text">{{ t('Server HTML Cache') }}</span>
+          </label>
           <p class="text-[10px] text-admin-theme-text-muted">{{ t('Caches compiled HTML responses on server.') }}</p>
         </div>
 
         <!-- Browser HTTP Asset Cache -->
         <div>
-          <div class="flex items-center justify-between mb-1">
-            <span class="text-xs font-semibold text-admin-theme-text">{{ t('Browser HTTP Cache') }}</span>
+          <label class="flex items-center gap-2 mb-1 cursor-pointer">
             <input type="checkbox" :checked="configForm.browser_http_cache_enabled === 'yes'" @change="configForm.browser_http_cache_enabled = ($event.target.checked ? 'yes' : 'no'); configForm.cache_preset = 'custom'" class="rounded border-admin-theme-border text-admin-theme-primary focus:ring-admin-theme-primary">
-          </div>
+            <span class="text-xs font-semibold text-admin-theme-text">{{ t('Browser HTTP Cache') }}</span>
+          </label>
           <p class="text-[10px] text-admin-theme-text-muted">{{ t('Stale-While-Revalidate HTTP Headers.') }}</p>
+        </div>
+
+        <!-- Show Execution Time Badge -->
+        <div>
+          <label class="flex items-center gap-2 mb-1 cursor-pointer">
+            <input type="checkbox" :checked="configForm.execution_time_badge_enabled === 'yes'" @change="configForm.execution_time_badge_enabled = ($event.target.checked ? 'yes' : 'no')" class="rounded border-admin-theme-border text-admin-theme-primary focus:ring-admin-theme-primary">
+            <span class="text-xs font-semibold text-admin-theme-text">{{ t('Execution Time Badge') }}</span>
+          </label>
+          <p class="text-[10px] text-admin-theme-text-muted">{{ t('Show server/page load time on themes.') }}</p>
         </div>
       </div>
     </div>
@@ -1166,6 +1175,7 @@ const configForm = reactive({
   database_cache_max_total_mb: 512,
   cache_integrity_mode: 'sha256',
   durable_view_counter_enabled: 'yes',
+  execution_time_badge_enabled: 'yes',
   cache_allowlist_routes: 'home, posts.index, posts.archive, post.show, posts.show, page.show, pages.show, category.show, categories.show, products.index, products.archive, product.show, products.show, product-categories.show, projects.index, projects.archive, project.show, projects.show',
   cache_blacklisted_paths: 'admin, api, cart, checkout, account, logout, login, register, password, livewire',
 });
@@ -1338,6 +1348,7 @@ async function loadConfig() {
     configForm.database_cache_max_total_mb = settings.database_cache_max_total_mb?.value !== undefined ? Number(settings.database_cache_max_total_mb.value) : 512;
     configForm.cache_integrity_mode = settings.cache_integrity_mode?.value || 'sha256';
     configForm.durable_view_counter_enabled = settings.durable_view_counter_enabled?.value || 'yes';
+    configForm.execution_time_badge_enabled = settings.execution_time_badge_enabled?.value || 'yes';
     configForm.cache_allowlist_routes = settings.cache_allowlist_routes?.value || 'home, page.show, post.show, category.show, product.show, projects.show';
     configForm.cache_blacklisted_paths = settings.cache_blacklisted_paths?.value || 'admin, api, cart, checkout, account, logout, login, register, password, livewire';
   } catch (e) {
@@ -1373,6 +1384,7 @@ async function saveConfig() {
         database_cache_max_total_mb: { value: configForm.database_cache_max_total_mb, type: 'number', group: 'cache_optimization' },
         cache_integrity_mode: { value: configForm.cache_integrity_mode, type: 'string', group: 'cache_optimization' },
         durable_view_counter_enabled: { value: configForm.durable_view_counter_enabled, type: 'string', group: 'cache_optimization' },
+        execution_time_badge_enabled: { value: configForm.execution_time_badge_enabled, type: 'string', group: 'cache_optimization' },
         cache_allowlist_routes: { value: configForm.cache_allowlist_routes, type: 'string', group: 'cache_optimization' },
         cache_blacklisted_paths: { value: configForm.cache_blacklisted_paths, type: 'string', group: 'cache_optimization' },
       }

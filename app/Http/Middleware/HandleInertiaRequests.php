@@ -2,11 +2,35 @@
 
 namespace App\Http\Middleware;
 
+use Closure;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Inertia\Support\Header;
+use Symfony\Component\HttpFoundation\Response;
 
 class HandleInertiaRequests extends Middleware
 {
+    /**
+     * Handle the incoming request.
+     *
+     * Overrides parent to merge Vary header instead of overwriting.
+     * The upstream Inertia package hardcodes set('Vary', 'X-Inertia')
+     * which destroys Vary values (e.g. Accept-Encoding) set by downstream
+     * middlewares like PageCacheMiddleware.
+     */
+    public function handle(Request $request, Closure $next): Response
+    {
+        $response = parent::handle($request, $next);
+
+        // Re-merge Vary: parent::handle() overwrites with just 'X-Inertia'
+        $existingVary = array_filter(array_map('trim', explode(',', (string) $response->headers->get('Vary', ''))));
+        if (!in_array('Accept-Encoding', $existingVary, true)) {
+            $existingVary[] = 'Accept-Encoding';
+        }
+        $response->headers->set('Vary', implode(', ', $existingVary));
+
+        return $response;
+    }
     /**
      * The root template that is loaded on the first page visit.
      *

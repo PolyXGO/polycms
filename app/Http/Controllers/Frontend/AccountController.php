@@ -253,6 +253,14 @@ class AccountController extends Controller
                         } elseif (!$release->download_url || (!str_starts_with($release->download_url, 'http://') && !str_starts_with($release->download_url, 'https://'))) {
                             $release->download_url = null;
                         }
+
+                        // Normalize free_download_url to be relative path if it points to local storage
+                        if ($release->free_download_url && (str_starts_with($release->free_download_url, 'http://') || str_starts_with($release->free_download_url, 'https://'))) {
+                            $parsedUrl = parse_url($release->free_download_url);
+                            if (isset($parsedUrl['path']) && str_starts_with($parsedUrl['path'], '/storage/')) {
+                                $release->free_download_url = $parsedUrl['path'];
+                            }
+                        }
                     }
                     
                     $product->setAttribute('releases', $releases);
@@ -317,6 +325,7 @@ class AccountController extends Controller
                 $q->where('user_id', Auth::id())
                   ->whereIn('product_id', $productIds);
             })
+            ->orderByRaw("CASE status WHEN 'active' THEN 1 WHEN 'expired' THEN 2 WHEN 'suspended' THEN 3 WHEN 'revoked' THEN 4 WHEN 'inactive' THEN 5 ELSE 6 END")
             ->first();
             
         if (!$license) {
@@ -428,7 +437,7 @@ class AccountController extends Controller
                 $q->where('user_id', \Illuminate\Support\Facades\Auth::id())
                   ->whereIn('product_id', $productIds);
             })
-            ->orderByRaw("FIELD(status, 'active', 'expired', 'suspended', 'revoked', 'inactive')")
+            ->orderByRaw("CASE status WHEN 'active' THEN 1 WHEN 'expired' THEN 2 WHEN 'suspended' THEN 3 WHEN 'revoked' THEN 4 WHEN 'inactive' THEN 5 ELSE 6 END")
             ->first();
             
         $licenseKey = $license ? $license->license_key : 'N/A';

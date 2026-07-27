@@ -58,6 +58,17 @@ class PageCacheMiddleware
                 $entry = PageCacheEntry::fromArray($cachedData);
                 if ($entry !== null && $this->integrity->validate($entry)) {
                     if ($entry->isFresh()) {
+                        // ETag conditional: return 304 if client already has this version
+                        $serverEtag = '"pc-' . substr($entry->checksum, 0, 16) . '"';
+                        $clientEtag = $request->headers->get('If-None-Match');
+                        if ($clientEtag !== null && $clientEtag === $serverEtag) {
+                            return response('', 304, [
+                                'ETag' => $serverEtag,
+                                'Cache-Control' => 'public, max-age=60, stale-while-revalidate=300',
+                                'Vary' => 'Accept-Encoding',
+                                'X-PolyCMS-Cache' => 'HIT',
+                            ]);
+                        }
                         return $this->toResponse($entry, 'HIT');
                     }
 
@@ -72,7 +83,7 @@ class PageCacheMiddleware
                                     if ($this->eligibility->allowsResponse($request, $response)) {
                                         $genAfter = $this->generationStore->getForRequest($request);
                                         if ($genBefore === $genAfter) {
-                                            $this->storeResponseInCache($cacheKey, $response);
+                                            $this->storeResponseInCache($cacheKey, $response, $request);
                                         }
                                     }
                                 } catch (\Throwable $e) {
@@ -101,12 +112,22 @@ class PageCacheMiddleware
 
             // Fencing Token Check: If generation changed during render, do NOT store stale HTML
             if ($genBefore === $genAfter) {
-                $this->storeResponseInCache($cacheKey, $response);
+                $this->storeResponseInCache($cacheKey, $response, $request);
             }
         }
 
-        // 7. Add Cache miss header
+        // 7. Add Cache miss header + browser cache for eligible MISS responses
         $response->headers->set('X-PolyCMS-Cache', 'MISS');
+
+        $browserCacheEnabled = $this->settingsService->get('browser_http_cache_enabled', 'yes') === 'yes';
+        if ($browserCacheEnabled && $this->eligibility->allowsResponse($request, $response)) {
+            $response->headers->set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+            $existingVary = array_filter(array_map('trim', explode(',', (string) $response->headers->get('Vary', ''))));
+            if (!in_array('Accept-Encoding', $existingVary, true)) {
+                $existingVary[] = 'Accept-Encoding';
+            }
+            $response->headers->set('Vary', implode(', ', $existingVary));
+        }
 
         return $response;
     }
@@ -125,10 +146,22 @@ class PageCacheMiddleware
         $response->headers->set('X-PolyCMS-Cache', $cacheState);
         $response->headers->set('X-PolyCMS-Cache-Generation', (string) $entry->contentRevision);
 
+        // ETag from stored checksum for conditional request support
+        $response->headers->set('ETag', '"pc-' . substr($entry->checksum, 0, 16) . '"');
+
         $browserCacheEnabled = $this->settingsService->get('browser_http_cache_enabled', 'yes') === 'yes';
         if ($browserCacheEnabled) {
             $response->headers->set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
         }
+
+        // Ensure Vary includes Accept-Encoding for CDN/proxy correctness.
+        // Merge with existing Vary values (e.g. X-Inertia from cached headers) rather than overwriting.
+        // Do NOT add Vary: User-Agent — it would destroy cross-device cache sharing.
+        $existingVary = array_filter(array_map('trim', explode(',', (string) $response->headers->get('Vary', ''))));
+        if (!in_array('Accept-Encoding', $existingVary, true)) {
+            $existingVary[] = 'Accept-Encoding';
+        }
+        $response->headers->set('Vary', implode(', ', $existingVary));
 
         return $response;
     }
@@ -136,7 +169,7 @@ class PageCacheMiddleware
     /**
      * Store successful response in page cache with TTL Jitter & Response Envelope.
      */
-    protected function storeResponseInCache(string $cacheKey, Response $response): void
+    protected function storeResponseInCache(string $cacheKey, Response $response, Request $request): void
     {
         try {
             $ttlSetting = $this->settingsService->get('response_cache_ttl');
@@ -148,6 +181,10 @@ class PageCacheMiddleware
             $staleTtl = $finalTtl + 300; // 5 minute stale window
 
             $body = (string) $response->getContent();
+
+            // Strip dynamic debug comments before caching to prevent stale execution times
+            $body = $this->stripDebugComments($body);
+
             $checksum = $this->integrity->checksum($body);
 
             // Extract safe headers only
@@ -159,12 +196,15 @@ class PageCacheMiddleware
                 }
             }
 
+            // Use actual generation token instead of hardcoded 'v1'
+            $contentRevision = (string) $this->generationStore->getForRequest($request);
+
             $entry = new PageCacheEntry(
                 schemaVersion: CacheEntryIntegrity::CURRENT_SCHEMA_VERSION,
                 status: $response->getStatusCode(),
                 body: $body,
                 headers: $headers,
-                contentRevision: 'v1',
+                contentRevision: $contentRevision,
                 generatedAt: time(),
                 freshUntil: time() + $finalTtl,
                 staleUntil: time() + $staleTtl,
@@ -176,5 +216,28 @@ class PageCacheMiddleware
             // Fail-open: Write failure does not break response
             report($e);
         }
+    }
+
+    /**
+     * Strip dynamic debug HTML comments and elements from response body before caching.
+     * This prevents stale execution times from being frozen into cached responses.
+     */
+    protected function stripDebugComments(string $body): string
+    {
+        // Remove <!-- Cache Driver: ... Execution Time: ... ms --> comments
+        $body = preg_replace(
+            '/\n?<!-- Cache Driver:.*?Execution Time:.*?-->\n?/s',
+            '',
+            $body
+        ) ?? $body;
+
+        // Remove <div ... id="polycms-cache-debug" ...></div> hidden debug elements
+        $body = preg_replace(
+            '/\n?<div[^>]*id="polycms-cache-debug"[^>]*><\/div>\n?/s',
+            '',
+            $body
+        ) ?? $body;
+
+        return $body;
     }
 }

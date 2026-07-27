@@ -55,12 +55,7 @@
                     {{ _l('Last updated on') }} {{ format_post_date($post->updated_at, 'M j, Y g:i A') }}
                 </span>
 
-                @php
-                    $execMs = defined('LARAVEL_START') ? number_format((microtime(true) - LARAVEL_START) * 1000, 2, '.', ',') : '0.00';
-                @endphp
-                <span class="execution-time-badge" data-server-ms="{{ $execMs }}" style="font-size: 0.75rem; font-weight: 500; color: var(--geist-accents-5, #888); white-space: nowrap; display: inline-flex; align-items: center;">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 0.72rem; height: 0.72rem; display: inline-block; vertical-align: -1px; margin-right: 3px; color: var(--geist-accents-5, #888);"><path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.265-.723l1.992-7.289H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" /></svg>{{ $execMs }} ms (Server)
-                </span>
+                {!! \App\Facades\Hook::doAction('theme.wiki.single.after_title', $post) !!}
             </div>
         </div>
 
