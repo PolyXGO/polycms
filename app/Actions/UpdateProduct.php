@@ -87,6 +87,8 @@ class UpdateProduct
                 if (trim($data['description_html']) === '' || trim($data['description_html']) === '<p></p>' || trim($data['description_html']) === '<p><br></p>') {
                     $data['description_html'] = null;
                 }
+            }
+
             // Preserve external sales & rating stats in settings if present on model
             if (isset($data['settings']) && is_array($data['settings'])) {
                 $existingSettings = $product->settings ?? [];
