@@ -1,4 +1,4 @@
-.env
+﻿.env
 /storage/*.key
 /storage/installed.lock
 /vendor
@@ -7,4 +7,3 @@
 *.log
 *.tmp
 *.bak
-.phpunit.result.cache
