@@ -40,6 +40,9 @@ class CacheEligibilityPolicy
         'projects.show.page',
         'projects.category',
         'project.show',
+        // FlexiDocs theme custom routes
+        'theme.flexidocs.show',
+        'theme.flexidocs.category',
     ];
 
     /**
@@ -236,6 +239,9 @@ class CacheEligibilityPolicy
             'projects.show.page',
             'projects.category',
             'project.show',
+            // FlexiDocs theme custom routes
+            'theme.flexidocs.show',
+            'theme.flexidocs.category',
         ])));
     }
 

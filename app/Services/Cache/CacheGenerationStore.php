@@ -59,10 +59,10 @@ class CacheGenerationStore
         if (str_starts_with($routeName, 'products.') || str_starts_with($routeName, 'product-categories.') || str_starts_with($routeName, 'product-brands.')) {
             $entityType = 'product';
             $entityId = is_object($parameters['product'] ?? null) ? $parameters['product']->id : ($parameters['id'] ?? $parameters['slug'] ?? 'global');
-        } elseif (str_starts_with($routeName, 'posts.') || str_starts_with($routeName, 'post.')) {
+        } elseif (str_starts_with($routeName, 'posts.') || str_starts_with($routeName, 'post.') || $routeName === 'theme.flexidocs.show') {
             $entityType = 'post';
-            $entityId = is_object($parameters['post'] ?? null) ? $parameters['post']->id : ($parameters['id'] ?? $parameters['slug'] ?? 'global');
-        } elseif (str_starts_with($routeName, 'categories.') || str_starts_with($routeName, 'category.') || str_starts_with($routeName, 'product-tags.')) {
+            $entityId = is_object($parameters['post'] ?? null) ? $parameters['post']->id : ($parameters['id'] ?? $parameters['slug'] ?? $parameters['postSlug'] ?? 'global');
+        } elseif (str_starts_with($routeName, 'categories.') || str_starts_with($routeName, 'category.') || str_starts_with($routeName, 'product-tags.') || $routeName === 'theme.flexidocs.category') {
             $entityType = 'category';
             $entityId = is_object($parameters['category'] ?? null) ? $parameters['category']->id : ($parameters['slug'] ?? $parameters['id'] ?? 'global');
         } elseif (str_starts_with($routeName, 'projects.') || str_starts_with($routeName, 'project.')) {

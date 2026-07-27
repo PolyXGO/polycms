@@ -1,9 +1,0 @@
-﻿.env
-/storage/*.key
-/storage/installed.lock
-/vendor
-/node_modules
-*.zip
-*.log
-*.tmp
-*.bak
