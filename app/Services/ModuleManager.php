@@ -145,6 +145,15 @@ class ModuleManager
             $this->saveEnabledModules($enabled);
         }
 
+        $manifestPath = ($module['path'] ?? '') . '/module.json';
+        if (File::exists($manifestPath)) {
+            try {
+                $manifest = json_decode(File::get($manifestPath), true) ?? [];
+                $manifest['active'] = 1;
+                File::put($manifestPath, json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+            } catch (\Throwable $e) {}
+        }
+
         $this->publishModuleAssets($moduleKey, $module);
 
         $this->clearCache();
@@ -212,6 +221,15 @@ class ModuleManager
         $enabled = array_filter($enabled, fn($key) => $key !== $moduleKey);
 
         $this->saveEnabledModules(array_values($enabled));
+
+        $manifestPath = ($module['path'] ?? '') . '/module.json';
+        if (File::exists($manifestPath)) {
+            try {
+                $manifest = json_decode(File::get($manifestPath), true) ?? [];
+                $manifest['active'] = 0;
+                File::put($manifestPath, json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+            } catch (\Throwable $e) {}
+        }
         
         $this->unpublishModuleAssets($moduleKey);
         
@@ -227,34 +245,35 @@ class ModuleManager
      */
     public function getEnabledModules(): array
     {
-        $enabled = [];
         $configPath = config_path('modules.php');
 
         if (File::exists($configPath)) {
             $config = require $configPath;
-            $enabled = $config['enabled'] ?? [];
-        }
-
-        // Auto-discover installed modules that explicitly specify "active": 1 or "enabled": true in module.json
-        if (File::exists($this->modulesPath)) {
-            foreach (File::directories($this->modulesPath) as $vendorDir) {
-                $vendor = basename($vendorDir);
-                foreach (File::directories($vendorDir) as $moduleDir) {
-                    $module = basename($moduleDir);
-                    $manifestPath = $moduleDir . '/module.json';
-                    if (File::exists($manifestPath)) {
-                        try {
-                            $manifest = json_decode(File::get($manifestPath), true);
-                            if (!empty($manifest['active']) || !empty($manifest['enabled'])) {
-                                $key = "{$vendor}.{$module}";
-                                if (!in_array($key, $enabled, true)) {
-                                    $enabled[] = $key;
+            $enabled = (array) ($config['enabled'] ?? []);
+        } else {
+            $enabled = [];
+            // Auto-discover installed modules that explicitly specify "active": 1 or "enabled": true in module.json
+            if (File::exists($this->modulesPath)) {
+                foreach (File::directories($this->modulesPath) as $vendorDir) {
+                    $vendor = basename($vendorDir);
+                    foreach (File::directories($vendorDir) as $moduleDir) {
+                        $module = basename($moduleDir);
+                        $manifestPath = $moduleDir . '/module.json';
+                        if (File::exists($manifestPath)) {
+                            try {
+                                $manifest = json_decode(File::get($manifestPath), true);
+                                if (!empty($manifest['active']) || !empty($manifest['enabled'])) {
+                                    $key = "{$vendor}.{$module}";
+                                    if (!in_array($key, $enabled, true)) {
+                                        $enabled[] = $key;
+                                    }
                                 }
-                            }
-                        } catch (\Throwable $e) {}
+                            } catch (\Throwable $e) {}
+                        }
                     }
                 }
             }
+            $this->saveEnabledModules($enabled);
         }
 
         // Apply Core Filter Hook to allow dynamic 3rd-party module registration & filtering
