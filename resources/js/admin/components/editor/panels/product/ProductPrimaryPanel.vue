@@ -653,10 +653,36 @@
       </div>
 
       <div v-for="(rule, idx) in tieredRules" :key="idx" class="flex items-center gap-2 bg-admin-theme-base p-2 rounded-lg border border-admin-theme-border/60">
-        <input v-model.number="rule.min_sales" type="number" min="0" class="w-24 px-2 py-1 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text" :placeholder="$t('Min Sales')" />
-        <span class="text-xs text-admin-theme-text-muted">-</span>
-        <input v-model.number="rule.max_sales" type="number" min="0" class="w-24 px-2 py-1 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text" :placeholder="$t('Max (Empty = ∞)')" />
-        <input v-model.number="rule.price" type="number" step="0.01" min="0" class="w-28 px-2 py-1 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text font-bold" :placeholder="$t('Tier Price ($)')" />
+        <div class="flex items-center gap-1">
+          <input v-model.number="rule.min_sales" type="number" min="0" class="w-16 px-2 py-1 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text" :placeholder="$t('Min Sales')" @input="onTieredRangeChange(rule)" />
+          <span class="text-xs text-admin-theme-text-muted">-</span>
+          <input v-model.number="rule.max_sales" type="number" min="0" class="w-16 px-2 py-1 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text" :placeholder="$t('Max')" @input="onTieredRangeChange(rule)" />
+        </div>
+        <div class="relative flex items-center">
+          <input
+            v-model.number="rule.percent"
+            type="number"
+            min="0"
+            max="100"
+            step="1"
+            class="w-16 px-2 py-1 pr-4 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text font-bold text-right"
+            :placeholder="$t('% Off')"
+            @input="onTieredPercentChange(rule)"
+          />
+          <span class="absolute right-1.5 text-xs font-bold text-admin-theme-text-muted pointer-events-none">%</span>
+        </div>
+        <div class="relative flex items-center">
+          <span class="absolute left-1.5 text-xs font-bold text-admin-theme-text-muted pointer-events-none">$</span>
+          <input
+            v-model.number="rule.price"
+            type="number"
+            step="0.01"
+            min="0"
+            class="w-24 pl-4 pr-2 py-1 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text font-bold"
+            :placeholder="$t('Price ($)')"
+            @input="onTieredPriceChange(rule)"
+          />
+        </div>
         <input v-model="rule.label" type="text" class="flex-1 px-2 py-1 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text" :placeholder="$t('Label (e.g. Early Bird)')" />
         <button type="button" class="text-xs text-red-500 hover:text-red-700 px-2 py-1" @click="tieredRules.splice(idx, 1)">✕</button>
       </div>
@@ -691,15 +717,30 @@
       </div>
 
       <div v-for="(rule, idx) in volumeRules" :key="idx" class="flex items-center gap-2 bg-admin-theme-base p-2 rounded-lg border border-admin-theme-border/60">
-        <input v-model.number="rule.min_qty" type="number" min="1" class="w-20 px-2 py-1 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text" :placeholder="$t('Min Qty')" />
-        <span class="text-xs text-admin-theme-text-muted">-</span>
-        <input v-model.number="rule.max_qty" type="number" min="1" class="w-20 px-2 py-1 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text" :placeholder="$t('Max Qty')" />
-        <select v-model="rule.discount_type" class="px-2 py-1 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text">
+        <div class="flex items-center gap-1">
+          <input v-model.number="rule.min_qty" type="number" min="1" class="w-14 px-2 py-1 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text" :placeholder="$t('Min Qty')" @input="onVolumeRangeChange(rule)" />
+          <span class="text-xs text-admin-theme-text-muted">-</span>
+          <input v-model.number="rule.max_qty" type="number" min="1" class="w-14 px-2 py-1 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text" :placeholder="$t('Max Qty')" @input="onVolumeRangeChange(rule)" />
+        </div>
+        <select v-model="rule.discount_type" class="px-2 py-1 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text" @change="onVolumeValueChange(rule)">
           <option value="percentage">% Discount</option>
           <option value="fixed_amount">$ Fixed Off</option>
           <option value="fixed_price">Set Fixed Price</option>
         </select>
-        <input v-model.number="rule.discount_value" type="number" step="0.01" min="0" class="w-24 px-2 py-1 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text font-bold" :placeholder="$t('Value')" />
+        <div class="relative flex items-center">
+          <input
+            v-model.number="rule.percent"
+            type="number"
+            min="0"
+            max="100"
+            step="1"
+            class="w-16 px-2 py-1 pr-4 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text font-bold text-right"
+            :placeholder="$t('% Off')"
+            @input="onVolumePercentChange(rule)"
+          />
+          <span class="absolute right-1 text-xs font-bold text-admin-theme-text-muted pointer-events-none">%</span>
+        </div>
+        <input v-model.number="rule.discount_value" type="number" step="0.01" min="0" class="w-20 px-2 py-1 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text font-bold" :placeholder="$t('Value')" @input="onVolumeValueChange(rule)" />
         <input v-model="rule.label" type="text" class="flex-1 px-2 py-1 text-xs border rounded bg-admin-theme-input-bg text-admin-theme-text" :placeholder="$t('Label')" />
         <button type="button" class="text-xs text-red-500 hover:text-red-700 px-2 py-1" @click="volumeRules.splice(idx, 1)">✕</button>
       </div>
@@ -1352,13 +1393,112 @@ const validateBasePriceForPreset = (): boolean => {
   return true;
 };
 
+// CommerceOffers Auto Label & Calculation Handlers
+const updateTieredLabel = (rule: any) => {
+  const basePrice = Number(form.value?.price || 0);
+  const price = Number(rule.price || 0);
+  const min = rule.min_sales ?? 0;
+  const max = rule.max_sales;
+  const rangeStr = max ? `${min}-${max}` : `${min}+`;
+
+  if (basePrice > 0) {
+    rule.percent = Math.max(0, Math.round((1 - price / basePrice) * 100));
+  }
+  const pct = rule.percent ?? 0;
+
+  if (min === 0 && max && pct > 0) {
+    rule.label = $t(`Early Bird ${pct}% Off`);
+  } else if (pct > 0) {
+    rule.label = $t(`Standard ${pct}% Off`);
+  } else if (pct === 0 && price >= basePrice && basePrice > 0) {
+    rule.label = $t('Final Full Price');
+  } else {
+    rule.label = $t(`Buy ${rangeStr}: $${price}`);
+  }
+};
+
+const onTieredPercentChange = (rule: any) => {
+  const basePrice = Number(form.value?.price || 0);
+  const pct = Math.min(100, Math.max(0, Number(rule.percent || 0)));
+  rule.percent = pct;
+  if (basePrice > 0) {
+    rule.price = Math.round(basePrice * (1 - pct / 100) * 100) / 100;
+  }
+  updateTieredLabel(rule);
+};
+
+const onTieredPriceChange = (rule: any) => {
+  const basePrice = Number(form.value?.price || 0);
+  const price = Number(rule.price || 0);
+  if (basePrice > 0) {
+    rule.percent = Math.max(0, Math.round((1 - price / basePrice) * 100));
+  }
+  updateTieredLabel(rule);
+};
+
+const onTieredRangeChange = (rule: any) => {
+  updateTieredLabel(rule);
+};
+
+const updateVolumeLabel = (rule: any) => {
+  const basePrice = Number(form.value?.price || 0);
+  const min = rule.min_qty ?? 1;
+  const max = rule.max_qty;
+  const rangeStr = max ? `${min}-${max}` : `${min}+`;
+  const val = Number(rule.discount_value || 0);
+
+  if (rule.discount_type === 'percentage') {
+    rule.percent = val;
+    rule.label = $t(`Buy ${rangeStr}: ${val}% Off`);
+  } else if (rule.discount_type === 'fixed_amount') {
+    rule.percent = basePrice > 0 ? Math.round((val / basePrice) * 100) : 0;
+    rule.label = $t(`Buy ${rangeStr}: $${val} Off`);
+  } else if (rule.discount_type === 'fixed_price') {
+    rule.percent = basePrice > 0 ? Math.round((1 - val / basePrice) * 100) : 0;
+    rule.label = $t(`Buy ${rangeStr}: $${val} Fixed`);
+  }
+};
+
+const onVolumePercentChange = (rule: any) => {
+  const basePrice = Number(form.value?.price || 0);
+  const pct = Math.min(100, Math.max(0, Number(rule.percent || 0)));
+  rule.percent = pct;
+
+  if (rule.discount_type === 'percentage') {
+    rule.discount_value = pct;
+  } else if (rule.discount_type === 'fixed_amount') {
+    rule.discount_value = Math.round(basePrice * (pct / 100) * 100) / 100;
+  } else if (rule.discount_type === 'fixed_price') {
+    rule.discount_value = Math.round(basePrice * (1 - pct / 100) * 100) / 100;
+  }
+  updateVolumeLabel(rule);
+};
+
+const onVolumeValueChange = (rule: any) => {
+  const basePrice = Number(form.value?.price || 0);
+  const val = Number(rule.discount_value || 0);
+
+  if (rule.discount_type === 'percentage') {
+    rule.percent = val;
+  } else if (rule.discount_type === 'fixed_amount') {
+    rule.percent = basePrice > 0 ? Math.round((val / basePrice) * 100) : 0;
+  } else if (rule.discount_type === 'fixed_price') {
+    rule.percent = basePrice > 0 ? Math.round((1 - val / basePrice) * 100) : 0;
+  }
+  updateVolumeLabel(rule);
+};
+
+const onVolumeRangeChange = (rule: any) => {
+  updateVolumeLabel(rule);
+};
+
 const applyTieredPreset = () => {
   if (!validateBasePriceForPreset()) return;
   const basePrice = Number(form.value.price);
   tieredRules.value = [
-    { min_sales: 0, max_sales: 10, price: Math.round(basePrice * 0.6 * 100) / 100, label: $t('Early Bird 40% Off') },
-    { min_sales: 11, max_sales: 50, price: Math.round(basePrice * 0.8 * 100) / 100, label: $t('Standard 20% Off') },
-    { min_sales: 51, max_sales: null, price: basePrice, label: $t('Final Full Price') },
+    { min_sales: 0, max_sales: 10, percent: 40, price: Math.round(basePrice * 0.6 * 100) / 100, label: $t('Early Bird 40% Off') },
+    { min_sales: 11, max_sales: 50, percent: 20, price: Math.round(basePrice * 0.8 * 100) / 100, label: $t('Standard 20% Off') },
+    { min_sales: 51, max_sales: null, percent: 0, price: basePrice, label: $t('Final Full Price') },
   ];
   showSuccess($t('3-Tier escalation pricing preset loaded successfully!'));
 };
@@ -1366,21 +1506,26 @@ const applyTieredPreset = () => {
 const applyVolumePreset = () => {
   if (!validateBasePriceForPreset()) return;
   volumeRules.value = [
-    { min_qty: 2, max_qty: 4, discount_type: 'percentage', discount_value: 10, label: $t('Buy 2-4: 10% Off') },
-    { min_qty: 5, max_qty: 9, discount_type: 'percentage', discount_value: 20, label: $t('Buy 5-9: 20% Off') },
-    { min_qty: 10, max_qty: null, discount_type: 'percentage', discount_value: 30, label: $t('Buy 10+: 30% Off') },
+    { min_qty: 2, max_qty: 4, discount_type: 'percentage', discount_value: 10, percent: 10, label: $t('Buy 2-4: 10% Off') },
+    { min_qty: 5, max_qty: 9, discount_type: 'percentage', discount_value: 20, percent: 20, label: $t('Buy 5-9: 20% Off') },
+    { min_qty: 10, max_qty: null, discount_type: 'percentage', discount_value: 30, percent: 30, label: $t('Buy 10+: 30% Off') },
   ];
   showSuccess($t('Volume bulk discount preset loaded successfully!'));
 };
 
 const addTieredRule = () => {
   if (!validateBasePriceForPreset()) return;
-  tieredRules.value.push({ min_sales: 0, max_sales: null, price: Number(form.value?.price || 0), label: '' });
+  const basePrice = Number(form.value?.price || 0);
+  const rule = { min_sales: 0, max_sales: null, percent: 0, price: basePrice, label: '' };
+  updateTieredLabel(rule);
+  tieredRules.value.push(rule);
 };
 
 const addVolumeRule = () => {
   if (!validateBasePriceForPreset()) return;
-  volumeRules.value.push({ min_qty: 1, max_qty: null, discount_type: 'percentage', discount_value: 10, label: '' });
+  const rule = { min_qty: 2, max_qty: 4, discount_type: 'percentage', discount_value: 10, percent: 10, label: '' };
+  updateVolumeLabel(rule);
+  volumeRules.value.push(rule);
 };
 
 const isOffersLoaded = ref(false);
@@ -1394,14 +1539,33 @@ const isSameRules = (a: any, b: any) => {
 };
 
 watch(
-  () => [form.value?.tiered_prices, form.value?.volume_discounts, form.value?.bundle_items],
-  ([newTiered, newVolume, newBundle]) => {
+  () => [form.value?.tiered_prices, form.value?.volume_discounts, form.value?.bundle_items, form.value?.price],
+  ([newTiered, newVolume, newBundle, newBasePrice]) => {
+    const basePrice = Number(newBasePrice || 0);
+
     if (!isSameRules(newTiered, tieredRules.value)) {
-      tieredRules.value = Array.isArray(newTiered) ? JSON.parse(JSON.stringify(newTiered)) : [];
+      const parsed = Array.isArray(newTiered) ? JSON.parse(JSON.stringify(newTiered)) : [];
+      parsed.forEach((r: any) => {
+        if (r.percent === undefined && basePrice > 0 && r.price !== undefined) {
+          r.percent = Math.max(0, Math.round((1 - Number(r.price) / basePrice) * 100));
+        }
+      });
+      tieredRules.value = parsed;
     }
+
     if (!isSameRules(newVolume, volumeRules.value)) {
-      volumeRules.value = Array.isArray(newVolume) ? JSON.parse(JSON.stringify(newVolume)) : [];
+      const parsed = Array.isArray(newVolume) ? JSON.parse(JSON.stringify(newVolume)) : [];
+      parsed.forEach((r: any) => {
+        if (r.percent === undefined) {
+          const val = Number(r.discount_value || 0);
+          if (r.discount_type === 'percentage') r.percent = val;
+          else if (r.discount_type === 'fixed_amount') r.percent = basePrice > 0 ? Math.round((val / basePrice) * 100) : 0;
+          else if (r.discount_type === 'fixed_price') r.percent = basePrice > 0 ? Math.round((1 - val / basePrice) * 100) : 0;
+        }
+      });
+      volumeRules.value = parsed;
     }
+
     if (!isSameRules(newBundle, bundleRules.value)) {
       bundleRules.value = Array.isArray(newBundle) ? JSON.parse(JSON.stringify(newBundle)) : [];
     }
