@@ -7,6 +7,10 @@ interface CartItem {
     variant_id?: number | null;
     name: string;
     price: number;
+    original_price?: number;
+    offer_discount?: number;
+    offer_label?: string;
+    offer_type?: string;
     quantity: number;
     image_url?: string;
     slug?: string;
@@ -21,11 +25,13 @@ interface CartItem {
     product_type?: string;
     // stock context
     stock_error?: string;
+    metadata?: Record<string, any>;
 }
 
 interface CartTotals {
     subtotal: number;
     discount: number;
+    total_volume_discount?: number;
     tax: number;
     total: number;
     discount_code?: string;
@@ -114,7 +120,11 @@ export const useCartStore = defineStore('cart', {
                         product_id: item.product_id,
                         variant_id: item.variant_id,
                         name: item.product?.name || item.name || '',
-                        price: parseFloat(item.unit_price || item.price || 0),
+                        price: parseFloat(item.price || item.unit_price || 0),
+                        original_price: item.original_price ? parseFloat(item.original_price) : (item.metadata?.original_price ? parseFloat(item.metadata.original_price) : undefined),
+                        offer_discount: item.offer_discount ? parseFloat(item.offer_discount) : (item.metadata?.total_offer_discount ? parseFloat(item.metadata.total_offer_discount) : undefined),
+                        offer_label: item.offer_label || item.metadata?.offer_label,
+                        offer_type: item.offer_type || item.metadata?.offer_type,
                         quantity: item.quantity,
                         image_url: item.product?.media?.[0]?.url || item.image_url,
                         slug: item.product?.slug || item.slug,
@@ -122,6 +132,7 @@ export const useCartStore = defineStore('cart', {
                         variant_label: item.variant?.display_name || item.variant_label,
                         service_id: item.service_id,
                         product_type: item.product?.type || item.product_type,
+                        metadata: item.metadata,
                     }));
                     this.totals.subtotal = parseFloat(data.subtotal || 0);
                 }
@@ -265,8 +276,14 @@ export const useCartStore = defineStore('cart', {
                         if (updated) {
                             return {
                                 ...item,
+                                price: parseFloat(updated.price !== undefined ? updated.price : item.price),
+                                original_price: updated.original_price !== undefined && updated.original_price !== null ? parseFloat(updated.original_price) : undefined,
+                                offer_discount: updated.offer_discount ? parseFloat(updated.offer_discount) : 0,
+                                offer_label: updated.offer_label || null,
+                                offer_type: updated.offer_type || null,
                                 slug: updated.slug || item.slug,
                                 permalink: updated.permalink || item.permalink,
+                                metadata: updated.metadata || item.metadata,
                             };
                         }
                         return item;
@@ -318,6 +335,10 @@ export const useCartStore = defineStore('cart', {
                     variant_id: item.variant_id,
                     name: item.name || item.product?.name || '',
                     price: parseFloat(item.price || item.unit_price || 0),
+                    original_price: item.original_price ? parseFloat(item.original_price) : (item.metadata?.original_price ? parseFloat(item.metadata.original_price) : undefined),
+                    offer_discount: item.offer_discount ? parseFloat(item.offer_discount) : (item.metadata?.total_offer_discount ? parseFloat(item.metadata.total_offer_discount) : undefined),
+                    offer_label: item.offer_label || item.metadata?.offer_label,
+                    offer_type: item.offer_type || item.metadata?.offer_type,
                     quantity: item.quantity,
                     image_url: item.image_url || item.product?.media?.[0]?.url,
                     slug: item.slug || item.product?.slug,
@@ -326,6 +347,7 @@ export const useCartStore = defineStore('cart', {
                     sku: item.sku,
                     service_id: item.service_id,
                     service_name: item.service_name,
+                    metadata: item.metadata,
                 }));
             }
             saveCartToStorage(this.items, this.couponCodes);

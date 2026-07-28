@@ -63,11 +63,25 @@ class CheckoutController extends Controller
 
         $data = $validated;
         
-        // Calculate subtotal
+        // Calculate subtotal and apply cart.totals filter for offer calculations
         $subtotal = 0;
         foreach ($items as $item) {
-            $subtotal += $item['price'] * $item['quantity'];
+            $subtotal += ($item['original_price'] ?? $item['price']) * $item['quantity'];
         }
+
+        $rawTotals = [
+            'items' => $items,
+            'subtotal' => $subtotal,
+            'discount' => 0,
+            'tax' => 0,
+            'total' => 0,
+        ];
+        $calculatedTotals = \App\Facades\Hook::applyFilters('cart.totals', $rawTotals, null);
+        if (!empty($calculatedTotals['items']) && is_array($calculatedTotals['items'])) {
+            $items = $calculatedTotals['items'];
+        }
+        $totalVolumeDiscount = (float) ($calculatedTotals['total_volume_discount'] ?? 0);
+        $subtotal = (float) ($calculatedTotals['subtotal'] ?? $subtotal);
 
         // Normalize Coupons
         $codes = $validated['coupon_codes'] ?? [];
@@ -137,7 +151,13 @@ class CheckoutController extends Controller
         // Basic Tax Calculation
         $data['tax_amount'] = 0; 
 
-        $totals = $this->orderManager->calculateTotals($items, $data);
+        $totals = [
+            'subtotal' => round($subtotal, 2),
+            'total_volume_discount' => round($totalVolumeDiscount, 2),
+            'discount' => round($totalDiscount, 2),
+            'tax' => 0,
+            'total' => max(0, round($subtotal - $totalVolumeDiscount - $totalDiscount, 2)),
+        ];
 
         // Fetch product slugs and images to refresh frontend
         $productIds = array_column($items, 'product_id');
@@ -163,7 +183,8 @@ class CheckoutController extends Controller
         }
 
         return response()->json(array_merge($totals, [
-            'items' => $items, // Return refreshed items
+            'items' => $items, // Return refreshed items with offers
+            'total_volume_discount' => $totalVolumeDiscount,
             'discount_code' => $data['discount_code'], 
             'applied_coupons' => $couponDetails, 
             'coupon_error' => $firstError
@@ -235,11 +256,25 @@ class CheckoutController extends Controller
             $data['guest_email'] = $guestEmail;
         }
 
-        // Recalculate Logic
+        // Recalculate Logic & apply cart.totals filter for offer calculations
         $subtotal = 0;
         foreach ($items as $item) {
-            $subtotal += $item['price'] * $item['quantity'];
+            $subtotal += ($item['original_price'] ?? $item['price']) * $item['quantity'];
         }
+
+        $rawTotals = [
+            'items' => $items,
+            'subtotal' => $subtotal,
+            'discount' => 0,
+            'tax' => 0,
+            'total' => 0,
+        ];
+        $calculatedTotals = \App\Facades\Hook::applyFilters('cart.totals', $rawTotals, null);
+        if (!empty($calculatedTotals['items']) && is_array($calculatedTotals['items'])) {
+            $items = $calculatedTotals['items'];
+        }
+        $totalVolumeDiscount = (float) ($calculatedTotals['total_volume_discount'] ?? 0);
+        $subtotal = (float) ($calculatedTotals['subtotal'] ?? $subtotal);
 
         $codes = $validated['coupon_codes'] ?? [];
         if (!empty($validated['coupon_code'])) {
@@ -275,9 +310,10 @@ class CheckoutController extends Controller
             }
         }
 
-        if ($totalDiscount > $subtotal) $totalDiscount = $subtotal;
+        $netSubtotal = max(0, $subtotal - $totalVolumeDiscount);
+        if ($totalDiscount > $netSubtotal) $totalDiscount = $netSubtotal;
         
-        $finalTotal = max(0, $subtotal - $totalDiscount);
+        $finalTotal = max(0, round($subtotal - $totalVolumeDiscount - $totalDiscount, 2));
         $isFreeOrder = ($finalTotal <= 0);
 
         $data['discount_amount'] = $totalDiscount;
