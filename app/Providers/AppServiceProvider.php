@@ -106,7 +106,25 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Global Fail-Safe Redis Protection Guard
+        // Global system cache & queue settings override
+        try {
+            if (file_exists(storage_path('installed.lock')) && \Illuminate\Support\Facades\Schema::hasTable('settings')) {
+                $cacheEnabled = app(\App\Services\SettingsService::class)->get('polycms_cache_enabled', 'yes');
+                if ($cacheEnabled === 'no') {
+                    config(['cache.default' => 'array']);
+                }
+
+                $queueConnectionSetting = app(\App\Services\SettingsService::class)->get('queue_connection');
+                if ($queueConnectionSetting) {
+                    config(['queue.default' => $queueConnectionSetting]);
+                }
+            }
+        } catch (\Throwable) {
+            // Silently use default during bootstrap/migration
+        }
+
+        // Global Fail-Safe Redis Protection Guard (Cache & Queue)
+        // Automatically prevents site crash when Redis PHP extension or server is missing
         try {
             $hasPhpRedis = extension_loaded('redis') || class_exists(\Redis::class);
             $hasPredis = class_exists(\Predis\Client::class);
@@ -115,30 +133,33 @@ class AppServiceProvider extends ServiceProvider
                 if (config('cache.default') === 'redis') {
                     config(['cache.default' => 'file']);
                 }
-            } else if (config('cache.default') === 'redis') {
-                try {
-                    if ($hasPhpRedis) {
-                        \Illuminate\Support\Facades\Redis::connection()->ping();
+                if (config('queue.default') === 'redis') {
+                    config(['queue.default' => 'sync']);
+                }
+            } else {
+                if (config('cache.default') === 'redis' || config('queue.default') === 'redis') {
+                    try {
+                        if ($hasPhpRedis) {
+                            \Illuminate\Support\Facades\Redis::connection()->ping();
+                        }
+                    } catch (\Throwable $ex) {
+                        if (config('cache.default') === 'redis') {
+                            config(['cache.default' => 'file']);
+                        }
+                        if (config('queue.default') === 'redis') {
+                            config(['queue.default' => 'sync']);
+                        }
+                        \Illuminate\Support\Facades\Log::warning('PolyCMS Redis Guard: Cannot connect to Redis server. Automatically falling back to File Cache / Sync Queue: ' . $ex->getMessage());
                     }
-                } catch (\Throwable $ex) {
-                    config(['cache.default' => 'file']);
-                    \Illuminate\Support\Facades\Log::warning('PolyCMS Redis Guard: Cannot connect to Redis server. Automatically falling back to File Cache: ' . $ex->getMessage());
                 }
             }
         } catch (\Throwable $e) {
-            config(['cache.default' => 'file']);
-        }
-
-        // Global system cache toggle (Bật/Tắt tính năng Cache trên toàn hệ thống)
-        try {
-            if (file_exists(storage_path('installed.lock')) && \Illuminate\Support\Facades\Schema::hasTable('settings')) {
-                $cacheEnabled = app(\App\Services\SettingsService::class)->get('polycms_cache_enabled', 'yes');
-                if ($cacheEnabled === 'no') {
-                    config(['cache.default' => 'array']);
-                }
+            if (config('cache.default') === 'redis') {
+                config(['cache.default' => 'file']);
             }
-        } catch (\Throwable) {
-            // Silently use default during bootstrap/migration
+            if (config('queue.default') === 'redis') {
+                config(['queue.default' => 'sync']);
+            }
         }
 
         // Ensure cache directories are writable — prevents site crash

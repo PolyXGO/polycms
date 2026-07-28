@@ -678,27 +678,30 @@ const emit = defineEmits<{
 }>();
 
 const transformShortcodesToHtml = (content: string): string => {
- if (!content || typeof content !=='string') return content;
- 
- // Regex to match [landing_block type="..." data="..."]
- // Pattern: \[landing_block\s+([^\]]+)\]
- const shortcodeRegex = /\[landing_block\s+([^\]]+)\]/g;
- 
- return content.replace(shortcodeRegex, (match, attrsString) => {
- const attrs: Record<string, string> = {};
- // Match key="value"
- const attrRegex = /(\w+)\s*=\s*"([^"]*)"/g;
- let m;
- while ((m = attrRegex.exec(attrsString)) !== null) {
- attrs[m[1]] = m[2];
- }
+  if (!content || typeof content !== 'string') return content;
+  
+  // Unescape &quot; HTML entities back to real double quotes for clean HTML attribute parsing
+  let cleaned = content.replace(/&quot;/g, '"');
+  
+  // Regex to match [landing_block type="..." data="..."]
+  // Pattern: \[landing_block\s+([^\]]+)\]
+  const shortcodeRegex = /\[landing_block\s+([^\]]+)\]/g;
+  
+  return cleaned.replace(shortcodeRegex, (match, attrsString) => {
+    const attrs: Record<string, string> = {};
+    // Match key="value"
+    const attrRegex = /(\w+)\s*=\s*"([^"]*)"/g;
+    let m;
+    while ((m = attrRegex.exec(attrsString)) !== null) {
+      attrs[m[1]] = m[2];
+    }
 
- const type = attrs.type ||'unknown';
- delete attrs.type;
- 
- // Wrap in div that LandingBlock extension expects
- return `<div data-type="landing-block" data-block-type="${type}" data-block-data='${JSON.stringify(attrs)}'></div>`;
- });
+    const type = attrs.type || 'unknown';
+    delete attrs.type;
+    
+    // Wrap in div that LandingBlock extension expects
+    return `<div data-type="landing-block" data-block-type="${type}" data-block-data='${JSON.stringify(attrs)}'></div>`;
+  });
 };
 
 const { t } = useTranslation();

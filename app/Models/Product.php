@@ -327,7 +327,25 @@ class Product extends Model
      */
     public function getEffectivePriceAttribute(): float
     {
-        $price = $this->sale_price ?? $this->price;
+        $regularPrice = (float) ($this->price ?? 0);
+        $salePrice = (float) ($this->sale_price ?? 0);
+
+        // Multilingual Price Fallback: if regular price is 0 on a translation, fallback to main product's price
+        if ($regularPrice <= 0 && !empty($this->translation_group_id)) {
+            $mainProduct = static::where('translation_group_id', $this->translation_group_id)
+                ->where('id', '!=', $this->id)
+                ->where('price', '>', 0)
+                ->first();
+            if ($mainProduct) {
+                $regularPrice = (float) $mainProduct->price;
+                if ($salePrice <= 0 && (float) ($mainProduct->sale_price ?? 0) > 0) {
+                    $salePrice = (float) $mainProduct->sale_price;
+                }
+            }
+        }
+
+        $price = ($salePrice > 0 && $salePrice < $regularPrice) ? $salePrice : $regularPrice;
+
         return (float) \App\Facades\Hook::applyFilters('product.effective_price', $price, $this);
     }
 

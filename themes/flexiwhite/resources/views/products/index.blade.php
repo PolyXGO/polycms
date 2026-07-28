@@ -122,9 +122,12 @@
                             <div class="listing-card__price-row" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; border-top: 1px solid var(--border-color, #e2e8f0); padding-top: 10px; margin-top: 10px; flex-wrap: wrap;">
                                 <div class="listing-card__price" style="margin: 0;">
                                     @php
-                                        $hasSale = !empty($product->sale_price) && (float)$product->sale_price !== (float)$product->price;
-                                        $currentPrice = $hasSale ? min((float)$product->price, (float)$product->sale_price) : (float)$product->price;
-                                        $strikePrice = $hasSale ? max((float)$product->price, (float)$product->sale_price) : null;
+                                        $effectivePrice = (float) $product->effective_price;
+                                        $regularPrice = (float) $product->price;
+                                        $salePrice = (float) ($product->sale_price ?? 0);
+                                        $hasSale = ($salePrice > 0 && $salePrice < $regularPrice);
+                                        $currentPrice = $effectivePrice > 0 ? $effectivePrice : $regularPrice;
+                                        $strikePrice = $hasSale ? $regularPrice : null;
                                     @endphp
                                     @if($hasSale)
                                         <span class="price-current">{{ format_currency($currentPrice) }}</span>

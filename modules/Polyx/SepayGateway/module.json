@@ -1,6 +1,6 @@
 {
     "name": "SepayGateway",
-  "module": "SepayGateway",
+    "module": "SepayGateway",
     "slug": "sepay-gateway",
     "version": "1.0.0",
     "description": "SePay QR Code Payment Gateway for Vietnamese banks",
@@ -18,6 +18,6 @@
     },
     "settings": {
         "admin_menu": false
-    }
+    },
+    "active": 1
 }
-

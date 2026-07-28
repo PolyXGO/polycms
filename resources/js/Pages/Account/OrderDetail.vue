@@ -167,6 +167,15 @@
                                             </a>
                                             <span v-else class="font-medium block text-gray-900 dark:text-gray-100">{{ item.name }}</span>
                                             
+                                            <!-- Applied Offer Badge -->
+                                            <div v-if="item.metadata?.offer_label" class="mt-1 inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded border border-emerald-100 dark:border-emerald-900/50 text-xs font-semibold">
+                                                <i class="fas fa-tag text-[10px]"></i>
+                                                <span>{{ item.metadata.offer_label }}</span>
+                                                <span v-if="item.metadata?.total_offer_discount" class="text-[11px] opacity-80">
+                                                    (Saved {{ formatCurrency(item.metadata.total_offer_discount, props.order?.currency) }})
+                                                </span>
+                                            </div>
+
                                             <!-- Bidirectional links to Subscription / License -->
                                             <div v-if="item.metadata?.subscription_id || item.metadata?.license_id" class="mt-1 flex flex-wrap gap-2 text-xs">
                                                 <Link v-if="item.metadata?.subscription_id" :href="route('account.subscriptions', { search: props.order?.code })" class="inline-flex items-center gap-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded border border-indigo-100 dark:border-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors font-medium">

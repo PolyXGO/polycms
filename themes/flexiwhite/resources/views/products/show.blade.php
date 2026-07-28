@@ -332,19 +332,27 @@
                         {!! \App\Facades\Hook::doAction('theme.product.single.after_title', $product) !!}
 
                         @php
-                            $hasSale = !empty($product->sale_price) && (float)$product->sale_price !== (float)$product->price;
-                            $currentPrice = $hasSale ? min((float)$product->price, (float)$product->sale_price) : (float)$product->price;
-                            $strikePrice = $hasSale ? max((float)$product->price, (float)$product->sale_price) : null;
+                            $effectivePrice = (float) $product->effective_price;
+                            $regularPrice = (float) $product->price;
+                            $salePrice = (float) ($product->sale_price ?? 0);
+                            $hasSale = ($salePrice > 0 && $salePrice < $regularPrice) || ($effectivePrice > 0 && $effectivePrice < $regularPrice);
+                            $currentPrice = ($effectivePrice > 0 && $effectivePrice < $regularPrice) ? $effectivePrice : (($salePrice > 0 && $salePrice < $regularPrice) ? $salePrice : $regularPrice);
+                            $strikePrice = $hasSale ? $regularPrice : null;
                         @endphp
                         <div class="single-product-price-row">
                             @if($hasSale)
                                 <span class="product-price single-product-price">{{ format_currency($currentPrice) }}</span>
                                 <span class="product-price-strike single-product-price-strike">{{ format_currency($strikePrice) }}</span>
-                                <span class="badge">{{ _l('Sale') }}</span>
+                                @if($effectivePrice > 0 && $effectivePrice < $regularPrice)
+                                    <span class="badge" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; font-weight: 700;">{{ _l('Offer Deal') }}</span>
+                                @else
+                                    <span class="badge">{{ _l('Sale') }}</span>
+                                @endif
                             @else
                                 <span class="product-price single-product-price">{{ format_currency($currentPrice) }}</span>
                             @endif
                         </div>
+                        {!! \App\Facades\Hook::doAction('theme.product.single.after_price', $product) !!}
 
                         <div class="single-product-stats-row">
                             {!! \App\Facades\Hook::doAction('theme.product.single.meta', $product) !!}
@@ -457,7 +465,8 @@
                             @if($product->services->count() === 1)
                                 @php 
                                     $service = $product->services->first();
-                                    $servicePrice = (float) ($service->price ?? $product->price);
+                                    $rawServicePrice = (float) ($service->price ?? $product->price);
+                                    $servicePrice = ($effectivePrice > 0 && $effectivePrice < $rawServicePrice) ? $effectivePrice : $rawServicePrice;
                                 @endphp
                                 <input type="radio" name="selected_service_id" value="{{ $service->id }}" 
                                        data-price="{{ $servicePrice }}" 
@@ -484,7 +493,10 @@
                                     <label class="block text-sm font-bold text-gray-700 dark:text-zinc-300 mb-2" style="font-weight: 700; margin-bottom: 8px; display: block;">{{ _l('Choose a Package / Plan:') }}</label>
                                     <div style="display: flex; flex-direction: column; gap: 10px;">
                                         @foreach($product->services as $index => $service)
-                                            @php $servicePrice = (float) ($service->price ?? $product->price); @endphp
+                                            @php 
+                                                $rawServicePrice = (float) ($service->price ?? $product->price);
+                                                $servicePrice = ($effectivePrice > 0 && $effectivePrice < $rawServicePrice) ? $effectivePrice : $rawServicePrice;
+                                            @endphp
                                             <label class="package-option-label" style="display: flex; align-items: flex-start; gap: 12px; padding: 14px; border: 2px solid {{ $index === 0 ? 'var(--primary-color, #3b82f6)' : '#e2e8f0' }}; border-radius: 12px; cursor: pointer; transition: all 0.2s; background: {{ $index === 0 ? 'rgba(59, 130, 246, 0.03)' : '#fff' }}; position: relative;">
                                                 <input type="radio" name="selected_service_id" value="{{ $service->id }}" 
                                                        data-price="{{ $servicePrice }}" 
@@ -497,7 +509,12 @@
                                                 <div style="flex: 1;">
                                                     <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 4px;">
                                                         <span style="font-weight: 700; color: #0f172a;" class="package-name-text">{{ $service->name }}</span>
-                                                        <span style="font-weight: 800; color: var(--primary-color, #3b82f6); font-size: 1.1rem;">{{ format_currency($servicePrice) }}</span>
+                                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                                            <span style="font-weight: 800; color: var(--primary-color, #3b82f6); font-size: 1.1rem;">{{ format_currency($servicePrice) }}</span>
+                                                            @if($servicePrice < $rawServicePrice)
+                                                                <span style="text-decoration: line-through; color: #94a3b8; font-size: 0.85rem; font-weight: 500;">{{ format_currency($rawServicePrice) }}</span>
+                                                            @endif
+                                                        </div>
                                                     </div>
                                                     <div style="font-size: 0.8rem; color: #64748b;">
                                                         @if($service->access_type === 'subscription')

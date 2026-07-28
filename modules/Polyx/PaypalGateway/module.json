@@ -1,6 +1,6 @@
 {
     "name": "PayPal Gateway",
-  "module": "PaypalGateway",
+    "module": "PaypalGateway",
     "slug": "paypal-gateway",
     "version": "1.0.0",
     "description": "PayPal payment gateway integration for PolyCMS e-commerce",
@@ -18,6 +18,6 @@
     },
     "settings": {
         "admin_menu": false
-    }
+    },
+    "active": 1
 }
-

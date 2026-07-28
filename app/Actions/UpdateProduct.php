@@ -76,17 +76,16 @@ class UpdateProduct
                 unset($data['service_config']);
             }
 
-            // Handle description: Always prefer rendering from description_blocks if available
-            // This ensures backend renderers (Blade, hooks) are used for complex blocks
-            if (!empty($data['description_blocks'])) {
-                // ContentRenderer now handles the context
+            // Handle description: prefer description_html if provided, fallback to description_blocks
+            if (isset($data['description_html']) && $data['description_html'] !== null && trim($data['description_html']) !== '') {
+                $trimmed = trim($data['description_html']);
+                if ($trimmed === '<p></p>' || $trimmed === '<p><br></p>') {
+                    $data['description_html'] = null;
+                }
+            } elseif (!empty($data['description_blocks'])) {
                 $data['description_html'] = $this->renderer
                     ->setContext(['product' => $product])
                     ->render($data['description_blocks']);
-            } elseif (isset($data['description_html'])) {
-                if (trim($data['description_html']) === '' || trim($data['description_html']) === '<p></p>' || trim($data['description_html']) === '<p><br></p>') {
-                    $data['description_html'] = null;
-                }
             }
 
             // Preserve external sales & rating stats in settings if present on model
@@ -100,6 +99,24 @@ class UpdateProduct
             }
 
             $product->update($this->filterPersistableProductData($data));
+
+            // Sync pricing (price, sale_price, cost_price) across all translations in group
+            if (!empty($product->translation_group_id)) {
+                Product::where('translation_group_id', $product->translation_group_id)
+                    ->where('id', '!=', $product->id)
+                    ->update([
+                        'price' => $product->price,
+                        'sale_price' => $product->sale_price,
+                        'cost_price' => $product->cost_price,
+                    ]);
+            }
+
+            // Sync CommerceOffers rules if provided in payload
+            if (class_exists(\Modules\Polyx\CommerceOffers\Services\CommerceOffersService::class)) {
+                try {
+                    app(\Modules\Polyx\CommerceOffers\Services\CommerceOffersService::class)->syncOffersForProduct($product, $data);
+                } catch (\Throwable $e) {}
+            }
 
             // Sync categories if provided
             if ($categoryIds !== null) {
@@ -138,7 +155,7 @@ class UpdateProduct
             }
 
             // Fire action hook
-            Hook::doAction('product.saved', $product);
+            Hook::doAction('product.saved', $product, $data);
 
             $relations = ['user', 'categories', 'tags', 'media', 'services', 'variants', 'variantAttributes.values'];
             if (Schema::hasTable('product_brand')) {

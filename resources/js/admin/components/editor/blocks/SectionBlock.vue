@@ -179,7 +179,7 @@
  ></div>
  </div>
 
- <button @click="openBlockPicker" class="section-block-add">
+ <button type="button" @click.prevent="openBlockPicker" class="section-block-add">
  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v12m6-6H6" /></svg>
  <span>Add Block to Section</span>
  </button>

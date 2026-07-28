@@ -53,19 +53,21 @@ class TopbarMenuController extends Controller
         
         $routeHash = md5((string) ($routeName ?? ''));
         $paramsHash = md5((string) json_encode($normalizedRouteParams));
+        $topbarVersion = Cache::get('polycms.topbar_menu.version', 1);
         $cacheKey = sprintf(
-            'polycms.topbar_menu.v1.user.%d.locale.%s.route.%s.params.%s',
+            'polycms.topbar_menu.v2.user.%d.locale.%s.route.%s.params.%s.v%s',
             $userId,
             $locale,
             $routeHash,
-            $paramsHash
+            $paramsHash,
+            $topbarVersion
         );
 
         if ($request->boolean('refresh')) {
             Cache::forget($cacheKey);
         }
 
-        $menuItems = Cache::remember($cacheKey, now()->addSeconds(30), fn (): array => $topbarService->getMenuItems($request));
+        $menuItems = Cache::remember($cacheKey, now()->addMinutes(5), fn (): array => $topbarService->getMenuItems($request));
 
         return response()->json([
             'data' => $menuItems,

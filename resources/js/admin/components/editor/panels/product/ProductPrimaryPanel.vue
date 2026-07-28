@@ -630,13 +630,22 @@
         <label class="text-xs font-bold uppercase tracking-wider text-admin-theme-text-secondary">
           1. {{ $t('Tiered Escalation Pricing (By Sales Count)') }}
         </label>
-        <button
-          type="button"
-          class="text-xs text-emerald-600 hover:text-emerald-500 font-medium"
-          @click="addTieredRule"
-        >
-          + {{ $t('Add Sales Tier') }}
-        </button>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="px-2 py-0.5 text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 rounded font-medium hover:bg-emerald-200 transition-colors"
+            @click="applyTieredPreset"
+          >
+            ⚡ {{ $t('Apply 3-Tier Escalation Preset') }}
+          </button>
+          <button
+            type="button"
+            class="text-xs text-emerald-600 hover:text-emerald-500 font-medium"
+            @click="addTieredRule"
+          >
+            + {{ $t('Add Sales Tier') }}
+          </button>
+        </div>
       </div>
 
       <div v-if="tieredRules.length === 0" class="text-xs text-admin-theme-text-muted italic">
@@ -659,13 +668,22 @@
         <label class="text-xs font-bold uppercase tracking-wider text-admin-theme-text-secondary">
           2. {{ $t('Volume Bulk Quantity Discounts') }}
         </label>
-        <button
-          type="button"
-          class="text-xs text-emerald-600 hover:text-emerald-500 font-medium"
-          @click="addVolumeRule"
-        >
-          + {{ $t('Add Volume Tier') }}
-        </button>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="px-2 py-0.5 text-xs bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300 rounded font-medium hover:bg-indigo-200 transition-colors"
+            @click="applyVolumePreset"
+          >
+            ⚡ {{ $t('Apply Volume Discount Preset') }}
+          </button>
+          <button
+            type="button"
+            class="text-xs text-emerald-600 hover:text-emerald-500 font-medium"
+            @click="addVolumeRule"
+          >
+            + {{ $t('Add Volume Tier') }}
+          </button>
+        </div>
       </div>
 
       <div v-if="volumeRules.length === 0" class="text-xs text-admin-theme-text-muted italic">
@@ -1325,42 +1343,124 @@ const tieredRules = ref<any[]>([]);
 const volumeRules = ref<any[]>([]);
 const bundleRules = ref<any[]>([]);
 
+const validateBasePriceForPreset = (): boolean => {
+  const price = Number(form.value?.price || 0);
+  if (!price || price <= 0) {
+    showError($t('Product baseline price must be greater than $0 before applying preset rules.'));
+    return false;
+  }
+  return true;
+};
+
+const applyTieredPreset = () => {
+  if (!validateBasePriceForPreset()) return;
+  const basePrice = Number(form.value.price);
+  tieredRules.value = [
+    { min_sales: 0, max_sales: 10, price: Math.round(basePrice * 0.6 * 100) / 100, label: $t('Early Bird 40% Off') },
+    { min_sales: 11, max_sales: 50, price: Math.round(basePrice * 0.8 * 100) / 100, label: $t('Standard 20% Off') },
+    { min_sales: 51, max_sales: null, price: basePrice, label: $t('Final Full Price') },
+  ];
+  showSuccess($t('3-Tier escalation pricing preset loaded successfully!'));
+};
+
+const applyVolumePreset = () => {
+  if (!validateBasePriceForPreset()) return;
+  volumeRules.value = [
+    { min_qty: 2, max_qty: 4, discount_type: 'percentage', discount_value: 10, label: $t('Buy 2-4: 10% Off') },
+    { min_qty: 5, max_qty: 9, discount_type: 'percentage', discount_value: 20, label: $t('Buy 5-9: 20% Off') },
+    { min_qty: 10, max_qty: null, discount_type: 'percentage', discount_value: 30, label: $t('Buy 10+: 30% Off') },
+  ];
+  showSuccess($t('Volume bulk discount preset loaded successfully!'));
+};
+
 const addTieredRule = () => {
-  tieredRules.value.push({ min_sales: 0, max_sales: null, price: form.value?.price || 0, label: '' });
+  if (!validateBasePriceForPreset()) return;
+  tieredRules.value.push({ min_sales: 0, max_sales: null, price: Number(form.value?.price || 0), label: '' });
 };
 
 const addVolumeRule = () => {
+  if (!validateBasePriceForPreset()) return;
   volumeRules.value.push({ min_qty: 1, max_qty: null, discount_type: 'percentage', discount_value: 10, label: '' });
 };
 
-const fetchCommerceOffers = async () => {
-  const productId = form.value?.id;
-  if (!productId) return;
+const isOffersLoaded = ref(false);
+
+const isSameRules = (a: any, b: any) => {
   try {
-    const res = await axios.get(`/api/v1/commerce-offers/products/${productId}`);
-    if (res.data?.success) {
-      tieredRules.value = res.data.data?.tiered_prices || [];
-      volumeRules.value = res.data.data?.volume_discounts || [];
-      bundleRules.value = res.data.data?.bundle_items || [];
-    }
-  } catch (e) {}
+    return JSON.stringify(a || []) === JSON.stringify(b || []);
+  } catch (e) {
+    return false;
+  }
 };
 
+watch(
+  () => [form.value?.tiered_prices, form.value?.volume_discounts, form.value?.bundle_items],
+  ([newTiered, newVolume, newBundle]) => {
+    if (!isSameRules(newTiered, tieredRules.value)) {
+      tieredRules.value = Array.isArray(newTiered) ? JSON.parse(JSON.stringify(newTiered)) : [];
+    }
+    if (!isSameRules(newVolume, volumeRules.value)) {
+      volumeRules.value = Array.isArray(newVolume) ? JSON.parse(JSON.stringify(newVolume)) : [];
+    }
+    if (!isSameRules(newBundle, bundleRules.value)) {
+      bundleRules.value = Array.isArray(newBundle) ? JSON.parse(JSON.stringify(newBundle)) : [];
+    }
+    isOffersLoaded.value = true;
+  },
+  { immediate: true, deep: true }
+);
+
+watch(
+  [tieredRules, volumeRules, bundleRules],
+  ([newTiered, newVolume, newBundle]) => {
+    if (form.value && isOffersLoaded.value) {
+      let changed = false;
+      if (!isSameRules(newTiered, form.value.tiered_prices)) {
+        form.value.tiered_prices = newTiered;
+        changed = true;
+      }
+      if (!isSameRules(newVolume, form.value.volume_discounts)) {
+        form.value.volume_discounts = newVolume;
+        changed = true;
+      }
+      if (!isSameRules(newBundle, form.value.bundle_items)) {
+        form.value.bundle_items = newBundle;
+        changed = true;
+      }
+      if (changed) {
+        form.value._sync_commerce_offers = true;
+        form.value._force_clear_offers = true;
+      }
+    }
+  },
+  { deep: true }
+);
+
 const saveCommerceOffers = async () => {
-  const productId = form.value?.id;
-  if (!productId) {
-    showError($t('Please save the product first before configuring offer rules.'));
-    return;
-  }
   isSavingOffers.value = true;
   try {
-    const res = await axios.post(`/api/v1/commerce-offers/products/${productId}`, {
-      tiered_prices: tieredRules.value,
-      volume_discounts: volumeRules.value,
-      bundle_items: bundleRules.value,
-    });
-    if (res.data?.success) {
-      showSuccess(res.data.message || $t('Offer rules saved successfully.'));
+    // 1. Sync current offer rules onto form.value
+    if (form.value) {
+      form.value.tiered_prices = tieredRules.value;
+      form.value.volume_discounts = volumeRules.value;
+      form.value.bundle_items = bundleRules.value;
+      form.value._sync_commerce_offers = true;
+      form.value._force_clear_offers = true;
+    }
+
+    // 2. Trigger unified Save All via helpers.save
+    if (typeof helpers?.save === 'function') {
+      await helpers.save();
+    } else {
+      const productId = form.value?.id;
+      if (productId) {
+        await axios.post(`/api/v1/commerce-offers/products/${productId}`, {
+          tiered_prices: tieredRules.value,
+          volume_discounts: volumeRules.value,
+          bundle_items: bundleRules.value,
+          _force_clear_offers: true,
+        });
+      }
     }
   } catch (e: any) {
     showError(e.response?.data?.message || $t('Failed to save offer rules.'));
@@ -1369,12 +1469,6 @@ const saveCommerceOffers = async () => {
   }
 };
 
-onMounted(() => {
-  fetchCommerceOffers();
-});
-watch(() => form.value?.id, () => {
-  fetchCommerceOffers();
-});
 </script>
 
 <style scoped>

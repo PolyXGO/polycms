@@ -102,7 +102,7 @@
   <div class="settings-divider"></div>
 
   <!-- Clear All -->
-  <button class="setting-item w-full text-left" @click="clearAllCaches" :disabled="clearing">
+  <button type="button" class="setting-item w-full text-left" @click="clearAllCaches" :disabled="clearing">
   <div class="setting-label">
   <span class="setting-title" style="color: #ef4444;">{{ $t('Clear All Caches') }}</span>
   <span class="setting-desc">{{ $t('Flush all registered cache stores') }}</span>
@@ -113,7 +113,7 @@
   </button>
 
   <!-- Fix Permissions -->
-  <button class="setting-item w-full text-left" @click="fixPermissions" :disabled="fixing">
+  <button type="button" class="setting-item w-full text-left" @click="fixPermissions" :disabled="fixing">
   <div class="setting-label">
   <span class="setting-title">{{ $t('Fix Permissions') }}</span>
   <span class="setting-desc">{{ $t('Repair cache & storage folder permissions') }}</span>
@@ -130,7 +130,7 @@
     {{ $t('Clear Individual Caches') }}
   </div>
   
-  <button class="setting-item w-full text-left cursor-pointer" @click="clearSpecificCache('page_current')" :disabled="clearingSpecific === 'page_current'">
+  <button type="button" class="setting-item w-full text-left cursor-pointer" @click="clearSpecificCache('page_current')" :disabled="clearingSpecific === 'page_current'">
   <div class="setting-label">
   <span class="setting-title" style="color: #3b82f6;">{{ $t('Clear Current Page Cache') }}</span>
   <span class="setting-desc">{{ $t('Purge page cache for current URL & bump generation') }}</span>
@@ -140,7 +140,7 @@
   </div>
   </button>
 
-  <button class="setting-item w-full text-left" @click="clearSpecificCache('application')" :disabled="clearingSpecific === 'application'">
+  <button type="button" class="setting-item w-full text-left" @click="clearSpecificCache('application')" :disabled="clearingSpecific === 'application'">
   <div class="setting-label">
   <span class="setting-title">{{ $t('Application Cache') }}</span>
   <span class="setting-desc">{{ $t('Clear main key-value cache') }}</span>
@@ -150,7 +150,7 @@
   </div>
   </button>
 
-  <button class="setting-item w-full text-left" @click="clearSpecificCache('view')" :disabled="clearingSpecific === 'view'">
+  <button type="button" class="setting-item w-full text-left" @click="clearSpecificCache('view')" :disabled="clearingSpecific === 'view'">
   <div class="setting-label">
   <span class="setting-title">{{ $t('View Cache') }}</span>
   <span class="setting-desc">{{ $t('Clear compiled blade templates') }}</span>
@@ -160,7 +160,7 @@
   </div>
   </button>
 
-  <button class="setting-item w-full text-left" @click="clearSpecificCache('config')" :disabled="clearingSpecific === 'config'">
+  <button type="button" class="setting-item w-full text-left" @click="clearSpecificCache('config')" :disabled="clearingSpecific === 'config'">
   <div class="setting-label">
   <span class="setting-title">{{ $t('Config Cache') }}</span>
   <span class="setting-desc">{{ $t('Clear cached app configurations') }}</span>
@@ -170,7 +170,7 @@
   </div>
   </button>
 
-  <button class="setting-item w-full text-left" @click="clearSpecificCache('route')" :disabled="clearingSpecific === 'route'">
+  <button type="button" class="setting-item w-full text-left" @click="clearSpecificCache('route')" :disabled="clearingSpecific === 'route'">
   <div class="setting-label">
   <span class="setting-title">{{ $t('Route Cache') }}</span>
   <span class="setting-desc">{{ $t('Clear cached route registrations') }}</span>

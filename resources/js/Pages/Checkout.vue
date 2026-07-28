@@ -377,10 +377,19 @@ const finishPayment = () => {
                                                 <a :href="item.permalink || (item.slug ? `/products/${item.slug}` : '#')" target="_blank" :class="{'hover:text-gray-600 dark:hover:text-gray-300': item.slug || item.permalink}">
                                                     {{ item.name }}
                                                 </a>
+                                                <!-- Applied Offer Badge -->
+                                                <div v-if="item.offer_label || item.metadata?.offer_label" class="mt-1 inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded text-xs font-semibold">
+                                                    <span>🏷️ {{ item.offer_label || item.metadata?.offer_label }}</span>
+                                                </div>
                                             </h3>
-                                            <p class="ml-4">{{ formatCurrency(item.price) }}</p>
+                                            <div class="ml-4 text-right">
+                                                <p class="font-bold">{{ formatCurrency(item.price * item.quantity) }}</p>
+                                                <p v-if="(item.original_price && item.original_price > item.price) || (item.metadata?.original_price && item.metadata.original_price > item.price)" class="text-xs line-through text-gray-400 dark:text-gray-500">
+                                                    {{ formatCurrency((item.original_price || item.metadata.original_price) * item.quantity) }}
+                                                </p>
+                                            </div>
                                         </div>
-                                         <div class="flex items-end justify-between text-sm">
+                                         <div class="flex items-end justify-between text-sm mt-1">
                                             <p class="text-gray-500 dark:text-gray-400">Qty {{ item.quantity }}</p>
                                             <button type="button" @click="cart.removeItem(index)" class="font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">Remove</button>
                                         </div>
@@ -461,7 +470,11 @@ const finishPayment = () => {
                                 <p>Subtotal</p>
                                 <p>{{ formatCurrency(cart.totals.subtotal || 0) }}</p>
                             </div>
-                             <div  v-if="Number(cart.totals.discount || 0) > 0" class="flex items-center justify-between text-base font-medium text-green-600">
+                             <div v-if="Number(cart.totals.total_volume_discount || 0) > 0" class="flex items-center justify-between text-base font-medium text-emerald-600 dark:text-emerald-400">
+                                <p>Volume Discount</p>
+                                <p>-{{ formatCurrency(cart.totals.total_volume_discount || 0) }}</p>
+                            </div>
+                             <div v-if="Number(cart.totals.discount || 0) > 0" class="flex items-center justify-between text-base font-medium text-green-600">
                                 <p>Discount</p>
                                 <p>-{{ formatCurrency(cart.totals.discount || 0) }}</p>
                             </div>

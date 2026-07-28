@@ -1022,9 +1022,9 @@ if (!function_exists('render_dynamic_blocks')) {
 
         if (!str_contains($content, 'pricing-matrix-') && 
             !str_contains($content, 'data-type="landing-block"') && 
+            !str_contains($content, 'data-block-type="') &&
             !str_contains($content, '<!-- landing_block:') &&
             !str_contains($content, 'data-youtube-gallery') &&
-            !str_contains($content, 'data-block-type="xem_tuoi_xong_dat"') &&
             !str_contains($content, 'language-mermaid') &&
             !str_contains($content, 'data-type="modal-link"') &&
             !str_contains($content, 'data-modal-link') &&
@@ -1060,9 +1060,10 @@ if (!function_exists('render_dynamic_blocks')) {
             }
         }, $content);
 
-        // 2. Handle modern placeholder format: <div data-type="landing-block" data-block-type="pricing_matrix" ...>
-        $content = preg_replace_callback('/<div[^>]*data-type="landing-block"[^>]*data-block-type="pricing_matrix"[^>]*>.*?<\/div>/s', function ($matches) {
+        // 2. Handle modern placeholder format: <div data-block-type="[BLOCK_TYPE]" ...>
+        $content = preg_replace_callback('/<div[^>]*data-block-type="([a-zA-Z0-9_\-]+)"[^>]*>.*?<\/div>/s', function ($matches) {
             $html = $matches[0];
+            $blockType = $matches[1];
             
             // Extract block data JSON
             $data = [];
@@ -1072,27 +1073,33 @@ if (!function_exists('render_dynamic_blocks')) {
                 $data = json_decode(htmlspecialchars_decode($dataMatch[1]), true) ?? [];
             }
             
-            // We need a product.
-            $product = request()->route('product'); 
-            if (!$product) {
-                // Try choosing any referenced product id if available in data
-                if (isset($data['product_id'])) {
+            $hookName = 'content.render.landing_block.' . $blockType;
+            $context = [];
+            $product = request()->route('product');
+            if ($product) {
+                $context['product'] = $product;
+            }
+
+            $rendered = \App\Facades\Hook::applyFilters($hookName, '', $data, $context);
+            if (!empty($rendered)) {
+                return $rendered;
+            }
+
+            if ($blockType === 'pricing_matrix') {
+                if (!$product && isset($data['product_id'])) {
                     $product = \App\Models\Product::find($data['product_id']);
                 }
+                if ($product) {
+                    try {
+                        return view('theme::blocks.pricing', [
+                            'product' => $product,
+                            'attrs' => $data
+                        ])->render();
+                    } catch (\Exception $e) {}
+                }
             }
-            
-            if (!$product) {
-                return $html;
-            }
-            
-            try {
-                return view('theme::blocks.pricing', [
-                    'product' => $product,
-                    'attrs' => $data
-                ])->render();
-            } catch (\Exception $e) {
-                return $html;
-            }
+
+            return $html;
         }, $content);
 
         // 3. Handle Xem Tuoi Xong Dat Block

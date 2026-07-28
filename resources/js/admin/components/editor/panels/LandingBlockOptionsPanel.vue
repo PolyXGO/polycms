@@ -59,7 +59,7 @@
                 <button type="button" @click="handlePasteOptions" :disabled="!landingStore.copiedBlockData" class="panel-action-btn p-1 text-admin-theme-text-muted hover:text-admin-theme-primary rounded transition-colors disabled:opacity-40" title="Paste Options">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                 </button>
-                <button @click="clearChildSelection" class="panel-close-btn p-1 text-admin-theme-text-muted hover:text-admin-theme-text rounded transition-colors" title="Close Child Options">
+                <button type="button" @click="clearChildSelection" class="panel-close-btn p-1 text-admin-theme-text-muted hover:text-admin-theme-text rounded transition-colors" title="Close Child Options">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>

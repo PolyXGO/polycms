@@ -251,7 +251,13 @@ class CartService
                 if ($service) {
                     $serviceName = $service->name;
                     if ($service->price !== null && $service->price > 0) {
-                        $price = (float) $service->price;
+                        $rawServicePrice = (float) $service->price;
+                        $effectiveProductPrice = (float) $product->effective_price;
+                        if ($effectiveProductPrice > 0 && $effectiveProductPrice < $rawServicePrice) {
+                            $price = $effectiveProductPrice;
+                        } else {
+                            $price = $rawServicePrice;
+                        }
                     }
                 }
             }
@@ -286,6 +292,7 @@ class CartService
                 'frontend_url' => $product->frontend_url,
                 'service_id' => $serviceId,
                 'service_name' => $serviceName,
+                'metadata' => $item->metadata ?? [],
             ];
         }
 

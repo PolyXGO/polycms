@@ -12,8 +12,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Execute the InitPresetsCommand which seeds the default presets safely
-        Artisan::call('polycms:init-presets');
+        try {
+            Artisan::call('db:seed', [
+                '--class' => 'Database\\Seeders\\CorePresetSeeder',
+                '--force' => true,
+            ]);
+        } catch (\Throwable $e) {}
     }
 
     /**

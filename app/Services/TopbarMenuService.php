@@ -28,8 +28,13 @@ class TopbarMenuService
     {
         $request = $request ?? request();
 
+        // Check request user first (works for Sanctum and all auth guards)
+        $user = $request->user();
+
         // Check web session auth (for frontend)
-        $user = Auth::guard('web')->user();
+        if (!$user) {
+            $user = Auth::guard('web')->user();
+        }
 
         // If no web session, check Sanctum token (for API/admin)
         if (!$user) {

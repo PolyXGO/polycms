@@ -216,6 +216,10 @@ const defaultFormState = (type?: string) => ({
  _attributes: [] as any[],
  locale: 'en',
  translations: [] as any[],
+ tiered_prices: [] as any[],
+ volume_discounts: [] as any[],
+ bundle_items: [] as any[],
+ _sync_commerce_offers: false,
 });
 
 const form = ref(defaultFormState());
@@ -447,6 +451,10 @@ const loadProduct = async () => {
  _variants: product.variants || [],
  locale: product.locale || 'en',
  translations: product.translations || [],
+ tiered_prices: product.tiered_prices || [],
+ volume_discounts: product.volume_discounts || [],
+ bundle_items: product.bundle_items || [],
+ _sync_commerce_offers: true,
  });
 
   if (!form.value.settings.purchase_options || typeof form.value.settings.purchase_options !== 'object' || Array.isArray(form.value.settings.purchase_options)) {
@@ -680,6 +688,11 @@ const saveProduct = async () => {
  service_config: form.value.service_config,
  variants: (form.value as any)._variants || [],
  attributes: (form.value as any)._attributes || [],
+ tiered_prices: (form.value as any).tiered_prices || [],
+ volume_discounts: (form.value as any).volume_discounts || [],
+ bundle_items: (form.value as any).bundle_items || [],
+ _sync_commerce_offers: (form.value as any)._sync_commerce_offers ?? true,
+ _force_clear_offers: (form.value as any)._force_clear_offers ?? false,
  };
 
  if (isEdit.value) {

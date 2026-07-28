@@ -1,6 +1,6 @@
 <template>
   <Teleport to="body">
-    <div v-if="show" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+    <div v-if="show" class="fixed inset-0 z-[10000000] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div class="bg-admin-theme-surface rounded-2xl shadow-2xl w-full max-w-6xl h-[85vh] max-h-[900px] overflow-hidden flex flex-col">
         <header class="p-4 border-b border-admin-theme-border flex items-center justify-between gap-4">
           <div class="flex items-center gap-3">
@@ -36,10 +36,12 @@
           type="text"
           placeholder="Search elements..."
           class="w-full bg-admin-theme-base/50 border border-admin-theme-border rounded-xl pl-9 pr-8 py-1.5 text-sm placeholder-admin-theme-text-muted text-admin-theme-text focus:outline-none focus:border-admin-theme-primary focus:ring-1 focus:ring-admin-theme-primary transition-all"
+          @keydown.enter.prevent
         />
         <button 
           v-if="searchQuery" 
-          @click="searchQuery = ''" 
+          type="button"
+          @click.prevent="searchQuery = ''" 
           class="absolute inset-y-0 right-0 pr-3 flex items-center text-admin-theme-text-muted hover:text-admin-theme-text"
         >
           <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -49,7 +51,7 @@
       </div>
 
       <!-- Close Button -->
-      <button @click="close" class="text-admin-theme-text-muted hover:text-admin-theme-text p-1 rounded-lg hover:bg-admin-theme-base/50 transition-colors flex items-center justify-center">
+      <button type="button" @click.prevent="close" class="text-admin-theme-text-muted hover:text-admin-theme-text p-1 rounded-lg hover:bg-admin-theme-base/50 transition-colors flex items-center justify-center">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>
@@ -72,7 +74,7 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
       <p class="text-sm font-semibold">No elements found matching "{{ searchQuery }}"</p>
-      <button @click="searchQuery = ''" class="mt-2 text-xs text-admin-theme-primary hover:underline">Clear search query</button>
+      <button type="button" @click.prevent="searchQuery = ''" class="mt-2 text-xs text-admin-theme-primary hover:underline">Clear search query</button>
     </div>
     
     <div v-else v-for="(blocks, category) in categorizedBlocks" :key="category" class="mb-10 last:mb-0">
@@ -83,9 +85,10 @@
  
  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
  <button 
+ type="button"
  v-for="block in blocks" 
  :key="block.key"
- @click="selectBlock(block)"
+ @click.prevent="selectBlock(block)"
  class="landing-picker-card group relative"
  :class="{'landing-picker-card--pattern': block.isPattern }"
  >
@@ -287,7 +290,20 @@ const categorizedBlocks = computed(() => {
       .filter(([, blocks]) => blocks.length > 0)
   );
 });
-const reusablePartItems = computed<ReusablePartSelection[]>(() => reusableParts.value.map(buildReusablePartSelection));
+const allReusablePartItems = computed<ReusablePartSelection[]>(() => reusableParts.value.map(buildReusablePartSelection));
+
+const reusablePartItems = computed<ReusablePartSelection[]>(() => {
+  const query = searchQuery.value.trim().toLowerCase();
+  if (!query) {
+    return allReusablePartItems.value;
+  }
+  return allReusablePartItems.value.filter((part) => {
+    const name = part.asset.name.toLowerCase();
+    const cat = part.asset.category ? part.asset.category.toLowerCase() : '';
+    const slug = part.asset.slug ? part.asset.slug.toLowerCase() : '';
+    return name.includes(query) || cat.includes(query) || slug.includes(query);
+  });
+});
 
 const extractAssetItems = (responseData: any): LayoutAssetSummary[] => {
  if (Array.isArray(responseData?.data)) {

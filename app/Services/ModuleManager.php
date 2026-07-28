@@ -88,6 +88,12 @@ class ModuleManager
                 }
             }
 
+            if (class_exists(\App\Facades\Hook::class)) {
+                try {
+                    $modules = (array) \App\Facades\Hook::applyFilters('modules.discovered', $modules);
+                } catch (\Throwable $e) {}
+            }
+
             return $modules;
         });
     }
@@ -221,16 +227,44 @@ class ModuleManager
      */
     public function getEnabledModules(): array
     {
-        // In a real implementation, you might store this in database
-        // For now, using config file
+        $enabled = [];
         $configPath = config_path('modules.php');
 
         if (File::exists($configPath)) {
             $config = require $configPath;
-            return $config['enabled'] ?? [];
+            $enabled = $config['enabled'] ?? [];
         }
 
-        return [];
+        // Auto-discover installed modules that explicitly specify "active": 1 or "enabled": true in module.json
+        if (File::exists($this->modulesPath)) {
+            foreach (File::directories($this->modulesPath) as $vendorDir) {
+                $vendor = basename($vendorDir);
+                foreach (File::directories($vendorDir) as $moduleDir) {
+                    $module = basename($moduleDir);
+                    $manifestPath = $moduleDir . '/module.json';
+                    if (File::exists($manifestPath)) {
+                        try {
+                            $manifest = json_decode(File::get($manifestPath), true);
+                            if (!empty($manifest['active']) || !empty($manifest['enabled'])) {
+                                $key = "{$vendor}.{$module}";
+                                if (!in_array($key, $enabled, true)) {
+                                    $enabled[] = $key;
+                                }
+                            }
+                        } catch (\Throwable $e) {}
+                    }
+                }
+            }
+        }
+
+        // Apply Core Filter Hook to allow dynamic 3rd-party module registration & filtering
+        if (class_exists(\App\Facades\Hook::class)) {
+            try {
+                $enabled = (array) \App\Facades\Hook::applyFilters('modules.enabled', $enabled);
+            } catch (\Throwable $e) {}
+        }
+
+        return array_values(array_unique($enabled));
     }
 
     /**
@@ -280,6 +314,9 @@ class ModuleManager
             if (File::exists($module['path'] . '/dist/admin.js') && !File::exists($publicDistPath)) {
                 $this->publishModuleAssets($moduleKey, $module);
             }
+
+            // Self-healing: auto-run pending module migrations on boot/activation
+            $this->runModuleMigrations($moduleKey, $module);
 
             $providerClass = $module['provider'];
 
@@ -383,7 +420,10 @@ class ModuleManager
         ResilientCache::forget($this->discoveredCacheKey);
         ResilientCache::forget($this->cacheKey);
         
-        // Invalidate admin menu cache by bumping its global version
-        ResilientCache::put('polycms.admin_menu.version', time());
+        $newVersion = time();
+        ResilientCache::put('polycms.admin_menu.version', $newVersion);
+        \Illuminate\Support\Facades\Cache::put('polycms.admin_menu.version', $newVersion);
+        \Illuminate\Support\Facades\Cache::put('polycms.topbar_menu.version', $newVersion);
+        ResilientCache::put('polycms.topbar_menu.version', $newVersion);
     }
 }

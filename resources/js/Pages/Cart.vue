@@ -78,10 +78,22 @@
                                                 <p v-if="item.sku" class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                                                     SKU: {{ item.sku }}
                                                 </p>
+                                                <!-- Applied Offer Badge -->
+                                                <div v-if="item.offer_label || item.metadata?.offer_label" class="mt-1.5 inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 text-xs font-semibold">
+                                                    <span>🏷️ {{ item.offer_label || item.metadata?.offer_label }}</span>
+                                                    <span v-if="item.offer_discount || item.metadata?.total_offer_discount" class="text-[11px] opacity-80">
+                                                        (-{{ formatCurrency(item.offer_discount || item.metadata?.total_offer_discount) }})
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <p class="text-lg font-medium text-gray-900 dark:text-white">
-                                                {{ formatCurrency(item.price * item.quantity) }}
-                                            </p>
+                                            <div class="text-right">
+                                                <p class="text-lg font-bold text-gray-900 dark:text-white">
+                                                    {{ formatCurrency(item.price * item.quantity) }}
+                                                </p>
+                                                <p v-if="(item.original_price && item.original_price > item.price) || (item.metadata?.original_price && item.metadata.original_price > item.price)" class="text-xs line-through text-gray-400 dark:text-gray-500">
+                                                    {{ formatCurrency((item.original_price || item.metadata.original_price) * item.quantity) }}
+                                                </p>
+                                            </div>
                                         </div>
 
                                         <!-- Stock Error -->
@@ -199,6 +211,10 @@
                             <div class="flex justify-between text-base text-gray-600 dark:text-gray-400">
                                 <span>Subtotal</span>
                                 <span>{{ formatCurrency(cart.totals.subtotal || 0) }}</span>
+                            </div>
+                            <div v-if="Number(cart.totals.total_volume_discount || 0) > 0" class="flex justify-between text-base text-emerald-600 dark:text-emerald-400 font-medium">
+                                <span>Volume Discount</span>
+                                <span>-{{ formatCurrency(cart.totals.total_volume_discount || 0) }}</span>
                             </div>
                             <div v-if="Number(cart.totals.discount || 0) > 0" class="flex justify-between text-base text-green-600 dark:text-green-400">
                                 <span>Discount</span>
