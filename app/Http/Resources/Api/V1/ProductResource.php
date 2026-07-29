@@ -134,8 +134,8 @@ class ProductResource extends JsonResource
                     ];
                 });
             }),
-            'created_at' => $this->created_at->toISOString(),
-            'updated_at' => $this->updated_at->toISOString(),
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
             'locale' => $this->locale,
             'translation_group_id' => $this->translation_group_id,
             'translations' => $this->getTranslationsList(),

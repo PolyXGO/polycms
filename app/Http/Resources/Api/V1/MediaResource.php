@@ -38,8 +38,8 @@ class MediaResource extends JsonResource
                 'id' => $this->user->id ?? null,
                 'name' => $this->user->name ?? null,
             ] ?? null,
-            'created_at' => $this->created_at->toISOString(),
-            'updated_at' => $this->updated_at->toISOString(),
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

@@ -179,11 +179,16 @@ class TagController extends Controller
         $targetLocale = $validated['locale'];
 
         // Check if already exists
-        $existing = Tag::where('translation_group_id', $tag->translation_group_id)
+        $existing = Tag::withoutGlobalScopes()
+            ->withTrashed()
+            ->where('translation_group_id', $tag->translation_group_id)
             ->where('locale', $targetLocale)
             ->first();
 
         if ($existing) {
+            if ($existing->trashed()) {
+                $existing->restore();
+            }
             return $this->successResponse(new TagResource($existing), 'Translation already exists');
         }
 
@@ -193,10 +198,10 @@ class TagController extends Controller
         $newTag->name = $tag->name . ' (' . strtoupper($targetLocale) . ')';
         $newTag->slug = $tag->slug;
 
-        // Ensure slug is unique for this type and locale
+        // Ensure slug is unique for this type and locale (checking trashed records)
         $baseSlug = $newTag->slug;
         $counter = 1;
-        while (Tag::where('type', $newTag->type)->where('slug', $newTag->slug)->where('locale', $targetLocale)->exists()) {
+        while (Tag::withoutGlobalScopes()->withTrashed()->where('type', $newTag->type)->where('slug', $newTag->slug)->where('locale', $targetLocale)->exists()) {
             $newTag->slug = $baseSlug . '-' . $counter;
             $counter++;
         }

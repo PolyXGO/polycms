@@ -64,8 +64,12 @@ class PostController extends Controller
         }
 
         // Status filter
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+        if ($request->has('status') && !empty($request->status)) {
+            if ($request->status === 'trash') {
+                $query->onlyTrashed();
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
         // Type filter
@@ -96,11 +100,32 @@ class PostController extends Controller
         $perPage = $this->resolvePerPage($request);
         $posts = $query->paginate($perPage);
 
-        if ($isCompact) {
-            return PostListResource::collection($posts)->response();
+        // Calculate status counts for UI tabs
+        $baseCountQuery = Post::query();
+        if ($request->has('type') && !empty($request->type)) {
+            $baseCountQuery->where('type', $request->type);
+        }
+        if ($request->has('locale') && !empty($request->locale)) {
+            $baseCountQuery->where('locale', $request->locale);
         }
 
-        return (new PostCollection($posts))->response();
+        $typeVal = $request->get('type');
+        $counts = [
+            'all' => (clone $baseCountQuery)->count(),
+            'published' => (clone $baseCountQuery)->where('status', 'published')->count(),
+            'draft' => (clone $baseCountQuery)->where('status', 'draft')->count(),
+            'archived' => (clone $baseCountQuery)->where('status', 'archived')->count(),
+            'trash' => Post::onlyTrashed()
+                ->when($typeVal, fn($q) => $q->where('type', $typeVal))
+                ->when($request->locale, fn($q) => $q->where('locale', $request->locale))
+                ->count(),
+        ];
+
+        if ($isCompact) {
+            return PostListResource::collection($posts)->additional(['meta' => ['counts' => $counts]])->response();
+        }
+
+        return (new PostCollection($posts))->additional(['meta' => ['counts' => $counts]])->response();
     }
 
     /**
@@ -176,6 +201,87 @@ class PostController extends Controller
         return $this->successResponse(null, 'Post deleted successfully', 204);
     }
 
+    /**
+     * Restore a soft-deleted post
+     */
+    public function restore(int $id): JsonResponse
+    {
+        $post = Post::withoutGlobalScopes()->withTrashed()->findOrFail($id);
+        $this->authorize('update', $post);
+        $post->restore();
+
+        return $this->successResponse(new PostResource($post), 'Post restored successfully');
+    }
+
+    /**
+     * Permanently delete a post
+     */
+    public function forceDelete(int $id): JsonResponse
+    {
+        $post = Post::withoutGlobalScopes()->withTrashed()->findOrFail($id);
+        $this->authorize('delete', $post);
+        $post->forceDelete();
+
+        return $this->successResponse(null, 'Post permanently deleted', 204);
+    }
+
+    /**
+     * Bulk soft delete posts (Move to trash)
+     */
+    public function bulkDestroy(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $posts = Post::whereIn('id', $validated['ids'])->get();
+        foreach ($posts as $post) {
+            $this->authorize('delete', $post);
+            $post->delete();
+        }
+
+        return $this->successResponse(null, 'Posts moved to trash successfully');
+    }
+
+    /**
+     * Bulk restore posts
+     */
+    public function bulkRestore(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $posts = Post::withoutGlobalScopes()->withTrashed()->whereIn('id', $validated['ids'])->get();
+        foreach ($posts as $post) {
+            $this->authorize('update', $post);
+            $post->restore();
+        }
+
+        return $this->successResponse(null, 'Posts restored successfully');
+    }
+
+    /**
+     * Bulk permanently delete posts
+     */
+    public function bulkForceDelete(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $posts = Post::withoutGlobalScopes()->withTrashed()->whereIn('id', $validated['ids'])->get();
+        foreach ($posts as $post) {
+            $this->authorize('delete', $post);
+            $post->forceDelete();
+        }
+
+        return $this->successResponse(null, 'Posts permanently deleted successfully');
+    }
+
     protected function canUseLayoutTemplates(): bool
     {
         return Schema::hasTable('layout_assets')
@@ -205,11 +311,16 @@ class PostController extends Controller
         $targetLocale = $validated['locale'];
 
         // Check if already exists
-        $existing = Post::where('translation_group_id', $post->translation_group_id)
+        $existing = Post::withoutGlobalScopes()
+            ->withTrashed()
+            ->where('translation_group_id', $post->translation_group_id)
             ->where('locale', $targetLocale)
             ->first();
 
         if ($existing) {
+            if ($existing->trashed()) {
+                $existing->restore();
+            }
             return $this->successResponse(new PostResource($existing), 'Translation already exists');
         }
 
@@ -221,10 +332,10 @@ class PostController extends Controller
         $newPost->title = $post->title . ' (' . strtoupper($targetLocale) . ')';
         $newPost->slug = $post->slug;
         
-        // Ensure slug is unique for this locale
+        // Ensure slug is unique for this locale (checking trashed records as well)
         $baseSlug = $newPost->slug;
         $counter = 1;
-        while (Post::where('slug', $newPost->slug)->where('locale', $targetLocale)->exists()) {
+        while (Post::withoutGlobalScopes()->withTrashed()->where('slug', $newPost->slug)->where('locale', $targetLocale)->exists()) {
             $newPost->slug = $baseSlug . '-' . $counter;
             $counter++;
         }

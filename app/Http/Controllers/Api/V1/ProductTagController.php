@@ -171,11 +171,16 @@ class ProductTagController extends Controller
         $targetLocale = $validated['locale'];
 
         // Check if already exists
-        $existing = ProductTag::where('translation_group_id', $productTag->translation_group_id)
+        $existing = ProductTag::withoutGlobalScopes()
+            ->withTrashed()
+            ->where('translation_group_id', $productTag->translation_group_id)
             ->where('locale', $targetLocale)
             ->first();
 
         if ($existing) {
+            if ($existing->trashed()) {
+                $existing->restore();
+            }
             return $this->successResponse(new ProductTagResource($existing), 'Translation already exists');
         }
 
@@ -185,10 +190,10 @@ class ProductTagController extends Controller
         $newTag->name = $productTag->name . ' (' . strtoupper($targetLocale) . ')';
         $newTag->slug = $productTag->slug;
 
-        // Ensure slug is unique for this locale
+        // Ensure slug is unique for this locale (checking trashed records)
         $baseSlug = $newTag->slug;
         $counter = 1;
-        while (ProductTag::where('slug', $newTag->slug)->where('locale', $targetLocale)->exists()) {
+        while (ProductTag::withoutGlobalScopes()->withTrashed()->where('slug', $newTag->slug)->where('locale', $targetLocale)->exists()) {
             $newTag->slug = $baseSlug . '-' . $counter;
             $counter++;
         }

@@ -218,11 +218,16 @@ class ProductBrandController extends Controller
         $targetLocale = $validated['locale'];
 
         // Check if already exists
-        $existing = ProductBrand::where('translation_group_id', $productBrand->translation_group_id)
+        $existing = ProductBrand::withoutGlobalScopes()
+            ->withTrashed()
+            ->where('translation_group_id', $productBrand->translation_group_id)
             ->where('locale', $targetLocale)
             ->first();
 
         if ($existing) {
+            if ($existing->trashed()) {
+                $existing->restore();
+            }
             return $this->successResponse(new ProductBrandResource($existing), 'Translation already exists');
         }
 
@@ -232,10 +237,10 @@ class ProductBrandController extends Controller
         $newBrand->name = $productBrand->name . ' (' . strtoupper($targetLocale) . ')';
         $newBrand->slug = $productBrand->slug;
 
-        // Ensure slug is unique for this locale
+        // Ensure slug is unique for this locale (checking trashed records)
         $baseSlug = $newBrand->slug;
         $counter = 1;
-        while (ProductBrand::where('slug', $newBrand->slug)->where('locale', $targetLocale)->exists()) {
+        while (ProductBrand::withoutGlobalScopes()->withTrashed()->where('slug', $newBrand->slug)->where('locale', $targetLocale)->exists()) {
             $newBrand->slug = $baseSlug . '-' . $counter;
             $counter++;
         }

@@ -296,12 +296,17 @@ class CategoryController extends Controller
 
         $targetLocale = $validated['locale'];
 
-        // Check if already exists
-        $existing = Category::where('translation_group_id', $category->translation_group_id)
+        // Check if already exists (including trashed)
+        $existing = Category::withoutGlobalScopes()
+            ->withTrashed()
+            ->where('translation_group_id', $category->translation_group_id)
             ->where('locale', $targetLocale)
             ->first();
 
         if ($existing) {
+            if ($existing->trashed()) {
+                $existing->restore();
+            }
             return $this->successResponse(new CategoryResource($existing), 'Translation already exists');
         }
 
@@ -319,10 +324,10 @@ class CategoryController extends Controller
             }
         }
 
-        // Ensure slug is unique for this type and locale
+        // Ensure slug is unique for this type and locale (checking trashed records)
         $baseSlug = $newCategory->slug;
         $counter = 1;
-        while (Category::where('type', $newCategory->type)->where('slug', $newCategory->slug)->where('locale', $targetLocale)->exists()) {
+        while (Category::withoutGlobalScopes()->withTrashed()->where('type', $newCategory->type)->where('slug', $newCategory->slug)->where('locale', $targetLocale)->exists()) {
             $newCategory->slug = $baseSlug . '-' . $counter;
             $counter++;
         }

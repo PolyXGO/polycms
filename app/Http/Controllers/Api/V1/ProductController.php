@@ -44,7 +44,7 @@ class ProductController extends Controller
                 'updated_at',
             ]);
             $query->with(['media' => function ($q) {
-                $q->select(['media.id', 'media.name', 'media.file_name', 'media.disk', 'media.path', 'media.mime_type', 'media.size', 'media.type', 'media.alt_text', 'media.metadata']);
+                $q->select(['media.id', 'media.name', 'media.file_name', 'media.disk', 'media.path', 'media.mime_type', 'media.size', 'media.type', 'media.alt_text', 'media.metadata', 'media.created_at', 'media.updated_at']);
             }]);
         } else {
             $query->with([
@@ -52,7 +52,7 @@ class ProductController extends Controller
                 'categories:id,name,slug',
                 'tags:id,name,slug',
                 'media' => function ($q) {
-                    $q->select(['media.id', 'media.name', 'media.file_name', 'media.disk', 'media.path', 'media.mime_type', 'media.size', 'media.type', 'media.alt_text', 'media.metadata']);
+                    $q->select(['media.id', 'media.name', 'media.file_name', 'media.disk', 'media.path', 'media.mime_type', 'media.size', 'media.type', 'media.alt_text', 'media.metadata', 'media.created_at', 'media.updated_at']);
                 }
             ]);
 
@@ -84,8 +84,12 @@ class ProductController extends Controller
         }
 
         // Status filter
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+        if ($request->has('status') && !empty($request->status)) {
+            if ($request->status === 'trash') {
+                $query->onlyTrashed();
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
         // Featured filter
@@ -130,11 +134,25 @@ class ProductController extends Controller
         $perPage = $this->resolvePerPage($request);
         $products = $query->paginate($perPage);
 
-        if ($isCompact) {
-            return ProductListResource::collection($products)->response();
+        // Calculate status counts for UI tabs
+        $baseCountQuery = Product::query();
+        if ($request->has('locale') && !empty($request->locale)) {
+            $baseCountQuery->where('locale', $request->locale);
         }
 
-        return (new ProductCollection($products))->response();
+        $counts = [
+            'all' => (clone $baseCountQuery)->count(),
+            'published' => (clone $baseCountQuery)->where('status', 'published')->count(),
+            'draft' => (clone $baseCountQuery)->where('status', 'draft')->count(),
+            'archived' => (clone $baseCountQuery)->where('status', 'archived')->count(),
+            'trash' => Product::onlyTrashed()->when($request->locale, fn($q) => $q->where('locale', $request->locale))->count(),
+        ];
+
+        if ($isCompact) {
+            return ProductListResource::collection($products)->additional(['meta' => ['counts' => $counts]])->response();
+        }
+
+        return (new ProductCollection($products))->additional(['meta' => ['counts' => $counts]])->response();
     }
 
     /**
@@ -220,6 +238,87 @@ class ProductController extends Controller
         return $this->successResponse(null, 'Product deleted successfully', 204);
     }
 
+    /**
+     * Restore a soft-deleted product
+     */
+    public function restore(int $id): JsonResponse
+    {
+        $product = Product::withoutGlobalScopes()->withTrashed()->findOrFail($id);
+        $this->authorize('update', $product);
+        $product->restore();
+
+        return $this->successResponse(new ProductResource($product), 'Product restored successfully');
+    }
+
+    /**
+     * Permanently delete a product
+     */
+    public function forceDelete(int $id): JsonResponse
+    {
+        $product = Product::withoutGlobalScopes()->withTrashed()->findOrFail($id);
+        $this->authorize('delete', $product);
+        $product->forceDelete();
+
+        return $this->successResponse(null, 'Product permanently deleted', 204);
+    }
+
+    /**
+     * Bulk soft delete products (Move to trash)
+     */
+    public function bulkDestroy(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $products = Product::whereIn('id', $validated['ids'])->get();
+        foreach ($products as $product) {
+            $this->authorize('delete', $product);
+            $product->delete();
+        }
+
+        return $this->successResponse(null, 'Products moved to trash successfully');
+    }
+
+    /**
+     * Bulk restore products
+     */
+    public function bulkRestore(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $products = Product::withoutGlobalScopes()->withTrashed()->whereIn('id', $validated['ids'])->get();
+        foreach ($products as $product) {
+            $this->authorize('update', $product);
+            $product->restore();
+        }
+
+        return $this->successResponse(null, 'Products restored successfully');
+    }
+
+    /**
+     * Bulk permanently delete products
+     */
+    public function bulkForceDelete(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $products = Product::withoutGlobalScopes()->withTrashed()->whereIn('id', $validated['ids'])->get();
+        foreach ($products as $product) {
+            $this->authorize('delete', $product);
+            $product->forceDelete();
+        }
+
+        return $this->successResponse(null, 'Products permanently deleted successfully');
+    }
+
     protected function supportsBrands(): bool
     {
         return Schema::hasTable('product_brand');
@@ -295,12 +394,17 @@ class ProductController extends Controller
 
         $targetLocale = $validated['locale'];
 
-        // Check if already exists
-        $existing = Product::where('translation_group_id', $product->translation_group_id)
+        // Check if already exists (including trashed records)
+        $existing = Product::withoutGlobalScopes()
+            ->withTrashed()
+            ->where('translation_group_id', $product->translation_group_id)
             ->where('locale', $targetLocale)
             ->first();
 
         if ($existing) {
+            if ($existing->trashed()) {
+                $existing->restore();
+            }
             return $this->successResponse(new ProductResource($existing), 'Translation already exists');
         }
 
@@ -311,10 +415,10 @@ class ProductController extends Controller
         $newProduct->name = $product->name . ' (' . strtoupper($targetLocale) . ')';
         $newProduct->slug = $product->slug;
         
-        // Ensure slug is unique
+        // Ensure slug is unique for target locale (checking trashed records as well)
         $baseSlug = $newProduct->slug;
         $counter = 1;
-        while (Product::where('slug', $newProduct->slug)->where('locale', $targetLocale)->exists()) {
+        while (Product::withoutGlobalScopes()->withTrashed()->where('slug', $newProduct->slug)->where('locale', $targetLocale)->exists()) {
             $newProduct->slug = $baseSlug . '-' . $counter;
             $counter++;
         }

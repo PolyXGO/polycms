@@ -245,11 +245,16 @@ class ProductCategoryController extends Controller
         $targetLocale = $validated['locale'];
 
         // Check if already exists
-        $existing = ProductCategory::where('translation_group_id', $productCategory->translation_group_id)
+        $existing = ProductCategory::withoutGlobalScopes()
+            ->withTrashed()
+            ->where('translation_group_id', $productCategory->translation_group_id)
             ->where('locale', $targetLocale)
             ->first();
 
         if ($existing) {
+            if ($existing->trashed()) {
+                $existing->restore();
+            }
             return $this->successResponse(new ProductCategoryResource($existing), 'Translation already exists');
         }
 
@@ -267,10 +272,10 @@ class ProductCategoryController extends Controller
             }
         }
 
-        // Ensure slug is unique for this locale
+        // Ensure slug is unique for this locale (checking trashed records)
         $baseSlug = $newCategory->slug;
         $counter = 1;
-        while (ProductCategory::where('slug', $newCategory->slug)->where('locale', $targetLocale)->exists()) {
+        while (ProductCategory::withoutGlobalScopes()->withTrashed()->where('slug', $newCategory->slug)->where('locale', $targetLocale)->exists()) {
             $newCategory->slug = $baseSlug . '-' . $counter;
             $counter++;
         }

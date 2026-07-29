@@ -131,10 +131,20 @@ Route::prefix('v1')->group(function () {
 
         // Posts CRUD
         Route::post('posts/{post}/translate', [PostController::class, 'translate'])->name('api.v1.posts.translate');
+        Route::post('posts/{id}/restore', [PostController::class, 'restore'])->name('api.v1.posts.restore');
+        Route::delete('posts/{id}/force-delete', [PostController::class, 'forceDelete'])->name('api.v1.posts.force-delete');
+        Route::post('posts/bulk-delete', [PostController::class, 'bulkDestroy'])->name('api.v1.posts.bulk-delete');
+        Route::post('posts/bulk-restore', [PostController::class, 'bulkRestore'])->name('api.v1.posts.bulk-restore');
+        Route::post('posts/bulk-force-delete', [PostController::class, 'bulkForceDelete'])->name('api.v1.posts.bulk-force-delete');
         Route::apiResource('posts', PostController::class)->except(['index', 'show']);
 
         // Products CRUD
         Route::post('products/{product}/translate', [ProductController::class, 'translate'])->name('api.v1.products.translate');
+        Route::post('products/{id}/restore', [ProductController::class, 'restore'])->name('api.v1.products.restore');
+        Route::delete('products/{id}/force-delete', [ProductController::class, 'forceDelete'])->name('api.v1.products.force-delete');
+        Route::post('products/bulk-delete', [ProductController::class, 'bulkDestroy'])->name('api.v1.products.bulk-delete');
+        Route::post('products/bulk-restore', [ProductController::class, 'bulkRestore'])->name('api.v1.products.bulk-restore');
+        Route::post('products/bulk-force-delete', [ProductController::class, 'bulkForceDelete'])->name('api.v1.products.bulk-force-delete');
         Route::apiResource('products', ProductController::class)->except(['index', 'show']);
 
         // Categories CRUD
