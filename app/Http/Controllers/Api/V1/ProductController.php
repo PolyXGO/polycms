@@ -49,15 +49,15 @@ class ProductController extends Controller
         } else {
             $query->with([
                 'user:id,name,email',
-                'categories:categories.id,categories.name,categories.slug',
-                'tags:tags.id,tags.name,tags.slug',
+                'categories:id,name,slug',
+                'tags:id,name,slug',
                 'media' => function ($q) {
                     $q->select(['media.id', 'media.name', 'media.file_name', 'media.disk', 'media.path', 'media.mime_type', 'media.size', 'media.type', 'media.alt_text', 'media.metadata']);
                 }
             ]);
 
             if ($this->supportsBrands()) {
-                $query->with('brands:categories.id,categories.name,categories.slug');
+                $query->with('brands:id,name,slug');
             }
         }
 
@@ -100,7 +100,7 @@ class ProductController extends Controller
 
         // Category filter
         if ($request->has('category_id')) {
-            $query->whereHas('categories', fn($q) => $q->where('categories.id', $request->category_id));
+            $query->whereHas('categories', fn($q) => $q->where('product_categories.id', $request->category_id));
         }
 
         // Price range filter

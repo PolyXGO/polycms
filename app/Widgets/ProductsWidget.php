@@ -24,7 +24,7 @@ class ProductsWidget
             ->orderBy($orderBy, $orderDirection);
 
         if (!empty($categoryIds)) {
-            $query->whereHas('categories', fn($q) => $q->whereIn('categories.id', $categoryIds));
+            $query->whereHas('categories', fn($q) => $q->whereIn('product_categories.id', $categoryIds));
         }
 
         $products = $query->limit($limit)->get();
