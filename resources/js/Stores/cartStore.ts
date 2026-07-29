@@ -210,13 +210,31 @@ export const useCartStore = defineStore('cart', {
             if (item?.id) {
                 try {
                     await axios.put(`/api/v1/cart/items/${item.id}`, { quantity });
+                    if (this.items[index]) {
+                        this.items[index].stock_error = '';
+                    }
                 } catch (error: any) {
                     if (error.response?.status === 422) {
-                        throw new Error(error.response.data.message || 'Stock limit reached');
+                        const errMsg = error.response.data.message || 'Stock limit reached';
+                        if (this.items[index]) {
+                            this.items[index].stock_error = errMsg;
+                        }
+                        throw new Error(errMsg);
                     }
                 }
+            } else if (item) {
+                if (item.max_per_order && quantity > item.max_per_order) {
+                    const errMsg = `You can only purchase a maximum of ${item.max_per_order} units per order.`;
+                    this.items[index].stock_error = errMsg;
+                    throw new Error(errMsg);
+                } else {
+                    this.items[index].stock_error = '';
+                }
             }
-            this.items[index].quantity = quantity;
+
+            if (this.items[index]) {
+                this.items[index].quantity = quantity;
+            }
             saveCartToStorage(this.items, this.couponCodes);
             this.calculateTotals();
         },

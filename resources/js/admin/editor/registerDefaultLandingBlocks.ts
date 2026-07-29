@@ -26,6 +26,7 @@ import ProjectHubChartBlock from '../components/editor/blocks/ProjectHubChartBlo
 import YoutubeGalleryBlock from '../components/editor/blocks/YoutubeGalleryBlock.vue';
 import ModalLinkBlock from '../components/editor/blocks/ModalLinkBlock.vue';
 import MermaidChartBlock from '../components/editor/blocks/MermaidChartBlock.vue';
+import OffersCTABlock from '../../../../modules/Polyx/CommerceOffers/resources/admin/components/OffersCTABlock.vue';
 import { DEFAULT_DEMO_SHOWCASE_IMAGE } from './landingPatternTemplates';
 
 // Atomic Blocks
@@ -588,6 +589,24 @@ export function registerDefaultLandingBlocks() {
         component: MermaidChartBlock,
         defaultAttrs: {
             code: ''
+        }
+    });
+
+    // CommerceOffers CTA Block
+    landingBlockRegistry.register({
+        key: 'commerce_offers_cta',
+        label: 'Offer CTA Banner',
+        category: 'ecommerce',
+        icon: `<svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" /></svg>`,
+        component: OffersCTABlock,
+        defaultAttrs: {
+            product_id: null,
+            preset: 'minimal',
+            cta_text: 'Get This Deal',
+            cta_url: '',
+            _product_name: '',
+            _product_price: '0.00',
+            _product_original_price: '0.00',
         }
     });
 }

@@ -123,8 +123,15 @@ class CreateProduct
                 $product->update(['description_html' => $descriptionHtml]);
             }
 
+            // Sync CommerceOffers rules if provided in payload
+            if (class_exists(\Modules\Polyx\CommerceOffers\Services\CommerceOffersService::class)) {
+                try {
+                    app(\Modules\Polyx\CommerceOffers\Services\CommerceOffersService::class)->syncOffersForProduct($product, $data);
+                } catch (\Throwable $e) {}
+            }
+
             // Fire action hook
-            Hook::doAction('product.saved', $product);
+            Hook::doAction('product.saved', $product, $data);
 
             $relations = ['user', 'categories', 'tags', 'media', 'services', 'variants', 'variantAttributes.values'];
             if (Schema::hasTable('product_brand')) {

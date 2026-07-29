@@ -51,11 +51,15 @@ class UpdateProduct
 
                     $config = $this->normalizeServiceConfig($config);
 
-                    // Try to find existing by code or name
+                    // Try to find existing by id first, then by code or name
                     $existing = null;
-                    if (!empty($config['code'])) {
+                    if (!empty($config['id'])) {
+                        $existing = $product->services()->where('id', $config['id'])->first();
+                    }
+                    if (!$existing && !empty($config['code'])) {
                         $existing = $product->services()->where('code', $config['code'])->first();
-                    } elseif (!empty($config['name'])) {
+                    }
+                    if (!$existing && !empty($config['name'])) {
                         $existing = $product->services()->where('name', $config['name'])->first();
                     }
 
@@ -68,8 +72,14 @@ class UpdateProduct
                     }
                 }
 
-                // Delete services that are no longer in the list
-                $product->services()->whereNotIn('id', $processedIds)->delete();
+                // Delete services that are no longer in the list safely (skip those referenced in order_items)
+                $toDelete = $product->services()->whereNotIn('id', $processedIds)->get();
+                foreach ($toDelete as $serviceToDelete) {
+                    $isReferencedInOrders = \App\Models\Ecommerce\OrderItem::where('service_id', $serviceToDelete->id)->exists();
+                    if (!$isReferencedInOrders) {
+                        $serviceToDelete->delete();
+                    }
+                }
                 
                 // Refresh services relationship so renderer sees new data
                 $product->unsetRelation('services');

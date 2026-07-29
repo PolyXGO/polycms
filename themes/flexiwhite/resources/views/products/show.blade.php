@@ -462,15 +462,53 @@
                         @endforeach
 
                         @if($product->services && $product->services->isNotEmpty())
+                            @php
+                                $isCommerceOffersActive = class_exists(\App\Services\ModuleManager::class) 
+                                    && app(\App\Services\ModuleManager::class)->isModuleEnabled('Polyx.CommerceOffers');
+
+                                $baseRefPrice = (float) ($product->price ?? 0);
+                                if ($baseRefPrice <= 0 && $product->services->isNotEmpty()) {
+                                    $baseRefPrice = (float) ($product->services->first()->price ?? 1);
+                                }
+
+                                $currentOfferPrice = $isCommerceOffersActive ? (float) $product->effective_price : (float) ($product->price ?? 0);
+                                $offerRatio = ($isCommerceOffersActive && $baseRefPrice > 0 && $currentOfferPrice > 0 && $currentOfferPrice < $baseRefPrice)
+                                    ? ($currentOfferPrice / $baseRefPrice)
+                                    : 1.0;
+
+                                $tierRatios = [];
+                                if ($isCommerceOffersActive && class_exists(\Modules\Polyx\CommerceOffers\Services\CommerceOffersService::class)) {
+                                    try {
+                                        $offersService = app(\Modules\Polyx\CommerceOffers\Services\CommerceOffersService::class);
+                                        $offersMetrics = $offersService->getTierMetrics($product);
+                                        if (!empty($offersMetrics['all_tiers'])) {
+                                            foreach ($offersMetrics['all_tiers'] as $t) {
+                                                $tPrice = (float) $t->price;
+                                                $tierRatios[] = $baseRefPrice > 0 ? ($tPrice / $baseRefPrice) : 1.0;
+                                            }
+                                        }
+                                    } catch (\Throwable $e) {}
+                                }
+                            @endphp
+
                             @if($product->services->count() === 1)
                                 @php 
                                     $service = $product->services->first();
-                                    $rawServicePrice = (float) ($service->price ?? $product->price);
-                                    $servicePrice = ($effectivePrice > 0 && $effectivePrice < $rawServicePrice) ? $effectivePrice : $rawServicePrice;
+                                    $rawServicePrice = (float) ($service->price ?? $baseRefPrice);
+                                    $serviceOfferPrice = round($rawServicePrice * $offerRatio, 2);
+                                    $hasServiceSale = ($serviceOfferPrice < $rawServicePrice);
+                                    $serviceTiers = [];
+                                    foreach ($tierRatios as $ratio) {
+                                        $serviceTiers[] = format_currency(round($rawServicePrice * $ratio, 2));
+                                    }
                                 @endphp
                                 <input type="radio" name="selected_service_id" value="{{ $service->id }}" 
-                                       data-price="{{ $servicePrice }}" 
-                                       data-price-text="{{ format_currency($servicePrice) }}"
+                                       data-price="{{ $serviceOfferPrice }}" 
+                                       data-price-text="{{ format_currency($serviceOfferPrice) }}"
+                                       data-raw-price="{{ $rawServicePrice }}"
+                                       data-raw-price-text="{{ format_currency($rawServicePrice) }}"
+                                       data-has-sale="{{ $hasServiceSale ? '1' : '0' }}"
+                                       data-tiers="{{ json_encode($serviceTiers) }}"
                                        data-name="{{ $service->name }}"
                                        data-billing="{{ $service->access_type === 'subscription' ? ($service->duration_value . ' ' . $service->duration_unit . ($service->duration_value > 1 ? 's' : '')) : 'Lifetime' }}"
                                        checked 
@@ -494,13 +532,22 @@
                                     <div style="display: flex; flex-direction: column; gap: 10px;">
                                         @foreach($product->services as $index => $service)
                                             @php 
-                                                $rawServicePrice = (float) ($service->price ?? $product->price);
-                                                $servicePrice = ($effectivePrice > 0 && $effectivePrice < $rawServicePrice) ? $effectivePrice : $rawServicePrice;
+                                                $rawServicePrice = (float) ($service->price ?? $baseRefPrice);
+                                                $serviceOfferPrice = round($rawServicePrice * $offerRatio, 2);
+                                                $hasServiceSale = ($serviceOfferPrice < $rawServicePrice);
+                                                $serviceTiers = [];
+                                                foreach ($tierRatios as $ratio) {
+                                                    $serviceTiers[] = format_currency(round($rawServicePrice * $ratio, 2));
+                                                }
                                             @endphp
                                             <label class="package-option-label" style="display: flex; align-items: flex-start; gap: 12px; padding: 14px; border: 2px solid {{ $index === 0 ? 'var(--primary-color, #3b82f6)' : '#e2e8f0' }}; border-radius: 12px; cursor: pointer; transition: all 0.2s; background: {{ $index === 0 ? 'rgba(59, 130, 246, 0.03)' : '#fff' }}; position: relative;">
                                                 <input type="radio" name="selected_service_id" value="{{ $service->id }}" 
-                                                       data-price="{{ $servicePrice }}" 
-                                                       data-price-text="{{ format_currency($servicePrice) }}"
+                                                       data-price="{{ $serviceOfferPrice }}" 
+                                                       data-price-text="{{ format_currency($serviceOfferPrice) }}"
+                                                       data-raw-price="{{ $rawServicePrice }}"
+                                                       data-raw-price-text="{{ format_currency($rawServicePrice) }}"
+                                                       data-has-sale="{{ $hasServiceSale ? '1' : '0' }}"
+                                                       data-tiers="{{ json_encode($serviceTiers) }}"
                                                        data-name="{{ $service->name }}"
                                                        data-billing="{{ $service->access_type === 'subscription' ? ($service->duration_value . ' ' . $service->duration_unit . ($service->duration_value > 1 ? 's' : '')) : 'Lifetime' }}"
                                                        {{ $index === 0 ? 'checked' : '' }} 
@@ -510,8 +557,8 @@
                                                     <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 4px;">
                                                         <span style="font-weight: 700; color: #0f172a;" class="package-name-text">{{ $service->name }}</span>
                                                         <div style="display: flex; align-items: center; gap: 8px;">
-                                                            <span style="font-weight: 800; color: var(--primary-color, #3b82f6); font-size: 1.1rem;">{{ format_currency($servicePrice) }}</span>
-                                                            @if($servicePrice < $rawServicePrice)
+                                                            <span style="font-weight: 800; color: var(--primary-color, #3b82f6); font-size: 1.1rem;">{{ format_currency($serviceOfferPrice) }}</span>
+                                                            @if($hasServiceSale)
                                                                 <span style="text-decoration: line-through; color: #94a3b8; font-size: 0.85rem; font-weight: 500;">{{ format_currency($rawServicePrice) }}</span>
                                                             @endif
                                                         </div>
@@ -562,21 +609,50 @@
                                     });
                                     
                                     const activeLabel = radio.closest('.package-option-label');
-                                    activeLabel.style.borderColor = 'var(--primary-color, #3b82f6)';
-                                    const isDark = document.body.classList.contains('dark') || document.documentElement.classList.contains('dark');
-                                    activeLabel.style.background = isDark ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.03)';
+                                    if (activeLabel) {
+                                        activeLabel.style.borderColor = 'var(--primary-color, #3b82f6)';
+                                        const isDark = document.body.classList.contains('dark') || document.documentElement.classList.contains('dark');
+                                        activeLabel.style.background = isDark ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.03)';
+                                    }
                                     
                                     // Update price display
                                     const priceText = radio.getAttribute('data-price-text');
+                                    const rawPriceText = radio.getAttribute('data-raw-price-text');
+                                    const hasSale = radio.getAttribute('data-has-sale') === '1';
+
                                     const priceEl = document.querySelector('.single-product-price');
                                     if (priceEl) {
                                         priceEl.textContent = priceText;
                                     }
-                                    // Hide strike price if any since packages have custom prices
                                     const strikeEl = document.querySelector('.single-product-price-strike');
-                                    if (strikeEl) strikeEl.style.display = 'none';
-                                    const badgeEl = document.querySelector('.single-product-summary .badge');
-                                    if (badgeEl) badgeEl.style.display = 'none';
+                                    if (strikeEl) {
+                                        if (hasSale && rawPriceText) {
+                                            strikeEl.textContent = rawPriceText;
+                                            strikeEl.style.display = 'inline';
+                                        } else {
+                                            strikeEl.style.display = 'none';
+                                        }
+                                    }
+
+                                    // Update Exclusive Offers & Deals Header price
+                                    const offersHeaderPriceEl = document.querySelector('.offers-header-price');
+                                    if (offersHeaderPriceEl) {
+                                        offersHeaderPriceEl.textContent = priceText;
+                                    }
+
+                                    // Update Tier Boxes in Exclusive Offers & Deals
+                                    const tiersAttr = radio.getAttribute('data-tiers');
+                                    if (tiersAttr) {
+                                        try {
+                                            const tiers = JSON.parse(tiersAttr);
+                                            const tierBoxes = document.querySelectorAll('.offers-tier-price-box');
+                                            tierBoxes.forEach((box, idx) => {
+                                                if (tiers[idx] !== undefined) {
+                                                    box.textContent = tiers[idx];
+                                                }
+                                            });
+                                        } catch (e) {}
+                                    }
                                 }
                                 
                                 // Initial dark/light mode adjustment

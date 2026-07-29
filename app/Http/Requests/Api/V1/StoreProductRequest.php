@@ -77,7 +77,7 @@ class StoreProductRequest extends FormRequest
             'stock_quantity' => ['nullable', 'integer', 'min:0'],
             'manage_stock' => ['nullable', 'boolean'],
             'stock_low_threshold' => ['nullable', 'integer', 'min:0'],
-            'max_per_order' => ['nullable', 'integer', 'min:1'],
+            'max_per_order' => ['nullable', 'integer', 'min:0'],
             'status' => ['required', Rule::in(['draft', 'published', 'archived'])],
             'featured' => ['nullable', 'boolean'],
             'allow_refund' => ['nullable', 'boolean'],
@@ -133,6 +133,15 @@ class StoreProductRequest extends FormRequest
             'variants.*.is_active' => ['nullable', 'boolean'],
             'variants.*.is_default' => ['nullable', 'boolean'],
             'variants.*.image_id' => ['nullable', 'integer', 'exists:media,id'],
+            // CommerceOffers Suite
+            'tiered_prices' => ['nullable', 'array'],
+            'volume_discounts' => ['nullable', 'array'],
+            'bundle_items' => ['nullable', 'array'],
+            '_sync_commerce_offers' => ['nullable', 'boolean'],
+            '_force_clear_offers' => ['nullable', 'boolean'],
+            '_force_clear_tiered_prices' => ['nullable', 'boolean'],
+            '_force_clear_volume_discounts' => ['nullable', 'boolean'],
+            '_force_clear_bundle_items' => ['nullable', 'boolean'],
         ];
     }
 }

@@ -77,17 +77,6 @@ class CartService
             );
         }
 
-        // Anti-scalping: Max per order check
-        if ($product->max_per_order && $product->max_per_order > 0) {
-            $totalTargetQty = ($existing ? $existing->quantity : 0) + $quantity;
-            if ($totalTargetQty > $product->max_per_order) {
-                throw new InsufficientStockException(
-                    "You can only purchase a maximum of {$product->max_per_order} units of \"{$product->name}\" per order.",
-                    $product->max_per_order
-                );
-            }
-        }
-
         // Check for existing item to update quantity (DB-agnostic, no LEAST/GREATEST)
         $existingItems = CartItem::where('cart_id', $cart->id)
             ->where('product_id', $productId)
@@ -99,6 +88,17 @@ class CartService
             $newServiceId = $metadata['service_id'] ?? null;
             return $existingServiceId == $newServiceId;
         });
+
+        // Anti-scalping: Max per order check
+        if ($product->max_per_order && $product->max_per_order > 0) {
+            $totalTargetQty = ($existing ? $existing->quantity : 0) + $quantity;
+            if ($totalTargetQty > $product->max_per_order) {
+                throw new InsufficientStockException(
+                    "You can only purchase a maximum of {$product->max_per_order} units of \"{$product->name}\" per order.",
+                    $product->max_per_order
+                );
+            }
+        }
 
         if ($existing) {
             $newQty = min($existing->quantity + $quantity, 99);

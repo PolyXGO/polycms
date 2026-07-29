@@ -141,14 +141,25 @@ class ProductResource extends JsonResource
             'translations' => $this->getTranslationsList(),
         ];
 
-        // Include CommerceOffers dynamic rules if module exists
+        // Include CommerceOffers dynamic rules if database tables exist
         $productId = $this->resource->id ?? $this->id ?? null;
-        if ($productId && class_exists(\Modules\Polyx\CommerceOffers\Services\CommerceOffersService::class)) {
-            if (\Illuminate\Support\Facades\Schema::hasTable('product_tiered_prices')) {
-                $data['tiered_prices'] = \Modules\Polyx\CommerceOffers\Models\ProductTieredPrice::where('product_id', $productId)->orderBy('min_sales', 'asc')->get()->toArray();
-                $data['volume_discounts'] = \Modules\Polyx\CommerceOffers\Models\ProductVolumeDiscount::where('product_id', $productId)->orderBy('min_qty', 'asc')->get()->toArray();
-                $data['bundle_items'] = \Modules\Polyx\CommerceOffers\Models\ProductBundleItem::with('bundleProduct')->where('product_id', $productId)->orderBy('order', 'asc')->get()->toArray();
-            }
+        if ($productId && \Illuminate\Support\Facades\Schema::hasTable('product_tiered_prices')) {
+            try {
+                $targetId = $productId;
+                if (!empty($this->resource->translation_group_id)) {
+                    $mainProd = \App\Models\Product::withoutGlobalScope('locale')
+                        ->where('translation_group_id', $this->resource->translation_group_id)
+                        ->orderBy('id', 'asc')
+                        ->first();
+                    if ($mainProd) {
+                        $targetId = $mainProd->id;
+                    }
+                }
+
+                $data['tiered_prices'] = \Modules\Polyx\CommerceOffers\Models\ProductTieredPrice::where('product_id', $targetId)->orderBy('min_sales', 'asc')->get()->toArray();
+                $data['volume_discounts'] = \Modules\Polyx\CommerceOffers\Models\ProductVolumeDiscount::where('product_id', $targetId)->orderBy('min_qty', 'asc')->get()->toArray();
+                $data['bundle_items'] = \Modules\Polyx\CommerceOffers\Models\ProductBundleItem::with('bundleProduct')->where('product_id', $targetId)->orderBy('order', 'asc')->get()->toArray();
+            } catch (\Throwable $e) {}
         }
 
         if (class_exists(\App\Facades\Hook::class)) {

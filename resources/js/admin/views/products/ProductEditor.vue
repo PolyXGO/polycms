@@ -427,6 +427,7 @@ const loadProduct = async () => {
  stock_quantity: product.stock_quantity ?? 0,
  stock_status: product.stock_status ||'in_stock',
  manage_stock: product.manage_stock ?? false,
+ max_per_order: product.max_per_order ?? null,
  featured: product.featured ?? false,
  allow_refund: product.allow_refund ?? true,
  refund_window_days: product.refund_window_days ?? null,
@@ -668,6 +669,7 @@ const saveProduct = async () => {
  stock_quantity: form.value.stock_quantity || 0,
  stock_status: form.value.stock_status,
  manage_stock: form.value.manage_stock ? 1 : 0,
+ max_per_order: form.value.max_per_order !== undefined && form.value.max_per_order !== null && form.value.max_per_order !== '' ? Number(form.value.max_per_order) : null,
  featured: form.value.featured ? 1 : 0,
  allow_refund: form.value.allow_refund ? 1 : 0,
  refund_window_days: form.value.allow_refund

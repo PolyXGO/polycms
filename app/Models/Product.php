@@ -355,6 +355,15 @@ class Product extends Model
             }
         }
 
+        // Package Price Priority: If product has services (packages), base price follows minimum package price
+        $services = $this->relationLoaded('services') ? $this->services : $this->services()->get();
+        if ($services && $services->isNotEmpty()) {
+            $validServicePrices = $services->pluck('price')->filter(fn($p) => $p !== null && (float)$p > 0)->map(fn($p) => (float)$p);
+            if ($validServicePrices->isNotEmpty()) {
+                $salePrice = $validServicePrices->min();
+            }
+        }
+
         $price = ($salePrice > 0 && $salePrice < $regularPrice) ? $salePrice : $regularPrice;
 
         return (float) \App\Facades\Hook::applyFilters('product.effective_price', $price, $this);

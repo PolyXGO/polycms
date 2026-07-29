@@ -37,7 +37,7 @@
  </div>
  <div class="space-y-1">
  <label class="block text-sm font-medium text-admin-theme-text-secondary mb-1">{{ $t('Max per order (Anti-scalping)') }}</label>
- <input v-model.number="form.max_per_order" type="number" min="1" :disabled="!isDefaultLanguage" class="w-full px-3 py-2 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text placeholder-admin-theme-text-muted focus:ring-admin-theme-primary focus:border-admin-theme-primary disabled:bg-gray-100 disabled:text-gray-400 dark:disabled:bg-gray-800" :placeholder="$t('Unlimited')" />
+ <input v-model.number="form.max_per_order" type="number" min="0" :disabled="!isDefaultLanguage" class="w-full px-3 py-2 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text placeholder-admin-theme-text-muted focus:ring-admin-theme-primary focus:border-admin-theme-primary disabled:bg-gray-100 disabled:text-gray-400 dark:disabled:bg-gray-800" :placeholder="$t('Unlimited')" />
  </div>
  </div>
 

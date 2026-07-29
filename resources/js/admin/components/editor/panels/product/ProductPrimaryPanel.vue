@@ -602,7 +602,7 @@
   </div>
 
   <!-- CommerceOffers Suite (Dynamic Pricing, Tiers, Bundles & Order Thresholds) -->
-  <div class="rounded-xl border border-admin-theme-border/70 bg-admin-theme-card p-4 space-y-4 shadow-sm">
+  <div v-if="isCommerceOffersEnabled" class="rounded-xl border border-admin-theme-border/70 bg-admin-theme-card p-4 space-y-4 shadow-sm">
     <div class="flex items-center justify-between border-b border-admin-theme-border pb-3">
       <div>
         <h3 class="text-sm font-semibold text-admin-theme-text flex items-center gap-2">
@@ -1379,23 +1379,38 @@ const handleSlugInput = (event: Event) => {
 };
 
 // CommerceOffers Manager State
+const activeModulesList = ref<string[]>([]);
+const isCommerceOffersEnabled = computed(() => {
+  if (Array.isArray(activeModulesList.value) && activeModulesList.value.length > 0) {
+    return activeModulesList.value.includes('Polyx.CommerceOffers');
+  }
+  if (Array.isArray((window as any).PolyCMS_ActiveModules)) {
+    return (window as any).PolyCMS_ActiveModules.includes('Polyx.CommerceOffers');
+  }
+  return false;
+});
+
 const isSavingOffers = ref(false);
 const tieredRules = ref<any[]>([]);
 const volumeRules = ref<any[]>([]);
 const bundleRules = ref<any[]>([]);
 
-const validateBasePriceForPreset = (): boolean => {
-  const price = Number(form.value?.price || 0);
-  if (!price || price <= 0) {
-    showError($t('Product baseline price must be greater than $0 before applying preset rules.'));
-    return false;
+const getProductBasePrice = (): number => {
+  let price = Number(form.value?.price || 0);
+  if (price <= 0 && form.value?.services && Array.isArray(form.value.services) && form.value.services.length > 0) {
+    const validPrices = form.value.services
+      .map((s: any) => Number(s.price || 0))
+      .filter((p: number) => p > 0);
+    if (validPrices.length > 0) {
+      price = Math.min(...validPrices);
+    }
   }
-  return true;
+  return price > 0 ? price : 10.00;
 };
 
 // CommerceOffers Auto Label & Calculation Handlers
 const updateTieredLabel = (rule: any) => {
-  const basePrice = Number(form.value?.price || 0);
+  const basePrice = getProductBasePrice();
   const price = Number(rule.price || 0);
   const min = rule.min_sales ?? 0;
   const max = rule.max_sales;
@@ -1418,7 +1433,7 @@ const updateTieredLabel = (rule: any) => {
 };
 
 const onTieredPercentChange = (rule: any) => {
-  const basePrice = Number(form.value?.price || 0);
+  const basePrice = getProductBasePrice();
   const pct = Math.min(100, Math.max(0, Number(rule.percent || 0)));
   rule.percent = pct;
   if (basePrice > 0) {
@@ -1428,7 +1443,7 @@ const onTieredPercentChange = (rule: any) => {
 };
 
 const onTieredPriceChange = (rule: any) => {
-  const basePrice = Number(form.value?.price || 0);
+  const basePrice = getProductBasePrice();
   const price = Number(rule.price || 0);
   if (basePrice > 0) {
     rule.percent = Math.max(0, Math.round((1 - price / basePrice) * 100));
@@ -1441,7 +1456,7 @@ const onTieredRangeChange = (rule: any) => {
 };
 
 const updateVolumeLabel = (rule: any) => {
-  const basePrice = Number(form.value?.price || 0);
+  const basePrice = getProductBasePrice();
   const min = rule.min_qty ?? 1;
   const max = rule.max_qty;
   const rangeStr = max ? `${min}-${max}` : `${min}+`;
@@ -1460,7 +1475,7 @@ const updateVolumeLabel = (rule: any) => {
 };
 
 const onVolumePercentChange = (rule: any) => {
-  const basePrice = Number(form.value?.price || 0);
+  const basePrice = getProductBasePrice();
   const pct = Math.min(100, Math.max(0, Number(rule.percent || 0)));
   rule.percent = pct;
 
@@ -1475,7 +1490,7 @@ const onVolumePercentChange = (rule: any) => {
 };
 
 const onVolumeValueChange = (rule: any) => {
-  const basePrice = Number(form.value?.price || 0);
+  const basePrice = getProductBasePrice();
   const val = Number(rule.discount_value || 0);
 
   if (rule.discount_type === 'percentage') {
@@ -1493,8 +1508,7 @@ const onVolumeRangeChange = (rule: any) => {
 };
 
 const applyTieredPreset = () => {
-  if (!validateBasePriceForPreset()) return;
-  const basePrice = Number(form.value.price);
+  const basePrice = getProductBasePrice();
   tieredRules.value = [
     { min_sales: 0, max_sales: 10, percent: 40, price: Math.round(basePrice * 0.6 * 100) / 100, label: $t('Early Bird 40% Off') },
     { min_sales: 11, max_sales: 50, percent: 20, price: Math.round(basePrice * 0.8 * 100) / 100, label: $t('Standard 20% Off') },
@@ -1504,7 +1518,6 @@ const applyTieredPreset = () => {
 };
 
 const applyVolumePreset = () => {
-  if (!validateBasePriceForPreset()) return;
   volumeRules.value = [
     { min_qty: 2, max_qty: 4, discount_type: 'percentage', discount_value: 10, percent: 10, label: $t('Buy 2-4: 10% Off') },
     { min_qty: 5, max_qty: 9, discount_type: 'percentage', discount_value: 20, percent: 20, label: $t('Buy 5-9: 20% Off') },
@@ -1514,15 +1527,13 @@ const applyVolumePreset = () => {
 };
 
 const addTieredRule = () => {
-  if (!validateBasePriceForPreset()) return;
-  const basePrice = Number(form.value?.price || 0);
+  const basePrice = getProductBasePrice();
   const rule = { min_sales: 0, max_sales: null, percent: 0, price: basePrice, label: '' };
   updateTieredLabel(rule);
   tieredRules.value.push(rule);
 };
 
 const addVolumeRule = () => {
-  if (!validateBasePriceForPreset()) return;
   const rule = { min_qty: 2, max_qty: 4, discount_type: 'percentage', discount_value: 10, percent: 10, label: '' };
   updateVolumeLabel(rule);
   volumeRules.value.push(rule);
@@ -1632,6 +1643,15 @@ const saveCommerceOffers = async () => {
     isSavingOffers.value = false;
   }
 };
+
+onMounted(async () => {
+  try {
+    const res = await axios.get('/api/v1/modules/active-frontend');
+    if (res.data?.data) {
+      activeModulesList.value = res.data.data.map((m: any) => m.key);
+    }
+  } catch (e) {}
+});
 
 </script>
 

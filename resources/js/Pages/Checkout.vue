@@ -12,6 +12,9 @@ import { useDialog } from '@/admin/composables/useDialog';
 import { usePage } from '@inertiajs/vue3';
 import Modal from '@/Components/Modal.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
+import OffersGuidelineModal from '@/Components/OffersGuidelineModal.vue';
+
+const offersModalRef = ref<any>(null);
 
 const dialog = useDialog();
 const page = usePage();
@@ -378,8 +381,13 @@ const finishPayment = () => {
                                                     {{ item.name }}
                                                 </a>
                                                 <!-- Applied Offer Badge -->
-                                                <div v-if="item.offer_label || item.metadata?.offer_label" class="mt-1 inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded text-xs font-semibold">
-                                                    <span>🏷️ {{ item.offer_label || item.metadata?.offer_label }}</span>
+                                                <div v-if="item.offer_label || item.metadata?.offer_label" 
+                                                     @click="offersModalRef?.open(item.product_id)"
+                                                     title="Click to view offer guidelines"
+                                                     class="mt-1 inline-flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded text-xs font-semibold cursor-pointer transition-colors group">
+                                                    <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                                    <span>{{ item.offer_label || item.metadata?.offer_label }}</span>
+                                                    <svg class="w-3 h-3 text-emerald-500 opacity-70 group-hover:opacity-100 ml-0.5 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                                 </div>
                                             </h3>
                                             <div class="ml-4 text-right">
@@ -597,5 +605,6 @@ const finishPayment = () => {
         </Modal>
 
     </div>
+    <OffersGuidelineModal ref="offersModalRef" />
     <DialogProvider />
 </template>

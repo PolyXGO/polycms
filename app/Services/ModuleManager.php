@@ -107,6 +107,10 @@ class ModuleManager
     public function getModule(string $moduleKey): ?array
     {
         $modules = $this->discoverModules();
+        if (!isset($modules[$moduleKey])) {
+            $this->clearCache();
+            $modules = $this->discoverModules();
+        }
         return $modules[$moduleKey] ?? null;
     }
 
@@ -252,28 +256,28 @@ class ModuleManager
             $enabled = (array) ($config['enabled'] ?? []);
         } else {
             $enabled = [];
-            // Auto-discover installed modules that explicitly specify "active": 1 or "enabled": true in module.json
-            if (File::exists($this->modulesPath)) {
-                foreach (File::directories($this->modulesPath) as $vendorDir) {
-                    $vendor = basename($vendorDir);
-                    foreach (File::directories($vendorDir) as $moduleDir) {
-                        $module = basename($moduleDir);
-                        $manifestPath = $moduleDir . '/module.json';
-                        if (File::exists($manifestPath)) {
-                            try {
-                                $manifest = json_decode(File::get($manifestPath), true);
-                                if (!empty($manifest['active']) || !empty($manifest['enabled'])) {
-                                    $key = "{$vendor}.{$module}";
-                                    if (!in_array($key, $enabled, true)) {
-                                        $enabled[] = $key;
-                                    }
+        }
+
+        // Always auto-discover installed modules that explicitly specify "active": 1 or "enabled": true in module.json
+        if (File::exists($this->modulesPath)) {
+            foreach (File::directories($this->modulesPath) as $vendorDir) {
+                $vendor = basename($vendorDir);
+                foreach (File::directories($vendorDir) as $moduleDir) {
+                    $module = basename($moduleDir);
+                    $manifestPath = $moduleDir . '/module.json';
+                    if (File::exists($manifestPath)) {
+                        try {
+                            $manifest = json_decode(File::get($manifestPath), true);
+                            if (!empty($manifest['active']) || !empty($manifest['enabled'])) {
+                                $key = "{$vendor}.{$module}";
+                                if (!in_array($key, $enabled, true)) {
+                                    $enabled[] = $key;
                                 }
-                            } catch (\Throwable $e) {}
-                        }
+                            }
+                        } catch (\Throwable $e) {}
                     }
                 }
             }
-            $this->saveEnabledModules($enabled);
         }
 
         // Apply Core Filter Hook to allow dynamic 3rd-party module registration & filtering

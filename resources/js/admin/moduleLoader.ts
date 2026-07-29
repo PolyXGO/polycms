@@ -44,6 +44,7 @@ export async function loadModules(router: Router): Promise<void> {
 
         const response = await axios.get('/api/v1/modules/active-frontend', { headers });
         const modules: ModuleManifest[] = response.data?.data || [];
+        (window as any).PolyCMS_ActiveModules = modules.map((m) => m.key);
 
         if (modules.length === 0) return;
 
