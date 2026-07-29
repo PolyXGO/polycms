@@ -91,8 +91,9 @@ class Product extends Model
     {
         static::saved(function ($product) {
             if ($product->translation_group_id) {
-                // Sync physical and inventory fields across all translations
+                // Sync physical, pricing and inventory fields across all translations
                 $syncFields = [
+                    'price', 'sale_price', 'cost_price',
                     'manage_stock', 'stock_quantity', 'stock_status', 'stock_low_threshold', 'max_per_order',
                     'sku', 'weight', 'length', 'width', 'height'
                 ];

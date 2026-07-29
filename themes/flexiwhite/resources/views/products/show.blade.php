@@ -709,7 +709,8 @@
                         @endif
 
                         @php
-                            $defaultLabel = $directBtn ? data_get($directBtn, 'label', _l('Add to Cart')) : _l('Add to Cart');
+                            $directBtnObj = isset($directBtn) ? $directBtn : null;
+                            $defaultLabel = $directBtnObj ? data_get($directBtnObj, 'label', _l('Add to Cart')) : _l('Add to Cart');
                             $btnStatus = $product->stock_status ?? '';
                             $btnDisabled = in_array($btnStatus, ['out_of_stock', 'disabled_add_to_cart']);
                             $btnText = match($btnStatus) {
@@ -781,8 +782,22 @@
                             $freeDownloadUrl = null;
 
                             if (class_exists('\Modules\Polyx\ProjectHub\Models\Project')) {
-                                $projectHubProject = \Modules\Polyx\ProjectHub\Models\Project::whereHas('products', function ($q) use ($product) {
-                                    $q->where('products.id', $product->id);
+                                $productIds = [$product->id];
+                                if (!empty($product->translation_group_id)) {
+                                    $groupProductIds = \App\Models\Product::withoutGlobalScope('locale')
+                                        ->where('translation_group_id', $product->translation_group_id)
+                                        ->pluck('id')
+                                        ->toArray();
+                                    $productIds = array_merge($productIds, $groupProductIds);
+                                }
+                                $slugProductIds = \App\Models\Product::withoutGlobalScope('locale')
+                                    ->where('slug', $product->slug)
+                                    ->pluck('id')
+                                    ->toArray();
+                                $productIds = array_unique(array_filter(array_merge($productIds, $slugProductIds)));
+
+                                $projectHubProject = \Modules\Polyx\ProjectHub\Models\Project::whereHas('products', function ($q) use ($productIds) {
+                                    $q->whereIn('products.id', $productIds);
                                 })->first();
                                 
                                 if ($projectHubProject) {
@@ -791,6 +806,7 @@
                                         ->whereNotNull('free_download_url')
                                         ->where('free_download_url', '!=', '')
                                         ->orderByDesc('released_at')
+                                        ->orderByDesc('id')
                                         ->first();
                                         
                                     $freeDownloadRequiresAuth = (data_get($projectHubProject->settings, 'free_download_requires_auth', true) !== false);

@@ -89,7 +89,7 @@ class ProductController extends FrontendController
     /**
      * Display a single product
      */
-    public function show(string $slug, Request $request): View
+    public function show(string $slug, Request $request)
     {
         $query = Product::with(['user', 'categories', 'tags', 'media', 'services', 'variantAttributes.values', 'variantAttributes.group', 'activeVariants.image'])
             ->where('slug', $slug);
@@ -103,7 +103,24 @@ class ProductController extends FrontendController
         }
         // Admin users can see all products (draft, published, archived)
 
-        $product = $query->firstOrFail();
+        $product = $query->first();
+
+        // FALLBACK: If product translation does not exist in current locale, fallback to primary language version of product directly
+        if (!$product) {
+            $fallbackQuery = Product::withoutGlobalScope('locale')
+                ->with(['user', 'categories', 'tags', 'media', 'services', 'variantAttributes.values', 'variantAttributes.group', 'activeVariants.image'])
+                ->where('slug', $slug);
+
+            if (!$isAdmin) {
+                $fallbackQuery->where('status', 'published');
+            }
+
+            $product = $fallbackQuery->first();
+
+            if (!$product) {
+                abort(404);
+            }
+        }
 
         // Enforce: test products are only visible to system admins
         if (str_starts_with($product->slug, 'test-') && !$isAdmin && !app()->runningUnitTests()) {
