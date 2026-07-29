@@ -102,6 +102,14 @@
                                             {{ item.stock_error }}
                                         </p>
 
+                                        <!-- Anti-Scalping Max Per Order Badge -->
+                                        <div v-if="item.max_per_order && item.max_per_order > 0" class="mt-2">
+                                            <span class="inline-flex items-center gap-1 text-xs font-medium text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1 rounded-md border border-amber-200/80 dark:border-amber-800/60">
+                                                <span>🏷️ Max {{ item.max_per_order }} per order</span>
+                                                <span v-if="item.quantity >= item.max_per_order" class="font-bold text-amber-900 dark:text-amber-200">(Limit reached)</span>
+                                            </span>
+                                        </div>
+
                                         <!-- Quantity Controls -->
                                         <div class="mt-4 flex items-center justify-between">
                                             <div class="flex items-center space-x-3">
@@ -118,7 +126,9 @@
                                                 </span>
                                                 <button
                                                     @click="incrementQuantity(index)"
-                                                    class="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                    :disabled="!!(item.max_per_order && item.quantity >= item.max_per_order)"
+                                                    class="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                                                    :title="item.max_per_order && item.quantity >= item.max_per_order ? 'Maximum purchase limit reached' : ''"
                                                 >
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />

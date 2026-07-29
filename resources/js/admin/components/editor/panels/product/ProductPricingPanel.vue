@@ -36,14 +36,20 @@
  <input v-model.number="form.stock_quantity" type="number" min="0" :disabled="!isDefaultLanguage" class="w-full px-3 py-2 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text placeholder-admin-theme-text-muted focus:ring-admin-theme-primary focus:border-admin-theme-primary disabled:bg-gray-100 disabled:text-gray-400 dark:disabled:bg-gray-800" />
  </div>
  <div class="space-y-1">
+ <label class="block text-sm font-medium text-admin-theme-text-secondary mb-1">{{ $t('Max per order (Anti-scalping)') }}</label>
+ <input v-model.number="form.max_per_order" type="number" min="1" :disabled="!isDefaultLanguage" class="w-full px-3 py-2 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text placeholder-admin-theme-text-muted focus:ring-admin-theme-primary focus:border-admin-theme-primary disabled:bg-gray-100 disabled:text-gray-400 dark:disabled:bg-gray-800" :placeholder="$t('Unlimited')" />
+ </div>
+ </div>
+
+ <div class="space-y-1">
  <label class="block text-sm font-medium text-admin-theme-text-secondary mb-1">{{ $t('Stock Status') }}</label>
  <select v-model="form.stock_status" :disabled="!isDefaultLanguage" class="w-full px-3 py-2 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text focus:ring-admin-theme-primary focus:border-admin-theme-primary disabled:bg-gray-100 disabled:text-gray-400 dark:disabled:bg-gray-800">
  <option value="hide">{{ $t('Default (Hide)') }}</option>
  <option value="in_stock">{{ $t('In Stock') }}</option>
  <option value="out_of_stock">{{ $t('Out of Stock') }}</option>
+ <option value="disabled_add_to_cart">{{ $t('Sales Paused (Disabled Add to Cart)') }}</option>
  <option value="on_backorder">{{ $t('On Backorder') }}</option>
  </select>
- </div>
  </div>
 
  <div class="flex flex-wrap gap-4 items-center mt-2">

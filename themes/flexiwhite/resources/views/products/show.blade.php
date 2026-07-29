@@ -708,17 +708,38 @@
                             @endforeach
                         @endif
 
+                        @php
+                            $defaultLabel = $directBtn ? data_get($directBtn, 'label', _l('Add to Cart')) : _l('Add to Cart');
+                            $btnStatus = $product->stock_status ?? '';
+                            $btnDisabled = in_array($btnStatus, ['out_of_stock', 'disabled_add_to_cart']);
+                            $btnText = match($btnStatus) {
+                                'disabled_add_to_cart' => _l('Sales Paused'),
+                                'out_of_stock' => _l('Out of Stock'),
+                                default => $defaultLabel,
+                            };
+
+                            $buttonProps = [
+                                'disabled' => $btnDisabled,
+                                'label' => $btnText,
+                                'stock_status' => $btnStatus,
+                            ];
+                            if (class_exists('\App\Facades\Hook')) {
+                                $buttonProps = \App\Facades\Hook::applyFilters('product.add_to_cart_button_props', $buttonProps, $product);
+                            }
+                            $finalDisabled = !empty($buttonProps['disabled']);
+                            $finalLabel = $buttonProps['label'] ?? $btnText;
+                        @endphp
+
                         <div class="single-product-actions product-purchase-grid" style="width: 100%; max-width: 340px; justify-content: flex-start; align-items: stretch;">
                             @if($activeButtons->isNotEmpty())
                                 @if($directBtn)
                                     <button class="{{ $dHasPreset ? 'btn single-product-add-to-cart btn-preset-'.$dBtnId : 'btn btn-primary single-product-add-to-cart' }}" 
-                                             style="width: 100%;"
-                                             onclick='handleAddToCart();'
-                                             {{ ($product->stock_status ?? '') === 'out_of_stock' ? 'disabled' : '' }}>
+                                             style="width: 100%; {{ $finalDisabled ? 'opacity: 0.6; cursor: not-allowed;' : '' }}"
+                                             {{ $finalDisabled ? 'disabled' : 'onclick=handleAddToCart();' }}>
                                         <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right: 8px; display: inline-block; vertical-align: middle;">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                                         </svg>
-                                        {{ data_get($directBtn, 'label', _l('Add to Cart')) }}
+                                        {{ $finalLabel }}
                                     </button>
                                 @endif
 
@@ -744,13 +765,12 @@
                                 @endforeach
                             @else
                                 <button class="btn btn-primary single-product-add-to-cart" 
-                                        style="width: 100%;"
-                                        onclick='handleAddToCart();'
-                                        {{ ($product->stock_status ?? '') === 'out_of_stock' ? 'disabled' : '' }}>
+                                        style="width: 100%; {{ $finalDisabled ? 'opacity: 0.6; cursor: not-allowed;' : '' }}"
+                                        {{ $finalDisabled ? 'disabled' : 'onclick=handleAddToCart();' }}>
                                     <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right: 8px; display: inline-block; vertical-align: middle;">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                                     </svg>
-                                    {{ _l('Add to Cart') }}
+                                    {{ $finalLabel }}
                                 </button>
                             @endif
                         </div>

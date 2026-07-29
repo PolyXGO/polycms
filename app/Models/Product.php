@@ -32,6 +32,7 @@ class Product extends Model
         'stock_quantity',
         'manage_stock',
         'stock_low_threshold',
+        'max_per_order',
         'status',
         'featured',
         'allow_refund',
@@ -68,6 +69,7 @@ class Product extends Model
             'stock_quantity' => 'integer',
             'manage_stock' => 'boolean',
             'stock_low_threshold' => 'integer',
+            'max_per_order' => 'integer',
             'featured' => 'boolean',
             'allow_refund' => 'boolean',
             'refund_window_days' => 'integer',
@@ -91,7 +93,7 @@ class Product extends Model
             if ($product->translation_group_id) {
                 // Sync physical and inventory fields across all translations
                 $syncFields = [
-                    'manage_stock', 'stock_quantity', 'stock_status', 'stock_low_threshold',
+                    'manage_stock', 'stock_quantity', 'stock_status', 'stock_low_threshold', 'max_per_order',
                     'sku', 'weight', 'length', 'width', 'height'
                 ];
                 $changes = [];
@@ -248,6 +250,14 @@ class Product extends Model
     }
 
     /**
+     * Check if product sales are temporarily paused / disabled for Add to Cart
+     */
+    public function isSalesPaused(): bool
+    {
+        return $this->stock_status === 'disabled_add_to_cart';
+    }
+
+    /**
      * Scope for featured products
      */
     public function scopeFeatured($query)
@@ -362,11 +372,15 @@ class Product extends Model
      */
     public function isInStock(): bool
     {
-        if (!$this->manage_stock) {
-            return $this->stock_status === 'in_stock';
+        if ($this->stock_status === 'disabled_add_to_cart' || $this->stock_status === 'out_of_stock') {
+            return false;
         }
 
-        return $this->stock_status === 'in_stock' && $this->stock_quantity > 0;
+        if ($this->manage_stock) {
+            return $this->stock_quantity > 0 || $this->stock_status === 'on_backorder';
+        }
+
+        return $this->stock_status === 'in_stock' || $this->stock_status === 'on_backorder';
     }
 
     public function getEffectiveRefundWindowDaysAttribute(): ?int

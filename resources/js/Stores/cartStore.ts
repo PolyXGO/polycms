@@ -23,6 +23,7 @@ interface CartItem {
     billing_cycle?: string;
     // product type
     product_type?: string;
+    max_per_order?: number | null;
     // stock context
     stock_error?: string;
     metadata?: Record<string, any>;
@@ -126,6 +127,7 @@ export const useCartStore = defineStore('cart', {
                         offer_label: item.offer_label || item.metadata?.offer_label,
                         offer_type: item.offer_type || item.metadata?.offer_type,
                         quantity: item.quantity,
+                        max_per_order: item.product?.max_per_order || item.max_per_order || null,
                         image_url: item.product?.media?.[0]?.url || item.image_url,
                         slug: item.product?.slug || item.slug,
                         sku: item.sku,

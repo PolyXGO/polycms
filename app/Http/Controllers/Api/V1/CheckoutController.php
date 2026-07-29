@@ -61,6 +61,28 @@ class CheckoutController extends Controller
             }
         }
 
+        // Validate max_per_order limits & disabled_add_to_cart status
+        $productsById = \App\Models\Product::whereIn('id', array_column($items, 'product_id'))->get()->keyBy('id');
+        foreach ($items as $item) {
+            $p = $productsById->get($item['product_id']);
+            if ($p && $p->stock_status === 'disabled_add_to_cart') {
+                return response()->json([
+                    'message' => "Sales for \"{$p->name}\" are currently paused.",
+                    'errors' => [
+                        'items' => ["Sales for \"{$p->name}\" are currently paused."]
+                    ]
+                ], 422);
+            }
+            if ($p && $p->max_per_order && $p->max_per_order > 0 && $item['quantity'] > $p->max_per_order) {
+                return response()->json([
+                    'message' => "Quantity for \"{$p->name}\" exceeds the maximum allowed limit of {$p->max_per_order} per order.",
+                    'errors' => [
+                        'items' => ["Quantity for \"{$p->name}\" exceeds the maximum allowed limit of {$p->max_per_order} per order."]
+                    ]
+                ], 422);
+            }
+        }
+
         $data = $validated;
         
         // Calculate subtotal and apply cart.totals filter for offer calculations
@@ -245,6 +267,28 @@ class CheckoutController extends Controller
                         'items' => ['Test products can only be ordered by system administrators.']
                     ]
                 ], 403);
+            }
+        }
+
+        // Validate max_per_order limits & disabled_add_to_cart status
+        $productsById = \App\Models\Product::whereIn('id', array_column($items, 'product_id'))->get()->keyBy('id');
+        foreach ($items as $item) {
+            $p = $productsById->get($item['product_id']);
+            if ($p && $p->stock_status === 'disabled_add_to_cart') {
+                return response()->json([
+                    'message' => "Sales for \"{$p->name}\" are currently paused.",
+                    'errors' => [
+                        'items' => ["Sales for \"{$p->name}\" are currently paused."]
+                    ]
+                ], 422);
+            }
+            if ($p && $p->max_per_order && $p->max_per_order > 0 && $item['quantity'] > $p->max_per_order) {
+                return response()->json([
+                    'message' => "Quantity for \"{$p->name}\" exceeds the maximum allowed limit of {$p->max_per_order} per order.",
+                    'errors' => [
+                        'items' => ["Quantity for \"{$p->name}\" exceeds the maximum allowed limit of {$p->max_per_order} per order."]
+                    ]
+                ], 422);
             }
         }
 

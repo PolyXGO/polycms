@@ -118,7 +118,9 @@ const isServiceProduct = computed(() => {
 });
 
 const isDisabled = computed(() => {
-    // If it's a service product and requires service selection but none selected
+    if (props.product.stock_status === 'disabled_add_to_cart' || props.product.stock_status === 'out_of_stock') {
+        return true;
+    }
     if (props.requireService && isServiceProduct.value && !props.service) {
         return true;
     }
@@ -135,6 +137,8 @@ const resolvePrice = (): number => {
 };
 
 const buttonText = computed(() => {
+    if (props.product.stock_status === 'disabled_add_to_cart') return 'Sales Paused';
+    if (props.product.stock_status === 'out_of_stock') return 'Out of Stock';
     if (loading.value) return 'Adding...';
     if (added.value) return 'Added!';
     if (isDisabled.value) return 'Select a Plan';

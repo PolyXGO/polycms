@@ -61,13 +61,31 @@ class CartService
             $variant = $product->activeVariants()->findOrFail($variantId);
         }
 
-        // SECURITY: Validate stock
+        // SECURITY: Validate stock & sales status
+        if ($product->stock_status === 'disabled_add_to_cart') {
+            throw new InsufficientStockException(
+                "Sales for \"{$product->name}\" are currently paused.",
+                0
+            );
+        }
+
         $stockEntity = $variant ?? $product;
         if ($stockEntity->manage_stock && $stockEntity->stock_quantity < $quantity) {
             throw new InsufficientStockException(
                 "Only {$stockEntity->stock_quantity} items available for \"{$product->name}\"",
                 $stockEntity->stock_quantity
             );
+        }
+
+        // Anti-scalping: Max per order check
+        if ($product->max_per_order && $product->max_per_order > 0) {
+            $totalTargetQty = ($existing ? $existing->quantity : 0) + $quantity;
+            if ($totalTargetQty > $product->max_per_order) {
+                throw new InsufficientStockException(
+                    "You can only purchase a maximum of {$product->max_per_order} units of \"{$product->name}\" per order.",
+                    $product->max_per_order
+                );
+            }
         }
 
         // Check for existing item to update quantity (DB-agnostic, no LEAST/GREATEST)
@@ -121,6 +139,16 @@ class CartService
                 "Only {$stockEntity->stock_quantity} items available",
                 $stockEntity->stock_quantity
             );
+        }
+
+        // Anti-scalping: Max per order check
+        if ($item->product && $item->product->max_per_order && $item->product->max_per_order > 0) {
+            if ($quantity > $item->product->max_per_order) {
+                throw new InsufficientStockException(
+                    "You can only purchase a maximum of {$item->product->max_per_order} units of \"{$item->product->name}\" per order.",
+                    $item->product->max_per_order
+                );
+            }
         }
 
         $oldQuantity = $item->quantity;

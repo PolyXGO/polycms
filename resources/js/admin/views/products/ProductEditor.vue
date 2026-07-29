@@ -148,6 +148,7 @@ const defaultFormState = (type?: string) => ({
  stock_quantity: 0,
  stock_status:'in_stock',
  manage_stock: false,
+ max_per_order: null as number | null,
  featured: false,
  allow_refund: true,
  refund_window_days: null as number | null,
