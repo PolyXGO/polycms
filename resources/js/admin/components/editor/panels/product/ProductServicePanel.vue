@@ -3,28 +3,104 @@
     <!-- Preset Action Buttons -->
     <div class="flex items-center justify-between">
       <p class="text-xs font-semibold text-admin-theme-text-secondary uppercase tracking-wider">{{ $t('Quick Add Package Presets') }}</p>
+      <button 
+        v-if="packages.length > 1" 
+        type="button" 
+        class="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 transition-colors" 
+        @click="sortPackagesByDefault"
+        title="Sort packages by duration (Daily → Lifetime)"
+      >
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+        </svg>
+        <span>{{ $t('Sort Default Order (Daily → Lifetime)') }}</span>
+      </button>
     </div>
 
     <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
-      <button type="button" class="px-3 py-2 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors" @click="applyPreset('daily')">{{ $t('Daily Package') }}</button>
-      <button type="button" class="px-3 py-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors" @click="applyPreset('weekly')">{{ $t('Weekly Package') }}</button>
-      <button type="button" class="px-3 py-2 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors" @click="applyPreset('monthly')">{{ $t('Monthly Package') }}</button>
-      <button type="button" class="px-3 py-2 text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors" @click="applyPreset('yearly')">{{ $t('Yearly Package') }}</button>
-      <button type="button" class="px-3 py-2 text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors col-span-2 sm:col-span-1" @click="applyPreset('lifetime')">{{ $t('Lifetime Package') }}</button>
+      <button
+        v-for="btn in PRESET_BUTTONS"
+        :key="btn.id"
+        type="button"
+        :class="[
+          'px-3 py-2 text-xs font-semibold border rounded-lg transition-all flex items-center justify-center gap-1.5',
+          btn.btnClass,
+          isPresetAdded(btn.id) ? 'ring-2 ring-emerald-500/50 shadow-sm opacity-90' : ''
+        ]"
+        @click="applyPreset(btn.id)"
+      >
+        <svg v-if="isPresetAdded(btn.id)" class="w-3.5 h-3.5 text-emerald-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+        </svg>
+        <span>{{ $t(btn.label) }}</span>
+      </button>
     </div>
 
     <!-- Package Cards List -->
     <div class="space-y-4">
-      <div v-for="(pkg, index) in packages" :key="index" class="bg-admin-theme-surface border border-admin-theme-border rounded-xl shadow-sm overflow-hidden">
+      <div
+        v-for="(pkg, index) in packages"
+        :key="`${pkg.code || index}-${index}`"
+        :id="'package-card-' + index"
+        class="bg-admin-theme-surface border rounded-xl shadow-sm overflow-hidden transition-all duration-200"
+        :class="[
+          highlightIndex === index ? 'ring-2 ring-emerald-500 border-emerald-500' : 'border-admin-theme-border',
+          draggingIndex === index ? 'opacity-40 border-dashed border-indigo-500 scale-[0.99]' : ''
+        ]"
+        draggable="true"
+        @dragstart="onDragStart($event, index)"
+        @dragover="onDragOver"
+        @drop="onDrop($event, index)"
+        @dragend="onDragEnd"
+      >
         <!-- Package Header -->
-        <div class="p-4 bg-admin-theme-base/60 border-b border-admin-theme-border flex items-center justify-between cursor-pointer select-none" @click="togglePackageCollapse(index)">
-          <div class="flex items-center gap-2">
+        <div class="p-3.5 bg-admin-theme-base/60 border-b border-admin-theme-border flex items-center justify-between cursor-pointer select-none" @click="togglePackageCollapse(index)">
+          <div class="flex items-center gap-2.5">
+            <!-- Drag Handle Icon -->
+            <div 
+              class="cursor-grab active:cursor-grabbing p-1 text-admin-theme-text-muted hover:text-admin-theme-primary transition-colors"
+              title="Drag to reorder"
+              @click.stop
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
+              </svg>
+            </div>
+
             <span class="text-xs font-mono font-bold text-admin-theme-primary uppercase">PACKAGE #{{ index + 1 }}: {{ pkg.name || 'UNNAMED' }}</span>
             <span v-if="pkg.access_type === 'permanent'" class="px-2 py-0.5 text-[10px] font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 rounded border border-amber-200 dark:border-amber-800">PERMANENT</span>
             <span v-else class="px-2 py-0.5 text-[10px] font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded border border-blue-200 dark:border-blue-800">SUBSCRIPTION</span>
           </div>
-          <div class="flex items-center gap-3">
-            <button v-if="packages.length > 1" type="button" class="text-xs text-red-600 hover:text-red-700 font-semibold" @click.stop="removePackage(index)">{{ $t('Remove Package') }}</button>
+
+          <div class="flex items-center gap-2">
+            <!-- Reorder Up/Down Buttons -->
+            <div class="flex items-center gap-0.5 bg-admin-theme-base/80 p-0.5 rounded-lg border border-admin-theme-border shrink-0" @click.stop>
+              <button
+                type="button"
+                class="p-1 text-admin-theme-text-muted hover:text-admin-theme-primary disabled:opacity-30 disabled:hover:text-admin-theme-text-muted transition-colors"
+                :disabled="index === 0"
+                title="Move Up"
+                @click="movePackage(index, 'up')"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="p-1 text-admin-theme-text-muted hover:text-admin-theme-primary disabled:opacity-30 disabled:hover:text-admin-theme-text-muted transition-colors"
+                :disabled="index === packages.length - 1"
+                title="Move Down"
+                @click="movePackage(index, 'down')"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+
+            <button v-if="packages.length > 1" type="button" class="text-xs text-red-600 hover:text-red-700 font-semibold px-1.5" @click.stop="removePackage(index)">{{ $t('Remove Package') }}</button>
+
             <svg class="w-4 h-4 text-admin-theme-text-muted transition-transform duration-200" :class="{ 'rotate-180': !collapsedPackages[index] }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
@@ -152,7 +228,7 @@
 </template>
 
 <script setup lang="ts">
-import { inject, ref, watch, onMounted, getCurrentInstance } from 'vue';
+import { inject, ref, watch, onMounted, getCurrentInstance, nextTick } from 'vue';
 const instance = getCurrentInstance();
 const $t = instance?.appContext.config.globalProperties.$t;
 import { EditorContextKey } from '../../../../editor/context';
@@ -178,6 +254,72 @@ interface PackageConfig {
   capabilities: Record<string, any>;
 }
 
+const PRESET_BUTTONS = [
+  { id: 'daily', label: 'Daily Package', btnClass: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50' },
+  { id: 'weekly', label: 'Weekly Package', btnClass: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50' },
+  { id: 'monthly', label: 'Monthly Package', btnClass: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50' },
+  { id: 'yearly', label: 'Yearly Package', btnClass: 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/50' },
+  { id: 'lifetime', label: 'Lifetime Package', btnClass: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/50 col-span-2 sm:col-span-1' },
+];
+
+const PRESET_CONFIGS: Record<string, Omit<PackageConfig, 'price' | 'capabilities'>> = {
+  daily: {
+    name: 'Daily Package',
+    code: 'daily',
+    access_type: 'subscription',
+    duration_value: 1,
+    duration_unit: 'day',
+    is_recurring: false,
+    trial_period_days: 0,
+    license_policy: 'site',
+    max_activations: 1,
+  },
+  weekly: {
+    name: 'Weekly Package',
+    code: 'weekly',
+    access_type: 'subscription',
+    duration_value: 1,
+    duration_unit: 'week',
+    is_recurring: false,
+    trial_period_days: 0,
+    license_policy: 'site',
+    max_activations: 1,
+  },
+  monthly: {
+    name: 'Monthly Package',
+    code: 'monthly',
+    access_type: 'subscription',
+    duration_value: 1,
+    duration_unit: 'month',
+    is_recurring: true,
+    trial_period_days: 0,
+    license_policy: 'site',
+    max_activations: 5,
+  },
+  yearly: {
+    name: 'Yearly Package',
+    code: 'yearly',
+    access_type: 'subscription',
+    duration_value: 1,
+    duration_unit: 'year',
+    is_recurring: true,
+    trial_period_days: 0,
+    license_policy: 'site',
+    max_activations: 5,
+  },
+  lifetime: {
+    name: 'Lifetime Package',
+    code: 'lifetime',
+    access_type: 'permanent',
+    duration_value: 1,
+    duration_unit: 'year',
+    is_recurring: false,
+    trial_period_days: 0,
+    license_policy: 'site',
+    max_activations: 5,
+  },
+};
+
 const createDefaultPackage = (): PackageConfig => ({
   name: '',
   code: '',
@@ -192,11 +334,123 @@ const createDefaultPackage = (): PackageConfig => ({
   capabilities: {},
 });
 
+const PRESET_ORDER_WEIGHT: Record<string, number> = {
+  daily: 10,
+  weekly: 20,
+  monthly: 30,
+  yearly: 40,
+  lifetime: 50,
+};
+
+const getPackageWeight = (pkg: PackageConfig): number => {
+  if (!pkg) return 999;
+  const code = (pkg.code || '').trim().toLowerCase();
+  if (code in PRESET_ORDER_WEIGHT) {
+    return PRESET_ORDER_WEIGHT[code];
+  }
+  if (pkg.access_type === 'permanent') {
+    return 50;
+  }
+  const val = Number(pkg.duration_value) || 1;
+  const unit = (pkg.duration_unit || 'month').toLowerCase();
+  if (unit === 'day') return 10 * val;
+  if (unit === 'week') return 20 * val;
+  if (unit === 'month') return 30 * val;
+  if (unit === 'year') return 40 * val;
+  return 100;
+};
+
+const sortPackagesByDefault = () => {
+  packages.value.sort((a, b) => getPackageWeight(a) - getPackageWeight(b));
+};
+
 const packages = ref<PackageConfig[]>([createDefaultPackage()]);
 const collapsedPackages = ref<Record<number, boolean>>({});
+const highlightIndex = ref<number | null>(null);
+const draggingIndex = ref<number | null>(null);
+
+const onDragStart = (e: DragEvent, index: number) => {
+  draggingIndex.value = index;
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index));
+  }
+};
+
+const onDragOver = (e: DragEvent) => {
+  e.preventDefault();
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = 'move';
+  }
+};
+
+const onDrop = (e: DragEvent, targetIndex: number) => {
+  e.preventDefault();
+  if (draggingIndex.value === null || draggingIndex.value === targetIndex) {
+    draggingIndex.value = null;
+    return;
+  }
+  const itemToMove = packages.value.splice(draggingIndex.value, 1)[0];
+  packages.value.splice(targetIndex, 0, itemToMove);
+  draggingIndex.value = null;
+};
+
+const onDragEnd = () => {
+  draggingIndex.value = null;
+};
+
+const movePackage = (index: number, direction: 'up' | 'down') => {
+  if (direction === 'up' && index > 0) {
+    const item = packages.value.splice(index, 1)[0];
+    packages.value.splice(index - 1, 0, item);
+  } else if (direction === 'down' && index < packages.value.length - 1) {
+    const item = packages.value.splice(index, 1)[0];
+    packages.value.splice(index + 1, 0, item);
+  }
+};
 
 const togglePackageCollapse = (index: number) => {
   collapsedPackages.value[index] = !collapsedPackages.value[index];
+};
+
+const findPresetIndex = (presetType: string): number => {
+  const targetCode = PRESET_CONFIGS[presetType]?.code || presetType;
+  return packages.value.findIndex((pkg) => {
+    if (!pkg) return false;
+    const pkgCode = (pkg.code || '').trim().toLowerCase();
+    if (pkgCode === targetCode.toLowerCase()) return true;
+    if (presetType === 'lifetime' && pkg.access_type === 'permanent' && (!pkgCode || pkgCode === 'lifetime')) return true;
+    return false;
+  });
+};
+
+const isPresetAdded = (presetType: string): boolean => {
+  return findPresetIndex(presetType) !== -1;
+};
+
+const isPkgEmpty = (pkg: PackageConfig): boolean => {
+  if (!pkg) return true;
+  const nameEmpty = !pkg.name || pkg.name.trim() === '';
+  const codeEmpty = !pkg.code || pkg.code.trim() === '';
+  const priceEmpty = pkg.price === null || pkg.price === undefined || pkg.price === 0;
+  return nameEmpty && codeEmpty && priceEmpty;
+};
+
+const scrollToPackage = (index: number) => {
+  if (index < 0 || index >= packages.value.length) return;
+  collapsedPackages.value[index] = false;
+  nextTick(() => {
+    const el = document.getElementById(`package-card-${index}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      highlightIndex.value = index;
+      setTimeout(() => {
+        if (highlightIndex.value === index) {
+          highlightIndex.value = null;
+        }
+      }, 1800);
+    }
+  });
 };
 
 const getPackageExplanation = (pkg: any) => {
@@ -222,63 +476,33 @@ const getPackageExplanation = (pkg: any) => {
 };
 
 const applyPreset = (presetType: string) => {
-  let p = packages.value[0];
-  if (!p) {
-    p = createDefaultPackage();
-    packages.value.push(p);
+  const existingIndex = findPresetIndex(presetType);
+  if (existingIndex !== -1) {
+    scrollToPackage(existingIndex);
+    return;
   }
 
-  switch (presetType) {
-    case 'daily':
-      p.name = 'Daily Package';
-      p.code = 'daily';
-      p.access_type = 'subscription';
-      p.duration_value = 1;
-      p.duration_unit = 'day';
-      p.is_recurring = false;
-      p.license_policy = 'site';
-      p.max_activations = 1;
-      break;
-    case 'weekly':
-      p.name = 'Weekly Package';
-      p.code = 'weekly';
-      p.access_type = 'subscription';
-      p.duration_value = 1;
-      p.duration_unit = 'week';
-      p.is_recurring = false;
-      p.license_policy = 'site';
-      p.max_activations = 1;
-      break;
-    case 'monthly':
-      p.name = 'Monthly Package';
-      p.code = 'monthly';
-      p.access_type = 'subscription';
-      p.duration_value = 1;
-      p.duration_unit = 'month';
-      p.is_recurring = true;
-      p.license_policy = 'site';
-      p.max_activations = 5;
-      break;
-    case 'yearly':
-      p.name = 'Yearly Package';
-      p.code = 'yearly';
-      p.access_type = 'subscription';
-      p.duration_value = 1;
-      p.duration_unit = 'year';
-      p.is_recurring = true;
-      p.license_policy = 'site';
-      p.max_activations = 5;
-      break;
-    case 'lifetime':
-      p.name = 'Lifetime Package';
-      p.code = 'lifetime';
-      p.access_type = 'permanent';
-      p.duration_value = 1;
-      p.duration_unit = 'year';
-      p.is_recurring = false;
-      p.license_policy = 'site';
-      p.max_activations = 5;
-      break;
+  const presetData = PRESET_CONFIGS[presetType];
+  if (!presetData) return;
+
+  if (packages.value.length === 1 && isPkgEmpty(packages.value[0])) {
+    packages.value[0] = {
+      ...createDefaultPackage(),
+      ...presetData,
+    };
+  } else {
+    const newPkg: PackageConfig = {
+      ...createDefaultPackage(),
+      ...presetData,
+    };
+    packages.value.push(newPkg);
+  }
+
+  sortPackagesByDefault();
+
+  const newIndex = findPresetIndex(presetType);
+  if (newIndex !== -1) {
+    scrollToPackage(newIndex);
   }
 };
 
@@ -364,6 +588,7 @@ onMounted(() => {
         max_activations: item.max_activations !== undefined ? Number(item.max_activations) : getMaxActivations(item.license_policy, 5),
         capabilities: item.capabilities || {},
       }));
+      sortPackagesByDefault();
     } else if (context.form.value.service_config && Array.isArray(context.form.value.service_config)) {
       packages.value = context.form.value.service_config.map(item => ({
         ...item,
@@ -372,6 +597,7 @@ onMounted(() => {
         max_activations: item.max_activations !== undefined ? Number(item.max_activations) : getMaxActivations(item.license_policy, 5),
         capabilities: item.capabilities || {},
       }));
+      sortPackagesByDefault();
     }
   }, { immediate: true });
 });
