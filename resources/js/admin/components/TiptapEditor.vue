@@ -873,26 +873,32 @@ const editor = useEditor({
       class:'prose prose-sm max-w-none dark:prose-invert focus:outline-none',
     },
     handleDOMEvents: {
-      mousedown: (_view: any, event: MouseEvent) => {
-        const target = event.target as HTMLElement | null;
-        if (target?.closest('.showcase-img') || target?.closest('.mtxf-transform-overlay')) {
-          event.preventDefault();
-          event.stopPropagation();
-          (window as any).isDraggingMediaGesture = true;
-          return true;
-        }
-        return false;
-      },
-      touchstart: (_view: any, event: TouchEvent) => {
-        const target = event.target as HTMLElement | null;
-        if (target?.closest('.showcase-img') || target?.closest('.mtxf-transform-overlay')) {
-          event.preventDefault();
-          event.stopPropagation();
-          (window as any).isDraggingMediaGesture = true;
-          return true;
-        }
-        return false;
-      },
+        mousedown: (_view: any, event: MouseEvent) => {
+          const target = event.target as HTMLElement | null;
+          if (target?.closest('button') || target?.closest('.mtxf-action-box') || target?.closest('.mtxf-action-btn')) {
+            return false;
+          }
+          if (target?.closest('.showcase-img') || target?.closest('.mtxf-transform-overlay')) {
+            event.preventDefault();
+            event.stopPropagation();
+            (window as any).isDraggingMediaGesture = true;
+            return true;
+          }
+          return false;
+        },
+        touchstart: (_view: any, event: TouchEvent) => {
+          const target = event.target as HTMLElement | null;
+          if (target?.closest('button') || target?.closest('.mtxf-action-box') || target?.closest('.mtxf-action-btn')) {
+            return false;
+          }
+          if (target?.closest('.showcase-img') || target?.closest('.mtxf-transform-overlay')) {
+            event.preventDefault();
+            event.stopPropagation();
+            (window as any).isDraggingMediaGesture = true;
+            return true;
+          }
+          return false;
+        },
       dragstart: (_view: any, event: DragEvent) => {
         if ((window as any).isDraggingMediaGesture || (window as any).isHoveringMedia || (window as any).isTransformingMedia) {
           event.preventDefault();

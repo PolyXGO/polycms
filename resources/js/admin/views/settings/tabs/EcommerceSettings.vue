@@ -8,7 +8,12 @@
  <div class="space-y-4">
  <!-- Store Name -->
  <div>
+ <div class="flex items-center justify-between mb-2">
  <label for="ecommerce_store_name" class="block text-sm font-medium text-admin-theme-text-secondary">{{ t('Store Name') }}</label>
+ <span v-if="props.languages && props.languages.length > 1" class="text-[10px] text-admin-theme-text-muted font-medium bg-admin-theme-base px-1.5 py-0.5 rounded border border-admin-theme-border uppercase">
+ {{ props.selectedLocale || 'default' }}
+ </span>
+ </div>
  <input
  id="ecommerce_store_name"
  type="text"
@@ -21,7 +26,12 @@
 
  <!-- Company Name -->
  <div>
+ <div class="flex items-center justify-between mb-2">
  <label for="ecommerce_company_name" class="block text-sm font-medium text-admin-theme-text-secondary">{{ t('Company Name') }}</label>
+ <span v-if="props.languages && props.languages.length > 1" class="text-[10px] text-admin-theme-text-muted font-medium bg-admin-theme-base px-1.5 py-0.5 rounded border border-admin-theme-border uppercase">
+ {{ props.selectedLocale || 'default' }}
+ </span>
+ </div>
  <input
  id="ecommerce_company_name"
  type="text"
@@ -34,7 +44,12 @@
 
  <!-- Phone Number -->
  <div>
+ <div class="flex items-center justify-between mb-2">
  <label for="ecommerce_phone_number" class="block text-sm font-medium text-admin-theme-text-secondary">{{ t('Phone Number') }}</label>
+ <span v-if="props.languages && props.languages.length > 1" class="text-[10px] text-admin-theme-text-muted font-medium bg-admin-theme-base px-1.5 py-0.5 rounded border border-admin-theme-border uppercase">
+ {{ props.selectedLocale || 'default' }}
+ </span>
+ </div>
  <input
  id="ecommerce_phone_number"
  type="text"
@@ -47,7 +62,12 @@
 
  <!-- Store Email -->
  <div>
+ <div class="flex items-center justify-between mb-2">
  <label for="ecommerce_store_email" class="block text-sm font-medium text-admin-theme-text-secondary">{{ t('Store Email') }}</label>
+ <span v-if="props.languages && props.languages.length > 1" class="text-[10px] text-admin-theme-text-muted font-medium bg-admin-theme-base px-1.5 py-0.5 rounded border border-admin-theme-border uppercase">
+ {{ props.selectedLocale || 'default' }}
+ </span>
+ </div>
  <input
  id="ecommerce_store_email"
  type="email"
@@ -142,7 +162,12 @@
  
  <!-- State / Province -->
  <div>
+ <div class="flex items-center justify-between mb-2">
  <label for="ecommerce_address_state" class="block text-sm font-medium text-admin-theme-text-secondary">{{ t('State / Province') }}</label>
+ <span v-if="props.languages && props.languages.length > 1" class="text-[10px] text-admin-theme-text-muted font-medium bg-admin-theme-base px-1.5 py-0.5 rounded border border-admin-theme-border uppercase">
+ {{ props.selectedLocale || 'default' }}
+ </span>
+ </div>
  <input
  id="ecommerce_address_state"
  type="text"
@@ -154,7 +179,12 @@
 
  <!-- City -->
  <div>
+ <div class="flex items-center justify-between mb-2">
  <label for="ecommerce_address_city" class="block text-sm font-medium text-admin-theme-text-secondary">{{ t('City') }}</label>
+ <span v-if="props.languages && props.languages.length > 1" class="text-[10px] text-admin-theme-text-muted font-medium bg-admin-theme-base px-1.5 py-0.5 rounded border border-admin-theme-border uppercase">
+ {{ props.selectedLocale || 'default' }}
+ </span>
+ </div>
  <input
  id="ecommerce_address_city"
  type="text"
@@ -166,7 +196,12 @@
 
  <!-- Address -->
  <div>
+ <div class="flex items-center justify-between mb-2">
  <label for="ecommerce_address_line1" class="block text-sm font-medium text-admin-theme-text-secondary">{{ t('Address') }}</label>
+ <span v-if="props.languages && props.languages.length > 1" class="text-[10px] text-admin-theme-text-muted font-medium bg-admin-theme-base px-1.5 py-0.5 rounded border border-admin-theme-border uppercase">
+ {{ props.selectedLocale || 'default' }}
+ </span>
+ </div>
  <textarea
  id="ecommerce_address_line1"
  :value="settings.ecommerce_address_line1?.value"
@@ -309,28 +344,19 @@
  <div class="bg-admin-theme-surface shadow rounded-lg p-6">
  <div class="flex justify-between items-center mb-4">
  <h3 class="text-lg font-medium text-admin-theme-text">{{ t('Savings Call-to-Action (CTA)') }}</h3>
- 
- <div class="relative group">
- <button type="button" class="text-sm px-3 py-1.5 bg-admin-theme-base border border-admin-theme-border rounded-lg hover:bg-admin-theme-input-bg transition-colors flex items-center">
- <i class="fas fa-magic mr-1.5 text-indigo-500"></i> {{ t('Apply Preset') }}
- </button>
- <div class="absolute right-0 top-full mt-1 w-56 bg-admin-theme-surface border border-admin-theme-border rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
- <button type="button" @click="applyCtaPreset('⚡ Tiết kiệm $:amount+ trong :years năm cho :keys keys so với gia hạn hàng năm', '⚡ Tiết kiệm $:amount+ mỗi năm cho :keys keys so với gia hạn hàng tháng')" class="block w-full text-left px-4 py-2 text-sm text-admin-theme-text hover:bg-admin-theme-base border-b border-admin-theme-border rounded-t-lg">
- Vietnamese Default
- </button>
- <button type="button" @click="applyCtaPreset('⚡ Save $:amount+ over :years yrs across :keys keys vs yearly renewal', '⚡ Save $:amount+ per year across :keys keys vs monthly renewal')" class="block w-full text-left px-4 py-2 text-sm text-admin-theme-text hover:bg-admin-theme-base rounded-b-lg">
- English Default
- </button>
- </div>
- </div>
  </div>
  
  <div class="grid grid-cols-1 gap-6">
  <!-- Lifetime CTA -->
  <div>
+ <div class="flex items-center justify-between mb-2">
  <label for="ecommerce_savings_cta_lifetime" class="block text-sm font-medium text-admin-theme-text-secondary">
  {{ t('Savings CTA (Lifetime vs Yearly)') }}
  </label>
+ <span v-if="props.languages && props.languages.length > 1" class="text-[10px] text-admin-theme-text-muted font-medium bg-admin-theme-base px-1.5 py-0.5 rounded border border-admin-theme-border uppercase">
+ {{ props.selectedLocale || 'default' }}
+ </span>
+ </div>
  <textarea
  id="ecommerce_savings_cta_lifetime"
  :value="settings.ecommerce_savings_cta_lifetime?.value"
@@ -349,9 +375,14 @@
 
  <!-- Yearly CTA -->
  <div>
+ <div class="flex items-center justify-between mb-2">
  <label for="ecommerce_savings_cta_yearly" class="block text-sm font-medium text-admin-theme-text-secondary">
  {{ t('Savings CTA (Yearly vs Monthly)') }}
  </label>
+ <span v-if="props.languages && props.languages.length > 1" class="text-[10px] text-admin-theme-text-muted font-medium bg-admin-theme-base px-1.5 py-0.5 rounded border border-admin-theme-border uppercase">
+ {{ props.selectedLocale || 'default' }}
+ </span>
+ </div>
  <textarea
  id="ecommerce_savings_cta_yearly"
  :value="settings.ecommerce_savings_cta_yearly?.value"
@@ -396,7 +427,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from'vue';
+import { ref, computed, onMounted, watch } from'vue';
 import { useTranslation } from'../../../composables/useTranslation';
 import FormTags from'../../../components/forms/FormTags.vue';
 import MediaPicker from'../../../components/MediaPicker';
@@ -417,6 +448,8 @@ interface Props {
  };
  saving: boolean;
  group: string;
+ selectedLocale?: string;
+ languages?: any[];
 }
 
 const props = defineProps<Props>();
@@ -463,10 +496,6 @@ const insertMacro = (key: string, macro: string) => {
     }, 50);
 };
 
-const applyCtaPreset = (lifetimeText: string, yearlyText: string) => {
-    updateValue('ecommerce_savings_cta_lifetime', lifetimeText);
-    updateValue('ecommerce_savings_cta_yearly', yearlyText);
-};
 
 const mediaPickerRef = ref<any>(null);
 const currentPickerField = ref<string>('');

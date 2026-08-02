@@ -67,6 +67,8 @@
  :settings="settings[activeTab]"
  :saving="saving"
  :group="activeTab"
+ :selected-locale="selectedLocale"
+ :languages="languages"
  @update="updateSettings"
  @save="saveSettings"
  />

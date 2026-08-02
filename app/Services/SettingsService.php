@@ -1213,6 +1213,7 @@ class SettingsService
                 'section' => 'store_info',
                 'section_label' => 'Store Information',
                 'order' => 10,
+                'translatable' => true,
             ],
             'ecommerce_company_name' => [
                 'key' => 'ecommerce_company_name',
@@ -1222,6 +1223,7 @@ class SettingsService
                 'section' => 'store_info',
                 'section_label' => 'Store Information',
                 'order' => 20,
+                'translatable' => true,
             ],
             'ecommerce_phone_number' => [
                 'key' => 'ecommerce_phone_number',
@@ -1231,6 +1233,7 @@ class SettingsService
                 'description' => 'Contact number displayed to customers and on invoices.',
                 'section' => 'store_info',
                 'order' => 30,
+                'translatable' => true,
             ],
             'ecommerce_store_email' => [
                 'key' => 'ecommerce_store_email',
@@ -1240,6 +1243,7 @@ class SettingsService
                 'description' => 'Primary contact email for customer inquiries.',
                 'section' => 'store_info',
                 'order' => 40,
+                'translatable' => true,
             ],
             'ecommerce_admin_emails' => [
                 'key' => 'ecommerce_admin_emails',
@@ -1268,6 +1272,7 @@ class SettingsService
                 'label' => 'State / Province',
                 'section' => 'address',
                 'order' => 70,
+                'translatable' => true,
             ],
             'ecommerce_address_city' => [
                 'key' => 'ecommerce_address_city',
@@ -1276,6 +1281,7 @@ class SettingsService
                 'label' => 'City',
                 'section' => 'address',
                 'order' => 80,
+                'translatable' => true,
             ],
             'ecommerce_address_line1' => [
                 'key' => 'ecommerce_address_line1',
@@ -1284,6 +1290,7 @@ class SettingsService
                 'label' => 'Address',
                 'section' => 'address',
                 'order' => 90,
+                'translatable' => true,
             ],
             'ecommerce_tax_id' => [
                 'key' => 'ecommerce_tax_id',
