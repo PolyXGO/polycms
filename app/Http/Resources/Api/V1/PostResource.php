@@ -38,7 +38,10 @@ class PostResource extends JsonResource
                 'keywords' => $this->meta_keywords,
                 'og_image' => $this->og_image,
             ],
-            'meta_fields' => $this->whenLoaded('meta', fn() => $this->meta->pluck('meta_value', 'meta_key')->toArray(), []),
+            'meta_fields' => array_merge(
+                $this->relationLoaded('meta') ? $this->meta->pluck('meta_value', 'meta_key')->toArray() : [],
+                ['primary_category_id' => $this->getMeta('primary_category_id') ? (string) $this->getMeta('primary_category_id') : ($this->primary_category?->id ? (string) $this->primary_category->id : null)]
+            ),
             'featured_image' => $this->featured_image,
             'featured_image_url' => $this->featured_image_url,
             'thumbnail_url' => $this->thumbnail_url,

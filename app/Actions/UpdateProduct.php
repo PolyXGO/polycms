@@ -110,15 +110,62 @@ class UpdateProduct
 
             $product->update($this->filterPersistableProductData($data));
 
-            // Sync pricing (price, sale_price, cost_price) across all translations in group
+            // Sync product type, pricing, and service packages across all translations in group
             if (!empty($product->translation_group_id)) {
-                Product::where('translation_group_id', $product->translation_group_id)
+                Product::withoutGlobalScope('locale')
+                    ->where('translation_group_id', $product->translation_group_id)
                     ->where('id', '!=', $product->id)
                     ->update([
+                        'type' => $product->type,
                         'price' => $product->price,
                         'sale_price' => $product->sale_price,
                         'cost_price' => $product->cost_price,
                     ]);
+
+                // Sync service packages across all translations in group (syncing price, duration, settings while retaining localized labels if present)
+                $mainServices = $product->services;
+                if ($mainServices && $mainServices->isNotEmpty()) {
+                    $siblingProducts = Product::withoutGlobalScope('locale')
+                        ->where('translation_group_id', $product->translation_group_id)
+                        ->where('id', '!=', $product->id)
+                        ->get();
+
+                    foreach ($siblingProducts as $sibling) {
+                        $processedSiblingIds = [];
+                        foreach ($mainServices as $mainService) {
+                            $siblingService = $sibling->services()->where('code', $mainService->code)->first();
+                            $syncData = [
+                                'code' => $mainService->code,
+                                'price' => $mainService->price,
+                                'access_type' => $mainService->access_type,
+                                'duration_value' => $mainService->duration_value,
+                                'duration_unit' => $mainService->duration_unit,
+                                'is_recurring' => $mainService->is_recurring,
+                                'trial_period_days' => $mainService->trial_period_days,
+                                'capabilities' => $mainService->capabilities,
+                                'license_policy' => $mainService->license_policy,
+                            ];
+                            if ($siblingService) {
+                                if (empty($siblingService->name)) {
+                                    $syncData['name'] = $mainService->name;
+                                }
+                                $siblingService->update($syncData);
+                                $processedSiblingIds[] = $siblingService->id;
+                            } else {
+                                $syncData['name'] = $mainService->name;
+                                $newSib = $sibling->services()->create($syncData);
+                                $processedSiblingIds[] = $newSib->id;
+                            }
+                        }
+                        $toDelete = $sibling->services()->whereNotIn('id', $processedSiblingIds)->get();
+                        foreach ($toDelete as $delSib) {
+                            $isReferenced = \App\Models\Ecommerce\OrderItem::where('service_id', $delSib->id)->exists();
+                            if (!$isReferenced) {
+                                $delSib->delete();
+                            }
+                        }
+                    }
+                }
             }
 
             // Sync CommerceOffers rules if provided in payload

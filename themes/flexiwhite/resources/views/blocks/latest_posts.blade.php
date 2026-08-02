@@ -36,11 +36,6 @@
         $query->whereHas('categories', function($q) use ($categoryId) {
             $q->where('categories.id', $categoryId);
         });
-    } else {
-        // "All categories" - but only categories of the current locale to prevent mixup
-        $query->whereHas('categories', function($q) {
-            $q->where('categories.locale', app()->getLocale());
-        });
     }
 
     if ($offset > 0) {

@@ -16,15 +16,15 @@
 @section('content')
 <div class="container section">
     {{-- Search Hero Header --}}
-    <section class="fw-hero" style="text-align: left;">
-        <h1 class="fw-hero-title" style="margin-bottom: 0.25rem;">
+    <section class="search-hero-header" style="text-align: left; padding: 0.5rem 0 1.5rem;">
+        <h1 class="fw-hero-title" style="font-size: 2.25rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 0.35rem; line-height: 1.2;">
             @if(!empty($search))
                 {{ _l('Search results for') }} "{{ $search }}"
             @else
                 {{ _l('Search') }}
             @endif
         </h1>
-        <p class="fw-hero-subtitle" style="margin-left: 0; margin-right: 0; max-width: none;">
+        <p class="fw-hero-subtitle" style="font-size: 1rem; margin: 0; max-width: none; line-height: 1.6;">
             @if($totalResults > 0)
                 {{ _l('Found') }} {{ $totalResults }} {{ _l('matching item(s)') }}
             @else

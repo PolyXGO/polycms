@@ -50,15 +50,12 @@ const viewType = computed(() => {
 });
 
 // Safe computed accessor for iframe_url from metaFields
-const iframeUrl = computed(() => metaFields?.value?.iframe_url ||'');
+const iframeUrl = computed(() => metaFields?.iframe_url ||'');
 
 const onIframeUrlInput = (event: Event) => {
  const val = (event.target as HTMLInputElement).value;
  if (metaFields) {
- metaFields.value = {
- ...metaFields.value,
- iframe_url: val || null,
- };
+ metaFields['iframe_url'] = val || null;
  }
 };
 </script>

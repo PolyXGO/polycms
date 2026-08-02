@@ -164,6 +164,14 @@ class CoreMenuService
                     'permission' => 'update product',
                     'order' => 7,
                 ],
+                [
+                    'key' => 'products-capability-presets',
+                    'label' => 'Capability Presets',
+                    'route' => 'admin.capability-presets.index',
+                    'icon' => null,
+                    'permission' => 'update product',
+                    'order' => 8,
+                ],
             ],
         ]);
 

@@ -1792,6 +1792,36 @@ Hook::addFilter('content.render.landing_block.fw_contact_form', function ($html,
     return view('theme.flexiwhite::blocks.contact_form', ['attrs' => $attrs])->render();
 }, 10, 2);
 
+// Hook Related Products Landing Element to product single page
+Hook::addFilter('theme.product.single.after_content', function ($content, $product) {
+    if (!($product instanceof \App\Models\Product)) {
+        return $content;
+    }
+
+    $attrs = [
+        'limit' => 4,
+        'title' => 'Related Products',
+        'subtitle' => 'Explore more items in the same category',
+    ];
+
+    $blockHtml = \App\Facades\Hook::applyFilters(
+        'content.render.landing_block.landing_related_products',
+        '',
+        $attrs,
+        ['product' => $product]
+    );
+
+    if (empty($blockHtml) && view()->exists('mtelements::blocks.landing_related_products')) {
+        $blockHtml = view('mtelements::blocks.landing_related_products', [
+            'attrs' => $attrs,
+            'context' => ['product' => $product],
+            'product' => $product,
+        ])->render();
+    }
+
+    return $content . $blockHtml;
+}, 10, 2);
+
 
 
 

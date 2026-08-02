@@ -205,10 +205,35 @@ class AccountController extends Controller
             $product = $license->subscription?->product;
             if ($product) {
                 try {
+                    $productIds = [$product->id];
+                    if (!empty($product->translation_group_id)) {
+                        $groupProductIds = \App\Models\Product::withoutGlobalScope('locale')
+                            ->where('translation_group_id', $product->translation_group_id)
+                            ->pluck('id')
+                            ->toArray();
+                        $productIds = array_merge($productIds, $groupProductIds);
+                    }
+                    $productIds = array_unique(array_filter($productIds));
+
                     $projectIds = \Illuminate\Support\Facades\DB::table('project_products')
-                        ->where('product_id', $product->id)
+                        ->whereIn('product_id', $productIds)
                         ->pluck('project_id')
                         ->toArray();
+
+                    if (!empty($projectIds)) {
+                        $projectGroupIds = \Modules\Polyx\ProjectHub\Models\Project::withoutGlobalScope('locale')
+                            ->whereIn('id', $projectIds)
+                            ->whereNotNull('translation_group_id')
+                            ->pluck('translation_group_id')
+                            ->toArray();
+                        if (!empty($projectGroupIds)) {
+                            $allProjectIds = \Modules\Polyx\ProjectHub\Models\Project::withoutGlobalScope('locale')
+                                ->whereIn('translation_group_id', $projectGroupIds)
+                                ->pluck('id')
+                                ->toArray();
+                            $projectIds = array_unique(array_merge($projectIds, $allProjectIds));
+                        }
+                    }
                     
                     $releases = \Modules\Polyx\ProjectHub\Models\ProjectRelease::whereIn('project_id', $projectIds)
                         ->where('status', 'published')

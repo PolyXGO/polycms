@@ -21,7 +21,22 @@
         <h3 style="font-size: 1.125rem; margin-bottom: 1rem; color: var(--geist-foreground);">{{ _l('Latest Products') }}</h3>
         <ul style="list-style: none; padding: 0;">
             @php
-                $fallbackProducts = \App\Models\Product::where('status', 'published')->where('locale', app()->getLocale())->where('slug', 'not like', 'test-%')->latest()->take(3)->get();
+                $fallbackQuery = \App\Models\Product::where('status', 'published')->where('locale', app()->getLocale())->where('slug', 'not like', 'test-%');
+                
+                $currentProductObj = $product ?? view()->shared('product') ?? null;
+                if ($currentProductObj instanceof \App\Models\Product) {
+                    $excludeIds = [$currentProductObj->id];
+                    if (!empty($currentProductObj->translation_group_id)) {
+                        $groupProductIds = \App\Models\Product::withoutGlobalScope('locale')
+                            ->where('translation_group_id', $currentProductObj->translation_group_id)
+                            ->pluck('id')
+                            ->toArray();
+                        $excludeIds = array_unique(array_merge($excludeIds, $groupProductIds));
+                    }
+                    $fallbackQuery->whereNotIn('id', $excludeIds);
+                }
+
+                $fallbackProducts = $fallbackQuery->latest()->take(3)->get();
             @endphp
             @forelse($fallbackProducts as $fp)
                 <li style="margin-bottom: 1rem; display: flex; gap: 0.75rem; align-items: center;">

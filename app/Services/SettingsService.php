@@ -1444,6 +1444,26 @@ class SettingsService
                 'section' => 'formatting',
                 'order' => 210,
             ],
+            'ecommerce_savings_cta_lifetime' => [
+                'key' => 'ecommerce_savings_cta_lifetime',
+                'value' => '⚡ Save :amount+ over :years yrs across :keys keys vs yearly renewal',
+                'type' => 'string',
+                'label' => 'Savings CTA (Lifetime vs Yearly)',
+                'description' => 'CTA template for lifetime packages. Available macros: :amount, :years, :keys',
+                'section' => 'formatting',
+                'order' => 220,
+                'translatable' => true,
+            ],
+            'ecommerce_savings_cta_yearly' => [
+                'key' => 'ecommerce_savings_cta_yearly',
+                'value' => '⚡ Save :amount+ per year across :keys keys vs monthly renewal',
+                'type' => 'string',
+                'label' => 'Savings CTA (Yearly vs Monthly)',
+                'description' => 'CTA template for yearly packages. Available macros: :amount, :keys',
+                'section' => 'formatting',
+                'order' => 230,
+                'translatable' => true,
+            ],
         ];
     }
 

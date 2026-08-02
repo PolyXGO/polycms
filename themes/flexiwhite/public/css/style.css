@@ -220,6 +220,12 @@ p {
   padding-bottom: 2.5rem;
 }
 
+.breadcrumb-bar + main .section,
+.breadcrumb-bar ~ main .section,
+body:has(.breadcrumb-bar) main .section {
+  padding-top: 0.5rem;
+}
+
 /* Grid Layouts */
 .grid-list {
   display: grid;
@@ -780,8 +786,8 @@ html.dark .header-widget-area .widget-search-trigger--icon {
 
 /* Breadcrumb */
 .breadcrumb-bar {
-  padding-top: 1rem;
-  padding-bottom: 1rem;
+  padding-top: 0.75rem;
+  padding-bottom: 0.25rem;
   border-bottom: none;
   margin-bottom: 0;
 }

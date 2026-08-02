@@ -39,9 +39,7 @@ class ProductCategoryController extends Controller
             $limit = max(1, min(100, (int) $request->input('limit', 20)));
 
             $query->select('product_categories.*')
-                ->leftJoin('product_category', 'product_categories.id', '=', 'product_category.category_id')
-                ->selectRaw('COUNT(DISTINCT product_category.product_id) as usage_count')
-                ->groupBy('product_categories.id')
+                ->selectRaw('(SELECT COUNT(DISTINCT product_id) FROM product_category WHERE category_id = product_categories.id) as usage_count')
                 ->orderByDesc('usage_count')
                 ->orderBy('product_categories.name')
                 ->limit($limit);

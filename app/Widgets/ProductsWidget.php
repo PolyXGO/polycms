@@ -23,6 +23,23 @@ class ProductsWidget
             ->where('slug', 'not like', 'test-%')
             ->orderBy($orderBy, $orderDirection);
 
+        // Exclude currently viewed product and its translation group variants
+        $currentProduct = view()->shared('product') ?? request()->route('product');
+        if (!($currentProduct instanceof Product) && request()->route('slug')) {
+            $currentProduct = Product::withoutGlobalScope('locale')->where('slug', request()->route('slug'))->first();
+        }
+        if ($currentProduct instanceof Product) {
+            $excludeIds = [$currentProduct->id];
+            if (!empty($currentProduct->translation_group_id)) {
+                $groupProductIds = Product::withoutGlobalScope('locale')
+                    ->where('translation_group_id', $currentProduct->translation_group_id)
+                    ->pluck('id')
+                    ->toArray();
+                $excludeIds = array_unique(array_merge($excludeIds, $groupProductIds));
+            }
+            $query->whereNotIn('id', $excludeIds);
+        }
+
         if (!empty($categoryIds)) {
             $query->whereHas('categories', fn($q) => $q->whereIn('product_categories.id', $categoryIds));
         }
@@ -33,7 +50,7 @@ class ProductsWidget
             return '';
         }
 
-        $title = $instance->title ?: 'Products';
+        $title = $instance->title ? _l($instance->title) : _l('Latest Products');
 
         $viewName = 'widgets.products';
 

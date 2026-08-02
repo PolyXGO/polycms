@@ -210,7 +210,23 @@
 
           <!-- Capabilities Section -->
           <div class="space-y-3">
-            <label class="block text-sm font-semibold text-admin-theme-text-secondary">{{ $t('Capabilities (Features)') }}</label>
+            <div class="flex justify-between items-end">
+              <label class="block text-sm font-semibold text-admin-theme-text-secondary">{{ $t('Capabilities (Features)') }}</label>
+              
+              <!-- Capability Presets Badges -->
+              <div v-if="capabilityPresets.length > 0" class="flex flex-wrap gap-1.5 justify-end max-w-md">
+                <button 
+                  v-for="preset in capabilityPresets" 
+                  :key="preset.id"
+                  type="button"
+                  @click="addPresetCapability(index, preset)"
+                  class="px-2 py-0.5 text-[10px] rounded bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800 transition-colors"
+                  :title="preset.group"
+                >
+                  + {{ preset.name }}
+                </button>
+              </div>
+            </div>
             <div class="space-y-2">
               <div v-for="(capValue, capKey) in pkg.capabilities" :key="capKey" class="flex gap-2 items-center">
                 <input :value="capKey" @input="updateCapabilityKey(index, String(capKey), ($event.target as HTMLInputElement).value)" :placeholder="$t('Key')" class="flex-1 px-3 py-2 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text text-sm" />
@@ -229,11 +245,14 @@
 
 <script setup lang="ts">
 import { inject, ref, watch, onMounted, getCurrentInstance, nextTick } from 'vue';
+import axios from 'axios';
 const instance = getCurrentInstance();
 const $t = instance?.appContext.config.globalProperties.$t;
 import { EditorContextKey } from '../../../../editor/context';
 import { useTranslation } from '@/admin/composables/useTranslation';
 const { t } = useTranslation();
+
+const capabilityPresets = ref<any[]>([]);
 
 const context = inject(EditorContextKey);
 if (!context) {
@@ -577,8 +596,40 @@ watch(packages, (newValue) => {
   }));
 }, { deep: true });
 
+const addPresetCapability = (pkgIndex: number, preset: any) => {
+  const currentLocale = window.Laravel?.locale || 'en';
+  let val = preset.name;
+  if (preset.translations && typeof preset.translations === 'object') {
+    val = preset.translations[currentLocale] || preset.translations['en'] || preset.translations['vi'] || preset.name;
+  }
+  
+  const currentCaps = packages.value[pkgIndex].capabilities || {};
+  let newKey = 'feature';
+  let counter = 1;
+  while (newKey in currentCaps) {
+    newKey = `feature_${counter}`;
+    counter++;
+  }
+  
+  packages.value[pkgIndex].capabilities = {
+    ...currentCaps,
+    [newKey]: val
+  };
+};
+
+const fetchCapabilityPresets = async () => {
+  try {
+    const { data } = await axios.get('/api/v1/admin/capability-presets');
+    capabilityPresets.value = data.data;
+  } catch (error) {
+    console.error('Failed to load capability presets', error);
+  }
+};
+
 // Load initial data
 onMounted(() => {
+  fetchCapabilityPresets();
+  
   watch(() => context.form.value.services, (newVal) => {
     if (newVal && Array.isArray(newVal) && newVal.length > 0) {
       packages.value = newVal.map(item => ({

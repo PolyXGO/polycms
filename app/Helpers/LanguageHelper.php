@@ -105,7 +105,17 @@ class LanguageHelper
 
         // Handle replacements if array provided
         if (is_array($replace) && !empty($replace)) {
-            return strtr($translated, $replace);
+            $formattedReplace = [];
+            foreach ($replace as $k => $v) {
+                $strK = (string) $k;
+                $strV = (string) $v;
+                if (!str_starts_with($strK, ':')) {
+                    $formattedReplace[':' . $strK] = $strV;
+                } else {
+                    $formattedReplace[$strK] = $strV;
+                }
+            }
+            return strtr($translated, $formattedReplace);
         }
 
         return $translated;

@@ -122,20 +122,26 @@
 
 /* Float Y (up & down) */
 @keyframes polyAnimFloatY {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    50% { transform: translate3d(0, -10px, 0); }
 }
 .poly-anim-float-y {
     animation: polyAnimFloatY 4s ease-in-out infinite !important;
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
 }
 
 /* Float X (left & right) */
 @keyframes polyAnimFloatX {
-    0%, 100% { transform: translateX(0); }
-    50% { transform: translateX(8px); }
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    50% { transform: translate3d(8px, 0, 0); }
 }
 .poly-anim-float-x {
     animation: polyAnimFloatX 4s ease-in-out infinite !important;
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
 }
 
 /* Spin Slow */

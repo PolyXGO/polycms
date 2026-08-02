@@ -113,22 +113,35 @@ class Category extends Model
      */
     public function ancestors(): Collection
     {
-        if (!$this->path) {
-            return collect([]);
+        $ancestors = collect([]);
+
+        if ($this->path && str_contains($this->path, '/')) {
+            $ids = explode('/', $this->path);
+            array_pop($ids);
+            if (!empty($ids)) {
+                $found = static::withoutGlobalScopes()
+                    ->whereIn('id', $ids)
+                    ->where('type', $this->type)
+                    ->orderBy('depth')
+                    ->get();
+                if ($found->isNotEmpty()) {
+                    return $found;
+                }
+            }
         }
 
-        $ids = explode('/', $this->path);
-        // Remove current category ID
-        array_pop($ids);
-
-        if (empty($ids)) {
-            return collect([]);
+        // Fallback: Walk up parent_id tree if path is empty or single ID
+        $current = $this;
+        while ($current && $current->parent_id) {
+            $parent = static::withoutGlobalScopes()->find($current->parent_id);
+            if (!$parent || $ancestors->contains('id', $parent->id)) {
+                break;
+            }
+            $ancestors->prepend($parent);
+            $current = $parent;
         }
 
-        return static::whereIn('id', $ids)
-            ->where('type', $this->type)
-            ->orderBy('depth')
-            ->get();
+        return $ancestors;
     }
 
     /**
@@ -439,19 +452,20 @@ class Category extends Model
     /**
      * Update path and depth based on parent
      */
-    protected function updatePathAndDepth(): void
+    public function updatePathAndDepth(): void
     {
         if ($this->parent_id) {
-            $parent = static::find($this->parent_id);
+            $parent = static::withoutGlobalScopes()->find($this->parent_id);
             if ($parent) {
-                $this->path = $parent->path ? $parent->path . '/' . $this->id : (string)$this->id;
+                $parentPath = $parent->path ?: (string) $parent->id;
+                $this->path = $parentPath . '/' . $this->id;
                 $this->depth = $parent->depth + 1;
             } else {
-                $this->path = (string)$this->id;
+                $this->path = (string) $this->id;
                 $this->depth = 0;
             }
         } else {
-            $this->path = (string)$this->id;
+            $this->path = (string) $this->id;
             $this->depth = 0;
         }
     }

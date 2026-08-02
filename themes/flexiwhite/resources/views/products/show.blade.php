@@ -263,8 +263,41 @@
                     <!-- Product Image Gallery -->
                     <div>
                         @if($product->media && $product->media->count() > 0)
-                            <div class="single-product-image-wrap">
+                            <div class="single-product-image-wrap" style="position: relative;">
                                 <img id="main-product-image" src="{{ $product->featured_image_url ?? '' }}" alt="{{ $product->name }}" class="single-product-image" {!! media_lazy_attr() !!}>
+                                @php
+                                    $quickEditOptions = [
+                                        [
+                                            'id' => 'edit-product',
+                                            'label' => _l('Edit Product'),
+                                            'url' => url('/admin/products/' . $product->id . '/edit'),
+                                            'icon' => 'fas fa-pencil-alt',
+                                        ]
+                                    ];
+                                    $quickEditOptions = \App\Facades\Hook::applyFilters('product.quick_edit_options', $quickEditOptions, $product);
+                                @endphp
+
+                                @if(!empty($quickEditOptions))
+                                    @if(count($quickEditOptions) === 1)
+                                        <a href="{{ $quickEditOptions[0]['url'] }}" target="_blank" class="admin-quick-edit-btn" title="{{ $quickEditOptions[0]['label'] }}" style="top: 12px; right: 12px; width: 34px; height: 34px;">
+                                            <i class="{{ $quickEditOptions[0]['icon'] ?? 'fas fa-pencil-alt' }}" style="font-size: 0.85rem;"></i>
+                                        </a>
+                                    @else
+                                        <div class="admin-quick-edit-dropdown" style="position: absolute; top: 12px; right: 12px; z-index: 100;">
+                                            <button type="button" class="admin-quick-edit-btn" title="{{ _l('Edit Options') }}" style="width: 34px; height: 34px; border: none; cursor: pointer;" onclick="const m = this.nextElementSibling; m.style.display = m.style.display === 'none' ? 'block' : 'none';">
+                                                <i class="fas fa-pencil-alt" style="font-size: 0.85rem;"></i>
+                                            </button>
+                                            <div class="admin-quick-edit-menu" style="display: none; position: absolute; right: 0; top: 40px; background: #fff; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); min-width: 170px; padding: 6px 0; border: 1px solid #e2e8f0; z-index: 110;">
+                                                @foreach($quickEditOptions as $opt)
+                                                    <a href="{{ $opt['url'] }}" target="_blank" style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-size: 0.85rem; color: #334155; text-decoration: none; transition: background 0.15s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
+                                                        <i class="{{ $opt['icon'] ?? 'fas fa-pencil-alt' }}" style="font-size: 0.8rem; color: #64748b;"></i>
+                                                        <span>{{ $opt['label'] }}</span>
+                                                    </a>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endif
+                                @endif
                             </div>
                             
                             @if($product->media->count() > 1)
@@ -335,9 +368,17 @@
                             $effectivePrice = (float) $product->effective_price;
                             $regularPrice = (float) $product->price;
                             $salePrice = (float) ($product->sale_price ?? 0);
-                            $hasSale = ($salePrice > 0 && $salePrice < $regularPrice) || ($effectivePrice > 0 && $effectivePrice < $regularPrice);
-                            $currentPrice = ($effectivePrice > 0 && $effectivePrice < $regularPrice) ? $effectivePrice : (($salePrice > 0 && $salePrice < $regularPrice) ? $salePrice : $regularPrice);
-                            $strikePrice = $hasSale ? $regularPrice : null;
+                            
+                            if ($product->services && $product->services->isNotEmpty()) {
+                                $firstService = $product->services->first();
+                                $currentPrice = (float) ($firstService->price ?? $regularPrice);
+                                $hasSale = false;
+                                $strikePrice = null;
+                            } else {
+                                $hasSale = ($salePrice > 0 && $salePrice < $regularPrice) || ($effectivePrice > 0 && $effectivePrice < $regularPrice);
+                                $currentPrice = ($effectivePrice > 0 && $effectivePrice < $regularPrice) ? $effectivePrice : (($salePrice > 0 && $salePrice < $regularPrice) ? $salePrice : $regularPrice);
+                                $strikePrice = $hasSale ? $regularPrice : null;
+                            }
                         @endphp
                         <div class="single-product-price-row">
                             @if($hasSale)
@@ -489,56 +530,98 @@
                                         }
                                     } catch (\Throwable $e) {}
                                 }
+
+                                $yearlyService = $product->services->firstWhere('access_type', 'subscription');
+                                $lifetimeService = $product->services->first(fn($s) => in_array($s->access_type, ['lifetime', 'permanent']));
+
+                                $getActivationCount = function($svc) {
+                                    if (!$svc) return 1;
+                                    $policy = $svc->license_policy;
+                                    if (is_array($policy)) {
+                                        if (!empty($policy['max_activations'])) return (int) $policy['max_activations'];
+                                        if (!empty($policy['limit'])) return (int) $policy['limit'];
+                                        if (!empty($policy['seats'])) return (int) $policy['seats'];
+                                    }
+                                    if (!empty($svc->capabilities) && is_array($svc->capabilities)) {
+                                        foreach ($svc->capabilities as $cap) {
+                                            if (preg_match('/(\d+)\s*(site|domain|app|key|license)/i', (string) $cap, $m)) {
+                                                return (int) $m[1];
+                                            }
+                                        }
+                                    }
+                                    return 1;
+                                };
+
+                                $yearlyPrice = $yearlyService ? (float) ($yearlyService->price ?? 0) : 0;
+                                $lifetimePrice = $lifetimeService ? (float) ($lifetimeService->price ?? 0) : 0;
+                                $yearlyKeys = $getActivationCount($yearlyService);
+                                $lifetimeKeys = $getActivationCount($lifetimeService);
+
+                                $savingsText = null;
+                                if ($lifetimeService && $yearlyService && $yearlyPrice > 0 && $lifetimePrice > 0) {
+                                    $settingsService = app(\App\Services\SettingsService::class);
+                                    
+                                    if ($lifetimeKeys > $yearlyKeys) {
+                                        $years = 2;
+                                        $cost = $yearlyPrice * $lifetimeKeys * $years;
+                                        $savings = max(0, $cost - $lifetimePrice);
+                                        if ($savings > 0) {
+                                            $savingsFormatted = format_currency($savings);
+                                            $customCta = $settingsService->get('ecommerce_savings_cta_lifetime');
+                                            if ($customCta) {
+                                                $savingsText = str_replace(
+                                                    [':amount', ':years', ':keys'],
+                                                    [$savingsFormatted, $years, $lifetimeKeys],
+                                                    $customCta
+                                                );
+                                            } else {
+                                                $savingsText = _l('Save :amount+ over :years yrs across :keys keys vs yearly renewal', [
+                                                    'amount' => $savingsFormatted,
+                                                    'years' => $years,
+                                                    'keys' => $lifetimeKeys,
+                                                ]);
+                                            }
+                                        }
+                                    } else {
+                                        $years = 3;
+                                        $cost = $yearlyPrice * $years;
+                                        $savings = max(0, $cost - $lifetimePrice);
+                                        if ($savings > 0) {
+                                            $savingsFormatted = format_currency($savings);
+                                            $customCta = $settingsService->get('ecommerce_savings_cta_yearly');
+                                            if ($customCta) {
+                                                $savingsText = str_replace(
+                                                    [':amount', ':years', ':keys'],
+                                                    [$savingsFormatted, $years, $lifetimeKeys],
+                                                    $customCta
+                                                );
+                                            } else {
+                                                $savingsText = _l('Save :amount+ over :years yrs vs annual renewals • Pay once, use forever', [
+                                                    'amount' => $savingsFormatted,
+                                                    'years' => $years,
+                                                ]);
+                                            }
+                                        }
+                                    }
+                                }
                             @endphp
 
-                            @if($product->services->count() === 1)
-                                @php 
-                                    $service = $product->services->first();
-                                    $rawServicePrice = (float) ($service->price ?? $baseRefPrice);
-                                    $serviceOfferPrice = round($rawServicePrice * $offerRatio, 2);
-                                    $hasServiceSale = ($serviceOfferPrice < $rawServicePrice);
-                                    $serviceTiers = [];
-                                    foreach ($tierRatios as $ratio) {
-                                        $serviceTiers[] = format_currency(round($rawServicePrice * $ratio, 2));
-                                    }
-                                @endphp
-                                <input type="radio" name="selected_service_id" value="{{ $service->id }}" 
-                                       data-price="{{ $serviceOfferPrice }}" 
-                                       data-price-text="{{ format_currency($serviceOfferPrice) }}"
-                                       data-raw-price="{{ $rawServicePrice }}"
-                                       data-raw-price-text="{{ format_currency($rawServicePrice) }}"
-                                       data-has-sale="{{ $hasServiceSale ? '1' : '0' }}"
-                                       data-tiers="{{ json_encode($serviceTiers) }}"
-                                       data-name="{{ $service->name }}"
-                                       data-billing="{{ $service->access_type === 'subscription' ? ($service->duration_value . ' ' . $service->duration_unit . ($service->duration_value > 1 ? 's' : '')) : 'Lifetime' }}"
-                                       checked 
-                                       style="display: none;">
-                                
-                                @if(!empty($service->capabilities))
-                                    <div class="product-features-list mb-4" style="margin-top: 15px; margin-bottom: 20px; width: 100%; max-width: 340px;">
-                                        <div style="display: flex; flex-direction: column; gap: 8px;">
-                                            @foreach($service->capabilities as $capKey => $capVal)
-                                                <div style="display: flex; align-items: center;" class="text-slate-600 dark:text-zinc-300">
-                                                    <i class="fa fa-check text-success" style="color: #10b981; margin-right: 10px; font-size: 0.9rem;"></i>
-                                                    <span style="font-size: 0.85rem;">{{ $capVal }}</span>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    </div>
-                                @endif
-                            @else
-                                <div class="product-packages-selector mb-4" style="margin-top: 10px; margin-bottom: 20px; width: 100%; max-width: 340px;">
+                                <div class="product-packages-selector mb-4" style="margin-top: 10px; margin-bottom: 20px; width: 100%; max-width: 360px;">
                                     <label class="block text-sm font-bold text-gray-700 dark:text-zinc-300 mb-2" style="font-weight: 700; margin-bottom: 8px; display: block;">{{ _l('Choose a Package / Plan:') }}</label>
                                     <div style="display: flex; flex-direction: column; gap: 10px;">
                                         @foreach($product->services as $index => $service)
                                             @php 
                                                 $rawServicePrice = (float) ($service->price ?? $baseRefPrice);
-                                                $serviceOfferPrice = round($rawServicePrice * $offerRatio, 2);
-                                                $hasServiceSale = ($serviceOfferPrice < $rawServicePrice);
+                                                $serviceOfferPrice = $rawServicePrice;
+                                                $hasServiceSale = false;
                                                 $serviceTiers = [];
                                                 foreach ($tierRatios as $ratio) {
                                                     $serviceTiers[] = format_currency(round($rawServicePrice * $ratio, 2));
                                                 }
+
+                                                $serviceKeys = $getActivationCount($service);
+                                                $isLifetime = in_array($service->access_type, ['lifetime', 'permanent']);
+                                                $isSubscription = $service->access_type === 'subscription';
                                             @endphp
                                             <label class="package-option-label" style="display: flex; align-items: flex-start; gap: 12px; padding: 14px; border: 2px solid {{ $index === 0 ? 'var(--primary-color, #3b82f6)' : '#e2e8f0' }}; border-radius: 12px; cursor: pointer; transition: all 0.2s; background: {{ $index === 0 ? 'rgba(59, 130, 246, 0.03)' : '#fff' }}; position: relative;">
                                                 <input type="radio" name="selected_service_id" value="{{ $service->id }}" 
@@ -549,13 +632,13 @@
                                                        data-has-sale="{{ $hasServiceSale ? '1' : '0' }}"
                                                        data-tiers="{{ json_encode($serviceTiers) }}"
                                                        data-name="{{ $service->name }}"
-                                                       data-billing="{{ $service->access_type === 'subscription' ? ($service->duration_value . ' ' . $service->duration_unit . ($service->duration_value > 1 ? 's' : '')) : 'Lifetime' }}"
+                                                       data-billing="{{ $isSubscription ? ($service->duration_value . ' ' . $service->duration_unit . ($service->duration_value > 1 ? 's' : '')) : 'Lifetime' }}"
                                                        {{ $index === 0 ? 'checked' : '' }} 
                                                        style="margin-top: 4px; accent-color: var(--primary-color, #3b82f6);"
                                                        onchange="updateSelectedPackage(this)">
                                                 <div style="flex: 1;">
                                                     <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 4px;">
-                                                        <span style="font-weight: 700; color: #0f172a;" class="package-name-text">{{ $service->name }}</span>
+                                                        <span style="font-weight: 700; color: #0f172a;" class="package-name-text">{{ _l($service->name) }}</span>
                                                         <div style="display: flex; align-items: center; gap: 8px;">
                                                             <span style="font-weight: 800; color: var(--primary-color, #3b82f6); font-size: 1.1rem;">{{ format_currency($serviceOfferPrice) }}</span>
                                                             @if($hasServiceSale)
@@ -563,20 +646,46 @@
                                                             @endif
                                                         </div>
                                                     </div>
-                                                    <div style="font-size: 0.8rem; color: #64748b;">
-                                                        @if($service->access_type === 'subscription')
-                                                            {{ $service->duration_value }} {{ ucfirst($service->duration_unit) }}{{ $service->duration_value > 1 ? 's' : '' }}
-                                                            @if($service->is_recurring)
-                                                                ({{ _l('Auto-renew') }})
+
+                                                    <div style="font-size: 0.82rem; color: #64748b; margin-bottom: 2px;" class="package-meta-text">
+                                                        <div style="display: flex; align-items: center; gap: 6px; font-weight: 600; color: #334155; margin-bottom: 2px;" class="package-key-info">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px; color: #3b82f6; flex-shrink: 0;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 0121 9z" />
+                                                            </svg>
+                                                            <span>
+                                                                @if($serviceKeys > 1)
+                                                                    {{ _l(':count License Keys (:count Sites / Apps)', ['count' => $serviceKeys]) }}
+                                                                @else
+                                                                    {{ _l('1 License Key (1 Site / App)') }}
+                                                                @endif
+                                                            </span>
+                                                        </div>
+
+                                                        <div>
+                                                            @if($isSubscription)
+                                                                {{ $service->duration_value }} {{ _l(ucfirst($service->duration_unit) . ($service->duration_value > 1 ? 's' : '')) }}
+                                                                @if($service->is_recurring)
+                                                                    ({{ _l('Auto-renew') }})
+                                                                @endif
+                                                            @else
+                                                                {{ _l('Lifetime / Never Expires') }}
                                                             @endif
-                                                        @else
-                                                            {{ _l('Lifetime / Never Expires') }}
-                                                        @endif
-                                                        
-                                                        @if($service->trial_period_days > 0)
-                                                            <span style="margin-left: 8px; color: #10b981; font-weight: 600;">+ {{ $service->trial_period_days }} {{ _l('days free trial') }}</span>
-                                                        @endif
+                                                            
+                                                            @if($service->trial_period_days > 0)
+                                                                <span style="margin-left: 8px; color: #10b981; font-weight: 600;">+ {{ $service->trial_period_days }} {{ _l('days free trial') }}</span>
+                                                            @endif
+                                                        </div>
                                                     </div>
+
+                                                    @if($isLifetime && !empty($savingsText))
+                                                        <div style="margin-top: 8px; display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; color: #059669; font-weight: 600; font-size: 0.78rem; line-height: 1.3;" class="lifetime-savings-nudge">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px; color: #10b981; flex-shrink: 0;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                                            </svg>
+                                                            <span>{{ $savingsText }}</span>
+                                                        </div>
+                                                    @endif
+
                                                     @if(!empty($service->capabilities))
                                                         <div style="margin-top: 8px; font-size: 0.8rem; display: flex; flex-direction: column; gap: 6px;">
                                                             @foreach($service->capabilities as $capKey => $capVal)
@@ -592,7 +701,6 @@
                                         @endforeach
                                     </div>
                                 </div>
-                            @endif
                             
                             <!-- Script to update styles and price on radio change -->
                             <script>
@@ -655,8 +763,12 @@
                                     }
                                 }
                                 
-                                // Initial dark/light mode adjustment
+                                // Initial dark/light mode adjustment & package price sync
                                 document.addEventListener('DOMContentLoaded', () => {
+                                    const checkedRadio = document.querySelector('input[name="selected_service_id"]:checked');
+                                    if (checkedRadio) {
+                                        updateSelectedPackage(checkedRadio);
+                                    }
                                     const isDark = document.body.classList.contains('dark') || document.documentElement.classList.contains('dark');
                                     document.querySelectorAll('.package-option-label').forEach(label => {
                                         const radio = label.querySelector('input[type="radio"]');
@@ -872,11 +984,24 @@
                                     ->toArray();
                                 $productIds = array_unique(array_filter(array_merge($productIds, $slugProductIds)));
 
-                                $projectHubProject = \Modules\Polyx\ProjectHub\Models\Project::whereHas('products', function ($q) use ($productIds) {
-                                    $q->whereIn('products.id', $productIds);
-                                })->first();
+                                $mainProjectHubProject = \Modules\Polyx\ProjectHub\Models\Project::withoutGlobalScope('locale')->whereHas('products', function ($q) use ($productIds) {
+                                    $q->withoutGlobalScope('locale')->whereIn('products.id', $productIds);
+                                })->where('status', 'published')->first();
                                 
-                                if ($projectHubProject) {
+                                if ($mainProjectHubProject) {
+                                    $projectHubProject = $mainProjectHubProject;
+                                    $currentLocale = \Illuminate\Support\Facades\App::getLocale() ?: 'en';
+                                    if ($mainProjectHubProject->locale !== $currentLocale && !empty($mainProjectHubProject->translation_group_id)) {
+                                        $translatedProject = \Modules\Polyx\ProjectHub\Models\Project::withoutGlobalScope('locale')
+                                            ->where('translation_group_id', $mainProjectHubProject->translation_group_id)
+                                            ->where('locale', $currentLocale)
+                                            ->where('status', 'published')
+                                            ->first();
+                                        if ($translatedProject) {
+                                            $projectHubProject = $translatedProject;
+                                        }
+                                    }
+
                                     $projectHubFreeRelease = $projectHubProject->releases()
                                         ->where('status', 'published')
                                         ->whereNotNull('free_download_url')
@@ -884,6 +1009,16 @@
                                         ->orderByDesc('released_at')
                                         ->orderByDesc('id')
                                         ->first();
+
+                                    if (!$projectHubFreeRelease && $mainProjectHubProject->id !== $projectHubProject->id) {
+                                        $projectHubFreeRelease = $mainProjectHubProject->releases()
+                                            ->where('status', 'published')
+                                            ->whereNotNull('free_download_url')
+                                            ->where('free_download_url', '!=', '')
+                                            ->orderByDesc('released_at')
+                                            ->orderByDesc('id')
+                                            ->first();
+                                    }
                                         
                                     $freeDownloadRequiresAuth = (data_get($projectHubProject->settings, 'free_download_requires_auth', true) !== false);
                                     
@@ -1578,6 +1713,8 @@
             @endif
         </aside>
     </div>
+
+    {!! \App\Facades\Hook::applyFilters('theme.product.single.after_content', '', $product) !!}
 </div>
 <script>
 (() => {

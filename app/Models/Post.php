@@ -250,4 +250,26 @@ class Post extends Model
     {
         return $this->getEffectiveFeaturedImage('thumb');
     }
+
+    /**
+     * Get the primary category for the post (falls back to first/deepest category)
+     */
+    public function getPrimaryCategoryAttribute(): ?Category
+    {
+        $primaryId = $this->getMeta('primary_category_id');
+        if ($primaryId) {
+            $categories = $this->relationLoaded('categories') ? $this->categories : $this->categories()->get();
+            $primary = $categories->firstWhere('id', (int) $primaryId);
+            if ($primary) {
+                return $primary;
+            }
+            $found = Category::withoutGlobalScope('locale')->find((int) $primaryId);
+            if ($found) {
+                return $found;
+            }
+        }
+
+        $categories = $this->relationLoaded('categories') ? $this->categories : $this->categories()->get();
+        return $categories->sortByDesc('depth')->first() ?? $categories->first();
+    }
 }

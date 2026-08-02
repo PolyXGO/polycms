@@ -167,6 +167,9 @@ Route::prefix('v1')->group(function () {
         Route::post('product-categories/{productCategory}/translate', [ProductCategoryController::class, 'translate'])->name('api.v1.product-categories.translate');
         Route::apiResource('product-categories', ProductCategoryController::class)->except(['index', 'show']);
 
+        // Capability Presets CRUD
+        Route::apiResource('capability-presets', \App\Http\Controllers\Api\V1\Admin\CapabilityPresetController::class);
+
         // Product Brands CRUD
         Route::post('product-brands/{productBrand}/translate', [ProductBrandController::class, 'translate'])->name('api.v1.product-brands.translate');
         Route::apiResource('product-brands', ProductBrandController::class)->except(['index', 'show']);

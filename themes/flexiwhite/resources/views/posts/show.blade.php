@@ -11,7 +11,7 @@
             ['label' => _l('Blog'), 'url' => $postArchiveUrl],
         ];
         if ($post->categories->count() > 0) {
-            $displayCategory = $post->categories->sortByDesc('depth')->first();
+            $displayCategory = $post->primary_category ?? $post->categories->sortByDesc('depth')->first();
             foreach (collect($displayCategory->breadcrumb ?? [])->filter() as $cat) {
                 $breadcrumbs[] = ['label' => $cat->name, 'url' => $cat->frontend_url];
             }

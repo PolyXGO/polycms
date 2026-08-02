@@ -2,32 +2,20 @@
     <div class="wiki-content prose-headings:scroll-mt-24 prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline prose-img:rounded-xl">
         <div class="mb-6 pb-4 border-b border-slate-200 dark:border-slate-700">
             @php
-                $direct_category = $post->categories->sortByDesc('parent_id')->first() ?? $post->categories->first();
-                $root_category = null;
-                if ($direct_category) {
-                    $current = $direct_category;
-                    while ($current) {
-                        if (!$current->parent_id) {
-                            $root_category = $current;
-                            break;
-                        }
-                        $current = $current->parent;
-                    }
-                }
+                $primaryCategory = $post->primary_category;
+                $breadcrumbItems = $primaryCategory ? $primaryCategory->breadcrumb : collect([]);
             @endphp
             
-            @if($root_category)
+            @if($breadcrumbItems->isNotEmpty())
                 <nav class="flex flex-wrap text-sm text-slate-500 dark:text-slate-400 mb-4 items-center gap-y-1">
-                    <a href="{{ $root_category->frontend_url ?? url('/categories/' . $root_category->slug) }}" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors shrink-0">
-                        {{ $root_category->name }}
-                    </a>
-                    
-                    @if($direct_category && $direct_category->id !== $root_category->id)
-                        <svg class="w-4 h-4 mx-2 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                        <a href="{{ $direct_category->frontend_url ?? url('/categories/' . $direct_category->slug) }}" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors shrink-0">
-                            {{ $direct_category->name }}
+                    @foreach($breadcrumbItems as $index => $cat)
+                        @if($index > 0)
+                            <svg class="w-4 h-4 mx-2 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        @endif
+                        <a href="{{ $cat->frontend_url ?? url('/categories/' . $cat->slug) }}" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors shrink-0">
+                            {{ $cat->name }}
                         </a>
-                    @endif
+                    @endforeach
 
                     <svg class="w-4 h-4 mx-2 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                     <span class="text-slate-700 dark:text-slate-300 font-medium truncate max-w-[150px] sm:max-w-xs md:max-w-md shrink-0">{{ $post->title }}</span>

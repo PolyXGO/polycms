@@ -91,9 +91,9 @@ class Product extends Model
     {
         static::saved(function ($product) {
             if ($product->translation_group_id) {
-                // Sync physical, pricing and inventory fields across all translations
+                // Sync type, physical, pricing and inventory fields across all translations
                 $syncFields = [
-                    'price', 'sale_price', 'cost_price',
+                    'type', 'price', 'sale_price', 'cost_price',
                     'manage_stock', 'stock_quantity', 'stock_status', 'stock_low_threshold', 'max_per_order',
                     'sku', 'weight', 'length', 'width', 'height'
                 ];
@@ -355,12 +355,12 @@ class Product extends Model
             }
         }
 
-        // Package Price Priority: If product has services (packages), base price follows minimum package price
+        // Package Price Priority: If product has services (packages) and regular price is 0, base price follows minimum package price
         $services = $this->relationLoaded('services') ? $this->services : $this->services()->get();
         if ($services && $services->isNotEmpty()) {
             $validServicePrices = $services->pluck('price')->filter(fn($p) => $p !== null && (float)$p > 0)->map(fn($p) => (float)$p);
-            if ($validServicePrices->isNotEmpty()) {
-                $salePrice = $validServicePrices->min();
+            if ($validServicePrices->isNotEmpty() && $regularPrice <= 0) {
+                $regularPrice = $validServicePrices->min();
             }
         }
 
@@ -426,6 +426,30 @@ class Product extends Model
     public function services(): HasMany
     {
         return $this->hasMany(\App\Models\Ecommerce\ProductService::class);
+    }
+
+    /**
+     * Multilingual Fallback: Get services for this product or fallback to main product in translation group
+     */
+    public function getServicesAttribute()
+    {
+        $loaded = $this->relationLoaded('services') ? $this->getRelation('services') : $this->services()->get();
+        if ($loaded && $loaded->isNotEmpty()) {
+            return $loaded;
+        }
+
+        if (!empty($this->translation_group_id)) {
+            $mainProduct = static::withoutGlobalScope('locale')
+                ->where('translation_group_id', $this->translation_group_id)
+                ->where('id', '!=', $this->id)
+                ->whereHas('services')
+                ->first();
+            if ($mainProduct && $mainProduct->services->isNotEmpty()) {
+                return $mainProduct->services;
+            }
+        }
+
+        return $loaded;
     }
 
     // ─── Variant Relationships ────────────────────────────────

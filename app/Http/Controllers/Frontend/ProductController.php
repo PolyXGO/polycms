@@ -155,6 +155,20 @@ class ProductController extends FrontendController
             ?? data_get($product->settings, 'module_version')
             ?? null;
 
+        if (!$productVersion && !empty($product->translation_group_id)) {
+            $defaultLocale = config('app.locale', 'en');
+            $primaryProduct = \App\Models\Product::withoutGlobalScope('locale')
+                ->where('translation_group_id', $product->translation_group_id)
+                ->where('locale', $defaultLocale)
+                ->first();
+            if ($primaryProduct) {
+                $productVersion = data_get($primaryProduct->settings, 'version')
+                    ?? data_get($primaryProduct->settings, 'product_version')
+                    ?? data_get($primaryProduct->settings, 'module_version')
+                    ?? null;
+            }
+        }
+
         [$productFaqItems, $hasProductFaqTab] = $this->resolveProductFaqItems($product);
         [$productCustomTabs, $hasProductCustomTabs, $defaultProductCustomTabId] = $this->resolveProductCustomTabs($product);
 
@@ -170,50 +184,99 @@ class ProductController extends FrontendController
         }
 
         if ($isProjectHubActive && class_exists(\Modules\Polyx\ProjectHub\Models\Project::class)) {
-            $project = $product->projects()
+            $productIds = [$product->id];
+            if (!empty($product->translation_group_id)) {
+                $groupProductIds = \App\Models\Product::withoutGlobalScope('locale')
+                    ->where('translation_group_id', $product->translation_group_id)
+                    ->pluck('id')
+                    ->toArray();
+                $productIds = array_merge($productIds, $groupProductIds);
+            }
+            if (!empty($product->slug)) {
+                $slugProductIds = \App\Models\Product::withoutGlobalScope('locale')
+                    ->where('slug', $product->slug)
+                    ->pluck('id')
+                    ->toArray();
+                $productIds = array_merge($productIds, $slugProductIds);
+            }
+            $productIds = array_unique(array_filter($productIds));
+
+            $mainProject = \Modules\Polyx\ProjectHub\Models\Project::withoutGlobalScope('locale')
+                ->whereHas('products', function ($q) use ($productIds) {
+                    $q->withoutGlobalScope('locale')->whereIn('products.id', $productIds);
+                })
                 ->where('status', 'published')
-                ->orderByPivot('is_primary', 'desc')
-                ->orderByPivot('id', 'desc')
                 ->first();
-            if (!$project) {
-                $project = $product->projects()
-                    ->orderByPivot('is_primary', 'desc')
-                    ->orderByPivot('id', 'desc')
-                    ->first();
+
+            if ($mainProject) {
+                $project = $mainProject;
+                $currentLocale = \Illuminate\Support\Facades\App::getLocale() ?: 'en';
+                if ($mainProject->locale !== $currentLocale && !empty($mainProject->translation_group_id)) {
+                    $translatedProject = \Modules\Polyx\ProjectHub\Models\Project::withoutGlobalScope('locale')
+                        ->where('translation_group_id', $mainProject->translation_group_id)
+                        ->where('locale', $currentLocale)
+                        ->where('status', 'published')
+                        ->first();
+                    if ($translatedProject) {
+                        $project = $translatedProject;
+                    }
+                }
             }
         }
 
         if ($project) {
-            $projectReleases = \Modules\Polyx\ProjectHub\Models\ProjectRelease::where('project_id', $project->id)
+            $rawReleases = \Modules\Polyx\ProjectHub\Models\ProjectRelease::where('project_id', $project->id)
                 ->where('status', 'published')
                 ->orderByDesc('released_at')
                 ->orderByDesc('id')
                 ->take(5)
-                ->get()
-                ->map(function ($release) {
-                    return [
-                        'id' => $release->id,
-                        'version' => $release->version,
-                        'title' => \Modules\Polyx\ProjectHub\Models\ProjectRelease::stripEmojis((string) $release->title, true),
-                        'summary' => \Modules\Polyx\ProjectHub\Models\ProjectRelease::stripEmojis((string) $release->summary),
-                        'release_notes_html' => \Modules\Polyx\ProjectHub\Models\ProjectRelease::stripEmojis((string) $release->release_notes_html),
-                        'released_at' => optional($release->released_at)->format('d/m/Y'),
-                    ];
-                });
+                ->get();
 
-            $projectFeatures = \Modules\Polyx\ProjectHub\Models\ProjectFeature::where('project_id', $project->id)
+            if ($rawReleases->isEmpty() && isset($mainProject) && $mainProject && $mainProject->id !== $project->id) {
+                $rawReleases = \Modules\Polyx\ProjectHub\Models\ProjectRelease::where('project_id', $mainProject->id)
+                    ->where('status', 'published')
+                    ->orderByDesc('released_at')
+                    ->orderByDesc('id')
+                    ->take(5)
+                    ->get();
+            }
+
+            $projectReleases = $rawReleases->map(function ($release) {
+                return [
+                    'id' => $release->id,
+                    'version' => $release->version,
+                    'title' => \Modules\Polyx\ProjectHub\Models\ProjectRelease::stripEmojis((string) $release->title, true),
+                    'summary' => \Modules\Polyx\ProjectHub\Models\ProjectRelease::stripEmojis((string) $release->summary),
+                    'release_notes_html' => \Modules\Polyx\ProjectHub\Models\ProjectRelease::stripEmojis((string) $release->release_notes_html),
+                    'released_at' => optional($release->released_at)->format('d/m/Y'),
+                ];
+            });
+
+            if (!$productVersion && $rawReleases->isNotEmpty()) {
+                $productVersion = $rawReleases->first()['version'];
+            }
+
+            $rawFeatures = \Modules\Polyx\ProjectHub\Models\ProjectFeature::where('project_id', $project->id)
                 ->whereIn('status', ['in_progress', 'backlog'])
                 ->orderBy('order')
-                ->get()
-                ->map(function ($feature) {
-                    return [
-                        'title' => \Modules\Polyx\ProjectHub\Models\ProjectRelease::stripEmojis((string) $feature->title, true),
-                        'description' => \Modules\Polyx\ProjectHub\Models\ProjectRelease::stripEmojis((string) $feature->description),
-                        'status' => $feature->status,
-                        'priority' => $feature->priority,
-                        'added_at' => $feature->added_at ? $feature->added_at->format('Y-m-d') : ($feature->created_at ? $feature->created_at->format('Y-m-d') : null),
-                    ];
-                });
+                ->get();
+
+            if ($rawFeatures->isEmpty() && isset($mainProject) && $mainProject && $mainProject->id !== $project->id) {
+                $rawFeatures = \Modules\Polyx\ProjectHub\Models\ProjectFeature::where('project_id', $mainProject->id)
+                    ->whereIn('status', ['in_progress', 'backlog'])
+                    ->orderBy('order')
+                    ->get();
+            }
+
+            $projectFeatures = $rawFeatures->map(function ($feature) {
+                return [
+                    'title' => \Modules\Polyx\ProjectHub\Models\ProjectRelease::stripEmojis((string) $feature->title, true),
+                    'description' => \Modules\Polyx\ProjectHub\Models\ProjectRelease::stripEmojis((string) $feature->description),
+                    'status' => $feature->status,
+                    'priority' => $feature->priority,
+                    'added_at' => $feature->added_at ? $feature->added_at->format('Y-m-d') : ($feature->created_at ? $feature->created_at->format('Y-m-d') : null),
+                ];
+            });
 
             try {
                 $locale = \App\Helpers\LanguageHelper::getCurrentLanguage() ?: 'en';

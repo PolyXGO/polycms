@@ -29,7 +29,7 @@ class ProductCategoriesWidget
         }
 
         $grouped = $categories->groupBy(fn(ProductCategory $category) => $category->parent_id ?: 0);
-        $title = $instance->title ?: 'Product Categories';
+        $title = $instance->title ? _l($instance->title) : _l('Product Categories');
 
         $html = '<div class="widget widget-product-categories">';
         $html .= '<h3 class="widget-title">' . e($title) . '</h3>';

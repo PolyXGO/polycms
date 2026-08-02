@@ -305,6 +305,70 @@
  </div>
  </div>
 
+ <!-- Savings Call-to-Action (CTA) -->
+ <div class="bg-admin-theme-surface shadow rounded-lg p-6">
+ <div class="flex justify-between items-center mb-4">
+ <h3 class="text-lg font-medium text-admin-theme-text">{{ t('Savings Call-to-Action (CTA)') }}</h3>
+ 
+ <div class="relative group">
+ <button type="button" class="text-sm px-3 py-1.5 bg-admin-theme-base border border-admin-theme-border rounded-lg hover:bg-admin-theme-input-bg transition-colors flex items-center">
+ <i class="fas fa-magic mr-1.5 text-indigo-500"></i> {{ t('Apply Preset') }}
+ </button>
+ <div class="absolute right-0 top-full mt-1 w-56 bg-admin-theme-surface border border-admin-theme-border rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+ <button type="button" @click="applyCtaPreset('⚡ Tiết kiệm $:amount+ trong :years năm cho :keys keys so với gia hạn hàng năm', '⚡ Tiết kiệm $:amount+ mỗi năm cho :keys keys so với gia hạn hàng tháng')" class="block w-full text-left px-4 py-2 text-sm text-admin-theme-text hover:bg-admin-theme-base border-b border-admin-theme-border rounded-t-lg">
+ Vietnamese Default
+ </button>
+ <button type="button" @click="applyCtaPreset('⚡ Save $:amount+ over :years yrs across :keys keys vs yearly renewal', '⚡ Save $:amount+ per year across :keys keys vs monthly renewal')" class="block w-full text-left px-4 py-2 text-sm text-admin-theme-text hover:bg-admin-theme-base rounded-b-lg">
+ English Default
+ </button>
+ </div>
+ </div>
+ </div>
+ 
+ <div class="grid grid-cols-1 gap-6">
+ <!-- Lifetime CTA -->
+ <div>
+ <label for="ecommerce_savings_cta_lifetime" class="block text-sm font-medium text-admin-theme-text-secondary">
+ {{ t('Savings CTA (Lifetime vs Yearly)') }}
+ </label>
+ <textarea
+ id="ecommerce_savings_cta_lifetime"
+ :value="settings.ecommerce_savings_cta_lifetime?.value"
+ @input="updateValue('ecommerce_savings_cta_lifetime', ($event.target as HTMLTextAreaElement).value)"
+ rows="2"
+ :class="controlClass"
+ placeholder="⚡ Save $:amount+ over :years yrs across :keys keys vs yearly renewal"
+ ></textarea>
+ <p class="mt-2 text-sm text-admin-theme-text-muted flex gap-1.5 flex-wrap items-center">
+ <span>{{ t('Macros:') }}</span>
+ <button type="button" @click="insertMacro('ecommerce_savings_cta_lifetime', ':amount')" class="text-indigo-600 dark:text-indigo-400 font-mono text-[11px] bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-colors">:amount</button>
+ <button type="button" @click="insertMacro('ecommerce_savings_cta_lifetime', ':years')" class="text-indigo-600 dark:text-indigo-400 font-mono text-[11px] bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-colors">:years</button>
+ <button type="button" @click="insertMacro('ecommerce_savings_cta_lifetime', ':keys')" class="text-indigo-600 dark:text-indigo-400 font-mono text-[11px] bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-colors">:keys</button>
+ </p>
+ </div>
+
+ <!-- Yearly CTA -->
+ <div>
+ <label for="ecommerce_savings_cta_yearly" class="block text-sm font-medium text-admin-theme-text-secondary">
+ {{ t('Savings CTA (Yearly vs Monthly)') }}
+ </label>
+ <textarea
+ id="ecommerce_savings_cta_yearly"
+ :value="settings.ecommerce_savings_cta_yearly?.value"
+ @input="updateValue('ecommerce_savings_cta_yearly', ($event.target as HTMLTextAreaElement).value)"
+ rows="2"
+ :class="controlClass"
+ placeholder="⚡ Save $:amount+ per year across :keys keys vs monthly renewal"
+ ></textarea>
+ <p class="mt-2 text-sm text-admin-theme-text-muted flex gap-1.5 flex-wrap items-center">
+ <span>{{ t('Macros:') }}</span>
+ <button type="button" @click="insertMacro('ecommerce_savings_cta_yearly', ':amount')" class="text-indigo-600 dark:text-indigo-400 font-mono text-[11px] bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-colors">:amount</button>
+ <button type="button" @click="insertMacro('ecommerce_savings_cta_yearly', ':keys')" class="text-indigo-600 dark:text-indigo-400 font-mono text-[11px] bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-colors">:keys</button>
+ </p>
+ </div>
+ </div>
+ </div>
+
  <!-- Save Button -->
  <div class="flex justify-end pt-4 border-t border-admin-theme-border">
  <button
@@ -374,6 +438,34 @@ const getSettingValue = (key: string): any => {
 
 const updateValue = (key: string, value: any) => {
     emit('update', props.group, key, value);
+};
+
+const insertMacro = (key: string, macro: string) => {
+    const el = document.getElementById(key) as HTMLTextAreaElement;
+    if (!el) {
+        // Fallback if element not found: just append
+        const currentVal = String(props.settings[key]?.value || '');
+        updateValue(key, currentVal + ' ' + macro);
+        return;
+    }
+    
+    const currentVal = String(props.settings[key]?.value || '');
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const newVal = currentVal.substring(0, start) + macro + currentVal.substring(end);
+    
+    updateValue(key, newVal);
+    
+    // Focus and restore cursor position after DOM updates
+    setTimeout(() => {
+        el.focus();
+        el.setSelectionRange(start + macro.length, start + macro.length);
+    }, 50);
+};
+
+const applyCtaPreset = (lifetimeText: string, yearlyText: string) => {
+    updateValue('ecommerce_savings_cta_lifetime', lifetimeText);
+    updateValue('ecommerce_savings_cta_yearly', yearlyText);
 };
 
 const mediaPickerRef = ref<any>(null);

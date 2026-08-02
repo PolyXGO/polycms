@@ -1185,17 +1185,42 @@ const openProjectHubModal = () => {
 };
 
 const handleBlockSelect = (block: any) => {
- if (!editor.value) return;
+  if (!editor.value) return;
 
- if (block?.isReusablePart && Array.isArray(block.documentContent) && block.documentContent.length > 0) {
- editor.value.chain().focus().insertContent(block.documentContent).run();
- return;
- }
- 
- editor.value.chain().focus().setLandingBlock({
- type: block.key,
- data: block.defaultAttrs || {},
- }).run();
+  if (block?.isReusablePart) {
+    if (Array.isArray(block.documentContent) && block.documentContent.length > 0) {
+      try {
+        editor.value.chain().focus().insertContent(block.documentContent).run();
+        return;
+      } catch (e) {
+        console.warn('Direct documentContent insertion failed, falling back to HTML snippet', e);
+      }
+    }
+    const partTitle = block.label || block.asset?.name || 'Reusable Element';
+    const htmlSnippet = `<div class="reusable-part-snippet p-4 my-2 rounded-xl border border-admin-theme-border bg-slate-900/80 text-white font-bold">● ${partTitle}</div>`;
+    editor.value.chain().focus().insertContent(htmlSnippet).run();
+    return;
+  }
+  
+  const chain = editor.value.chain().focus() as any;
+  if (chain && typeof chain.setLandingBlock === 'function') {
+    try {
+      chain.setLandingBlock({
+        type: block.key,
+        data: block.defaultAttrs || {},
+      }).run();
+      return;
+    } catch (e) {
+      console.warn('setLandingBlock execution failed, using HTML fallback', e);
+    }
+  }
+
+  const htmlSnippet = block.html || block.template || block.defaultAttrs?.content || 
+    `<div class="landing-block-snippet p-4 my-2 rounded-xl border border-admin-theme-border bg-slate-900/60 text-white shadow-md">` +
+    `<div class="font-extrabold text-sm text-emerald-400 mb-1">● ${block.label || block.title || block.key}</div>` +
+    `<div class="text-xs opacity-90">${block.description || ''}</div>` +
+    `</div>`;
+  editor.value.chain().focus().insertContent(htmlSnippet).run();
 };
 
 const openYoutubeGalleryModal = (initialUrls = [], initialLayout = 'grid', initialSliderVisibleItems = 1, initialSliderAutoPlay = false, initialSliderContinuous = false, initialSliderDirection = 'left', getPos: any = null) => {

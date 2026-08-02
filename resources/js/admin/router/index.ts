@@ -12,6 +12,7 @@ import CategoryList from '../views/categories/CategoryList.vue';
 import CategoryEditor from '../views/categories/CategoryEditor.vue';
 import ProductCategoryList from '../views/products/categories/ProductCategoryList.vue';
 import ProductCategoryEditor from '../views/products/categories/ProductCategoryEditor.vue';
+import CapabilityPresetList from '../views/products/capability-presets/CapabilityPresetList.vue';
 import ProductBrandList from '../views/products/brands/ProductBrandList.vue';
 import ProductBrandEditor from '../views/products/brands/ProductBrandEditor.vue';
 import TagList from '../views/tags/TagList.vue';
@@ -286,6 +287,11 @@ const routes: Array<RouteRecordRaw> = [
                 name: 'admin.product-categories.edit',
                 component: ProductCategoryEditor,
                 props: true,
+            },
+            {
+                path: 'capability-presets',
+                name: 'admin.capability-presets.index',
+                component: CapabilityPresetList,
             },
             {
                 path: 'product-brands',

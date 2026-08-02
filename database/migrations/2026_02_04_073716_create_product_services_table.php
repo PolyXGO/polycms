@@ -21,7 +21,7 @@ return new class extends Migration
             // Access Control
             $table->enum('access_type', ['permanent', 'subscription'])->default('subscription');
             $table->integer('duration_value')->nullable()->comment('e.g., 7, 30, 365');
-            $table->enum('duration_unit', ['day', 'month', 'year'])->nullable();
+            $table->string('duration_unit', 50)->nullable();
             $table->integer('trial_period_days')->default(0);
             $table->boolean('is_recurring')->default(false);
             

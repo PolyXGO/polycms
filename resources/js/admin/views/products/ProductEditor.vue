@@ -13,6 +13,14 @@
  >
  {{ $t('View Product') }}
  </a>
+ <a
+ v-if="isEdit && form.project && form.project.id"
+ :href="'/admin/project-hub/' + form.project.id + '/edit'"
+ target="_blank"
+ class="editor-page__action"
+ >
+ {{ $t('Edit Project Hub') || 'Edit Project Hub' }}
+ </a>
  <button type="button" class="editor-page__action" @click="router.back()">
  {{ $t('Cancel') }}
  </button>

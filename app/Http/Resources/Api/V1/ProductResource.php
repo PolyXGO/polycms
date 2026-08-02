@@ -90,8 +90,20 @@ class ProductResource extends JsonResource
             'categories' => CategoryResource::collection($this->whenLoaded('categories')),
             'tags' => TagResource::collection($this->whenLoaded('tags')),
             'brands' => CategoryResource::collection($this->whenLoaded('brands')),
-            'project' => $this->when($this->relationLoaded('projects') && $this->projects->first(), function () {
-                $p = $this->projects->first();
+            'project' => $this->when(true, function () {
+                $p = $this->relationLoaded('projects') ? $this->projects->first() : null;
+                if (!$p && !empty($this->translation_group_id) && class_exists(\Modules\Polyx\ProjectHub\Models\Project::class)) {
+                    $productIds = \App\Models\Product::withoutGlobalScope('locale')
+                        ->where('translation_group_id', $this->translation_group_id)
+                        ->pluck('id')
+                        ->toArray();
+                    if (!empty($productIds)) {
+                        $p = \Modules\Polyx\ProjectHub\Models\Project::withoutGlobalScope('locale')
+                            ->whereHas('products', fn ($q) => $q->withoutGlobalScope('locale')->whereIn('products.id', $productIds))
+                            ->where('status', 'published')
+                            ->first();
+                    }
+                }
                 return $p ? [
                     'id' => $p->id,
                     'name' => $p->name,

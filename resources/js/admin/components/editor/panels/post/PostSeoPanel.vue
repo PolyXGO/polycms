@@ -249,53 +249,50 @@ const setMetaField = (key: string, value: string | number | null): void => {
  return;
  }
 
- metaFields.value = {
- ...metaFields.value,
- [key]: value ==='' ? null : value,
- };
+ metaFields[key] = value === '' ? null : value;
 };
 
 const canonicalUrl = computed({
- get: () => String(metaFields?.value?.canonical_url ||''),
+ get: () => String(metaFields?.canonical_url || ''),
  set: (value: string) => setMetaField('canonical_url', value || null),
 });
 
 const robotsMeta = computed({
- get: () => String(metaFields?.value?.robots_meta ||''),
+ get: () => String(metaFields?.robots_meta || ''),
  set: (value: string) => setMetaField('robots_meta', value || null),
 });
 
 const sitemapExclude = computed({
  get: () => {
- const raw = metaFields?.value?.sitemap_exclude;
- return raw === true || raw === 1 || raw ==='1' || raw ==='true';
+ const raw = metaFields?.sitemap_exclude;
+ return raw === true || raw === 1 || raw === '1' || raw === 'true';
  },
  set: (value: boolean) => setMetaField('sitemap_exclude', value ? 1 : null),
 });
 
 const focusKeyword = computed({
- get: () => String(metaFields?.value?.seo_focus_keyword ||''),
+ get: () => String(metaFields?.seo_focus_keyword || ''),
  set: (value: string) => setMetaField('seo_focus_keyword', value || null),
 });
 
 const socialTitle = computed({
- get: () => String(metaFields?.value?.social_title ||''),
+ get: () => String(metaFields?.social_title || ''),
  set: (value: string) => setMetaField('social_title', value || null),
 });
 
 const socialDescription = computed({
- get: () => String(metaFields?.value?.social_description ||''),
+ get: () => String(metaFields?.social_description || ''),
  set: (value: string) => setMetaField('social_description', value || null),
 });
 
 const socialImage = computed({
- get: () => String(metaFields?.value?.social_image ||''),
+ get: () => String(metaFields?.social_image || ''),
  set: (value: string) => setMetaField('social_image', value || null),
 });
 
 const primaryCategoryId = computed<number | null>({
  get: () => {
- const raw = Number(metaFields?.value?.primary_category_id || 0);
+ const raw = Number(metaFields?.primary_category_id || 0);
  return Number.isFinite(raw) && raw > 0 ? raw : null;
  },
  set: (value) => {

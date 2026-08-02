@@ -593,7 +593,7 @@ class TopbarMenuService
 
             if ($product && ($user->hasRole(['admin', 'editor']) || $user->can('update', $product))) {
                 $editUrl = url('/admin/products/' . $product->id . '/edit');
-                $items[] = [
+                $productEditItem = [
                     'id' => 'edit-product',
                     'label' => _l('Edit Product'),
                     'url' => $editUrl,
@@ -602,6 +602,23 @@ class TopbarMenuService
                     'group' => 'left',
                     'highlight' => true,
                 ];
+
+                $editChildren = [
+                    [
+                        'id' => 'edit-product-item',
+                        'label' => _l('Edit Product'),
+                        'url' => $editUrl,
+                        'icon' => 'pencil',
+                    ]
+                ];
+
+                $editChildren = Hook::applyFilters('topbar.product_edit_children', $editChildren, $product, $user);
+
+                if (count($editChildren) > 1) {
+                    $productEditItem['children'] = $editChildren;
+                }
+
+                $items[] = $productEditItem;
             }
         }
 
