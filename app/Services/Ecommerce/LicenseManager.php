@@ -136,10 +136,10 @@ class LicenseManager
             return ['valid' => false, 'message' => "License is active, but domain {$domain} is not activated."];
         }
 
-        // Verify activation_token if provided (enhanced security)
-        if (!empty($activationToken) && !empty($activation->activation_token)) {
-            if (!hash_equals($activation->activation_token, $activationToken)) {
-                return ['valid' => false, 'message' => 'Activation token is invalid. Please re-activate your license.'];
+        // If activation_token exists on the activation record, enforce strict token verification
+        if (!empty($activation->activation_token)) {
+            if (empty($activationToken) || !hash_equals($activation->activation_token, $activationToken)) {
+                return ['valid' => false, 'message' => 'Activation token is missing or invalid. Please re-activate your license.'];
             }
         }
 
