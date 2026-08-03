@@ -598,6 +598,51 @@ $isLoginPage = request()->is('admin/login', 'account/login', 'login', 'register'
         top: 32px !important;
     }
 
+    @media (max-width: 768px) {
+        #polycms-topbar.polycms-topbar {
+            height: 36px;
+            line-height: 36px;
+            overflow: visible;
+        }
+        .polycms-topbar-container {
+            height: 36px;
+            padding: 0 8px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .polycms-topbar-container::-webkit-scrollbar {
+            display: none;
+        }
+        .polycms-topbar-left,
+        .polycms-topbar-right {
+            gap: 4px;
+            height: 36px;
+            flex-shrink: 0;
+        }
+        .polycms-topbar a,
+        .polycms-topbar button,
+        .polycms-topbar .topbar-button {
+            padding: 0 8px !important;
+            font-size: 12px !important;
+            height: 28px !important;
+            line-height: 28px !important;
+        }
+        .topbar-switcher-dropdown .topbar-switcher-panel {
+            right: 0 !important;
+            left: auto !important;
+            max-width: 90vw;
+        }
+        body.polycms-topbar-active {
+            padding-top: 36px !important;
+        }
+        body.polycms-topbar-active header {
+            top: 36px !important;
+        }
+    }
+
     /* ===== Switcher styles (Language / Currency) — matches Vue components ===== */
     .topbar-switcher-dropdown {
         position: relative;

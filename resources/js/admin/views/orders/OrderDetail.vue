@@ -11,7 +11,7 @@
  <h1 class="text-2xl font-bold text-admin-theme-text">{{ $t('Order') }} #{{ order.code }}</h1>
  <p class="text-sm text-gray-500">{{ formatDate(order.created_at) }}</p>
  </div>
- 
+
  <div class="flex space-x-3">
  <!-- Status Actions -->
  <select 
@@ -24,7 +24,7 @@
  <option value="completed">{{ $t('Completed') }}</option>
  <option value="cancelled">{{ $t('Cancelled') }}</option>
  </select>
- 
+
  <button
  @click="downloadInvoice"
  :disabled="invoiceLoading"
@@ -74,7 +74,7 @@
  </a>
  <div v-else class="text-sm font-medium text-admin-theme-text">{{ item.name }}</div>
  <div class="text-xs text-admin-theme-text-muted" v-if="item.metadata?.variant_label">{{ item.metadata.variant_label }}</div>
-  
+ 
   <!-- Product type, Plan Name, Subscription, License Key details -->
   <div class="mt-1.5 space-y-1 text-xs text-admin-theme-text-secondary">
     <div v-if="item.product?.type" class="inline-flex items-center gap-1.5 flex-wrap">
@@ -180,6 +180,117 @@
  </tfoot>
  </table>
  </div>
+
+ <!-- Apply Coupon (only for pending orders) -->
+ <div v-if="order.status === 'pending' && order.payment_status !== 'paid'" class="bg-admin-theme-surface rounded-lg shadow p-6">
+   <h3 class="text-lg font-medium text-admin-theme-text mb-4 flex items-center gap-2">
+     <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
+     {{ $t('Apply Coupon') }}
+   </h3>
+   <div class="flex gap-2">
+     <input
+       v-model="couponCode"
+       type="text"
+       :placeholder="$t('Enter coupon code...')"
+       class="flex-1 px-3 py-2 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text text-sm"
+       @keydown.enter="applyCoupon"
+     />
+     <button
+       @click="openCouponPicker"
+       type="button"
+       class="px-3 py-2 border border-admin-theme-border rounded-lg bg-admin-theme-base hover:bg-admin-theme-border text-admin-theme-text-secondary text-sm transition-colors inline-flex items-center gap-1.5"
+       :title="$t('Browse Coupons')"
+     >
+       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+       {{ $t('Browse') }}
+     </button>
+     <button
+       @click="applyCoupon"
+       :disabled="couponLoading || !couponCode.trim()"
+       class="px-4 py-2 bg-admin-theme-primary hover:bg-admin-theme-primary/90 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 inline-flex items-center gap-2"
+     >
+       <svg v-if="couponLoading" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+       {{ $t('Apply') }}
+     </button>
+   </div>
+   <p v-if="couponMessage" :class="couponSuccess ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'" class="text-xs mt-2">{{ couponMessage }}</p>
+ </div>
+
+ <!-- Coupon Picker Modal -->
+ <div v-if="showCouponPicker" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+   <div class="bg-admin-theme-surface border border-admin-theme-border rounded-xl shadow-2xl max-w-xl w-full overflow-hidden">
+     <!-- Header -->
+     <div class="px-6 py-4 border-b border-admin-theme-border flex justify-between items-center bg-admin-theme-base/30">
+       <h3 class="text-lg font-bold text-admin-theme-text flex items-center gap-2">
+         <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
+         {{ $t('Select Coupon') }}
+       </h3>
+       <button @click="showCouponPicker = false" class="text-admin-theme-text-muted hover:text-admin-theme-text transition-colors">
+         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+       </button>
+     </div>
+
+     <!-- Search -->
+     <div class="px-6 pt-4">
+       <input
+         v-model="couponSearch"
+         type="text"
+         :placeholder="$t('Search by code or title...')"
+         class="w-full px-3 py-2 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text text-sm"
+         @input="searchCouponsDebounced"
+       />
+     </div>
+
+     <!-- List -->
+     <div class="px-6 py-4 max-h-[400px] overflow-y-auto space-y-2">
+       <div v-if="couponPickerLoading" class="flex items-center justify-center py-8">
+         <svg class="animate-spin h-6 w-6 text-admin-theme-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+       </div>
+       <div v-else-if="!couponPickerList.length" class="text-center py-8 text-admin-theme-text-muted text-sm">
+         {{ $t('No coupons found.') }}
+       </div>
+       <div
+         v-else
+         v-for="c in couponPickerList"
+         :key="c.id"
+         class="p-3 border border-admin-theme-border rounded-lg hover:border-admin-theme-primary/50 hover:bg-admin-theme-primary/5 cursor-pointer transition-all group"
+         @click="selectCouponFromPicker(c)"
+       >
+         <div class="flex items-center justify-between">
+           <div class="min-w-0 flex-1">
+             <div class="flex items-center gap-2">
+               <code class="px-2 py-0.5 bg-admin-theme-base border border-admin-theme-border rounded font-mono text-sm font-bold text-admin-theme-text">{{ c.code }}</code>
+               <span class="text-xs font-semibold px-1.5 py-0.5 rounded" :class="c.type === 'percent' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'">
+                 {{ c.type === 'percent' ? c.value + '%' : formatCurrency(c.value) }}
+               </span>
+               <span v-if="c.restricted_emails && c.restricted_emails.length" class="text-[10px] px-1 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded" :title="$t('Restricted to specific emails')">
+                 <i class="fas fa-lock text-[8px]"></i> {{ $t('Restricted') }}
+               </span>
+             </div>
+             <p v-if="c.title" class="text-xs text-admin-theme-text-muted mt-1 truncate">{{ c.title }}</p>
+             <div class="flex items-center gap-3 mt-1 text-[11px] text-admin-theme-text-muted">
+               <span v-if="c.usage_limit">{{ $t('Used') }}: {{ c.usage_count || 0 }}/{{ c.usage_limit }}</span>
+               <span v-if="c.expires_at">{{ $t('Expires') }}: {{ formatDate(c.expires_at) }}</span>
+             </div>
+           </div>
+           <button
+             type="button"
+             class="shrink-0 px-3 py-1.5 bg-admin-theme-primary hover:bg-admin-theme-primary/90 text-white rounded-lg text-xs font-medium opacity-0 group-hover:opacity-100 transition-all"
+           >
+             {{ $t('Select') }}
+           </button>
+         </div>
+       </div>
+     </div>
+
+     <!-- Footer -->
+     <div class="px-6 py-3 border-t border-admin-theme-border flex justify-end bg-admin-theme-base/30">
+       <button @click="showCouponPicker = false" class="px-4 py-2 bg-admin-theme-base hover:bg-admin-theme-border text-admin-theme-text-secondary rounded-lg text-sm font-medium transition-colors">
+         {{ $t('Cancel') }}
+       </button>
+     </div>
+   </div>
+ </div>
  
  <!-- Transactions -->
  <div class="bg-admin-theme-surface rounded-lg shadow p-6">
@@ -213,7 +324,7 @@
  <p class="font-bold text-admin-theme-text">{{ order.user?.name || order.billing_address?.full_name || $t('Guest') }}</p>
  <p class="text-admin-theme-text-muted">{{ order.user?.email || order.guest_email }}</p>
  </div>
- 
+
  <div class="mt-4 pt-4 border-t border-admin-theme-border text-sm">
  <p class="font-medium text-admin-theme-text-muted mb-2">{{ $t('Billing Address') }}</p>
  <p v-if="order.billing_address" class="text-admin-theme-text-secondary leading-relaxed">
@@ -342,6 +453,123 @@
  {{ $t('Preview total refund') }}: <strong>{{ formatCurrency(refundPreview.total_refund || 0) }}</strong>
  </p>
  </div>
+ </div>
+ </div>
+
+ <!-- Order Notes -->
+ <div class="bg-admin-theme-surface rounded-lg shadow p-6">
+   <div class="flex items-center justify-between mb-4">
+     <h3 class="text-lg font-medium text-admin-theme-text flex items-center gap-2">
+       <svg class="w-5 h-5 text-admin-theme-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>
+       {{ $t('Order Notes') }}
+     </h3>
+   </div>
+
+   <!-- Add Note Form -->
+   <div class="mb-4 space-y-2 p-3 bg-admin-theme-base/50 rounded-lg border border-admin-theme-border">
+     <div class="flex gap-2">
+       <select v-model="newNote.type" class="px-2 py-1.5 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text text-xs w-auto">
+         <option value="note">{{ $t('General Note') }}</option>
+         <option value="status_change">{{ $t('Order Status') }}</option>
+         <option value="payment">{{ $t('Payment') }}</option>
+         <option value="refund">{{ $t('Refund') }}</option>
+         <option value="shipping">{{ $t('Shipping') }}</option>
+         <option value="coupon">{{ $t('Coupon / Discount') }}</option>
+         <option value="license">{{ $t('License') }}</option>
+       </select>
+       <label class="inline-flex items-center gap-1 text-xs text-admin-theme-text-muted whitespace-nowrap">
+         <input v-model="newNote.is_customer_visible" type="checkbox" class="rounded border-admin-theme-border w-3.5 h-3.5" />
+         {{ $t('Visible to customer') }}
+       </label>
+     </div>
+     <textarea
+       v-model="newNote.content"
+       rows="2"
+       class="w-full px-3 py-2 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text text-sm"
+       :placeholder="$t('Write a note...')"
+     />
+     <div class="flex justify-end">
+       <button
+         @click="addNote"
+         :disabled="!newNote.content.trim() || noteLoading"
+         class="px-3 py-1.5 bg-admin-theme-primary hover:bg-admin-theme-primary/90 text-white rounded-lg text-xs font-medium transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
+       >
+         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+         {{ $t('Add Note') }}
+       </button>
+     </div>
+   </div>
+
+   <!-- Notes List -->
+   <div v-if="order.notes && order.notes.length" class="space-y-2 max-h-[400px] overflow-y-auto">
+     <div
+       v-for="note in order.notes"
+       :key="note.id"
+       class="p-3 rounded-lg border border-admin-theme-border bg-admin-theme-base/30 group relative"
+     >
+       <div class="flex items-start justify-between gap-2">
+         <div class="flex items-center gap-2 min-w-0 flex-1">
+           <span class="text-sm" :title="getNoteTypeLabel(note.type)">{{ getNoteTypeIcon(note.type) }}</span>
+           <span class="text-[10px] uppercase font-semibold text-admin-theme-text-muted tracking-wider bg-admin-theme-base px-1.5 py-0.5 rounded border border-admin-theme-border">
+             {{ getNoteTypeLabel(note.type) }}
+           </span>
+           <span v-if="note.is_customer_visible" class="text-[10px] text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1 py-0.5 rounded" :title="$t('Visible to customer')">
+             <i class="fas fa-eye"></i>
+           </span>
+         </div>
+         <!-- Action buttons (only for non-system notes) -->
+         <div v-if="note.type !== 'system' && note.type !== 'status_change'" class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+           <button
+             @click="startEditNote(note)"
+             type="button"
+             class="p-1 text-admin-theme-text-muted hover:text-admin-theme-primary transition-colors"
+             :title="$t('Edit')"
+           >
+             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+           </button>
+           <button
+             @click="deleteNote(note)"
+             type="button"
+             class="p-1 text-admin-theme-text-muted hover:text-red-500 transition-colors"
+             :title="$t('Delete')"
+           >
+             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+           </button>
+         </div>
+       </div>
+
+       <!-- Content: Normal view or Edit mode -->
+       <div v-if="editingNoteId === note.id" class="mt-2 space-y-2">
+         <textarea
+           v-model="editNoteContent"
+           rows="2"
+           class="w-full px-3 py-2 border border-admin-theme-primary/50 rounded-lg bg-admin-theme-input-bg text-admin-theme-text text-sm ring-1 ring-admin-theme-primary/30"
+         />
+         <div class="flex gap-2 justify-end">
+           <button @click="cancelEditNote" class="px-2 py-1 text-xs text-admin-theme-text-muted hover:text-admin-theme-text">{{ $t('Cancel') }}</button>
+           <button @click="saveEditNote(note)" :disabled="noteLoading" class="px-2 py-1 text-xs bg-admin-theme-primary text-white rounded hover:bg-admin-theme-primary/90 disabled:opacity-50">{{ $t('Save') }}</button>
+         </div>
+       </div>
+       <p v-else class="text-sm text-admin-theme-text-secondary mt-1.5 whitespace-pre-wrap break-words">{{ note.content }}</p>
+
+       <!-- Meta: author + timestamps -->
+       <div class="flex items-center gap-2 mt-2 text-[11px] text-admin-theme-text-muted">
+         <span v-if="note.user">{{ note.user.name }}</span>
+         <span v-else class="italic">{{ $t('System') }}</span>
+         <span>·</span>
+         <span>{{ formatDate(note.created_at) }}</span>
+         <template v-if="note.updated_at && note.updated_at !== note.created_at">
+           <span>·</span>
+           <span class="italic">{{ $t('edited') }} {{ formatDate(note.updated_at) }}</span>
+         </template>
+       </div>
+     </div>
+   </div>
+   <div v-else class="text-sm text-admin-theme-text-muted italic">
+     {{ $t('No notes yet.') }}
+   </div>
+ </div>
+
  <!-- Service Package Detail Modal -->
   <div v-if="isServiceModalOpen && selectedService" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity">
     <div class="bg-admin-theme-surface border border-admin-theme-border rounded-xl shadow-2xl max-w-lg w-full overflow-hidden transform transition-all duration-300">
@@ -436,8 +664,6 @@
  </div>
  </div>
  </div>
- </div>
- </div>
 </template>
 
 <script setup lang="ts">
@@ -484,6 +710,28 @@ const refundForm = ref({
 const selectedService = ref<any>(null);
 const isServiceModalOpen = ref(false);
 
+// ─── Coupon State ─────────────────────────────────────────
+const couponCode = ref('');
+const couponLoading = ref(false);
+const couponMessage = ref('');
+const couponSuccess = ref(false);
+
+// ─── Coupon Picker State ──────────────────────────────────
+const showCouponPicker = ref(false);
+const couponSearch = ref('');
+const couponPickerList = ref<any[]>([]);
+const couponPickerLoading = ref(false);
+
+// ─── Notes State ──────────────────────────────────────────
+const noteLoading = ref(false);
+const newNote = ref({
+  content: '',
+  type: 'note',
+  is_customer_visible: false,
+});
+const editingNoteId = ref<number | null>(null);
+const editNoteContent = ref('');
+
 const showServiceDetail = (service: any) => {
  selectedService.value = service;
  isServiceModalOpen.value = true;
@@ -509,17 +757,9 @@ const refundableItems = computed(() => {
 });
 
 const canGenerateInvoice = computed(() => {
- // If order is cancelled, do not allow generating invoices
  if (order.value?.status ==='cancelled') return false;
- 
- // Only allow generating if there's absolutely no valid invoice
- // And to prevent confusion after Voiding, we can restrict it to max 1 active/void cycle 
- // unless explicitly needed. But for now, let's just make it so you can only generate a new one 
- // if there are NO invoices at all, or if the user explicitly wants to re-run it when all are voided.
- // Given the user's feedback ("if already VOID => disabled?"), we'll disable it if ANY invoice exists.
  if (!invoices.value || invoices.value.length === 0) return true;
- 
- return false; // Once generated, even if voided, the button stays disabled.
+ return false;
 });
 
 const formatDate = (date: string) => {
@@ -527,10 +767,7 @@ const formatDate = (date: string) => {
 };
 
 const getProductImage = (item: any) => {
- // Check if variant image was saved in metadata at checkout
  if (item.metadata?.image_url) return item.metadata.image_url;
-
- // Fallback to product primary image
  const product = item.product;
  if (!product || !product.media || !product.media.length) return null;
  const img = product.media.find((m: any) => m.pivot?.is_primary) || product.media[0];
@@ -548,6 +785,35 @@ const getTransactionStatusLabel = (status: string) => {
  if (status ==='pending') return $t('Pending');
  if (status ==='failed') return $t('Failed');
  return status;
+};
+
+// ─── Note Type Helpers ────────────────────────────────────
+const getNoteTypeIcon = (type: string) => {
+  const icons: Record<string, string> = {
+    note: '📝',
+    status_change: '🔄',
+    payment: '💳',
+    refund: '↩️',
+    shipping: '📦',
+    coupon: '🏷️',
+    license: '🔑',
+    system: '⚙️',
+  };
+  return icons[type] || '📝';
+};
+
+const getNoteTypeLabel = (type: string) => {
+  const labels: Record<string, string> = {
+    note: $t('General Note'),
+    status_change: $t('Status Change'),
+    payment: $t('Payment'),
+    refund: $t('Refund'),
+    shipping: $t('Shipping'),
+    coupon: $t('Coupon'),
+    license: $t('License'),
+    system: $t('System'),
+  };
+  return labels[type] || type;
 };
 
 const loadInvoices = async () => {
@@ -640,15 +906,12 @@ const updateStatus = async () => {
  });
 
  if (!confirmed) {
- // Restore old status if cancelled
  await loadOrder();
  return;
  }
 
  await axios.put(`/api/v1/orders/${order.value.id}`, { status: order.value.status });
  dialog.success($t('Order status updated successfully'));
- 
- // Refresh order data to show updated transaction statuses
  await loadOrder();
  } catch (e) {
  console.error(e);
@@ -717,6 +980,176 @@ const downloadPdfInvoice = async (inv: any) => {
  } finally {
  invoiceLoadingId.value = null;
  }
+};
+
+// ─── Apply Coupon ─────────────────────────────────────────
+const applyCoupon = async () => {
+  const code = couponCode.value.trim();
+  if (!code) return;
+
+  couponLoading.value = true;
+  couponMessage.value = '';
+
+  try {
+    const { data } = await axios.post(`/api/v1/orders/${order.value.id}/apply-coupon`, {
+      coupon_code: code,
+    });
+
+    // 100% discount requires confirmation
+    if (data.requires_confirm) {
+      const confirmed = await dialog.confirm({
+        title: $t('100% Discount'),
+        message: $t('This coupon will cover 100% of the order total. The order will be auto-completed and related licenses will be activated. Continue?'),
+        confirmText: $t('Confirm & Complete'),
+        type: 'warning',
+      });
+
+      if (confirmed) {
+        const { data: confirmData } = await axios.post(`/api/v1/orders/${order.value.id}/apply-coupon`, {
+          coupon_code: code,
+          confirm: true,
+        });
+        couponMessage.value = confirmData.message || $t('Coupon applied and order completed.');
+        couponSuccess.value = true;
+        couponCode.value = '';
+        await loadOrder();
+      } else {
+        couponMessage.value = $t('Coupon application cancelled.');
+        couponSuccess.value = false;
+      }
+    } else {
+      couponMessage.value = data.message || $t('Coupon applied successfully.');
+      couponSuccess.value = true;
+      couponCode.value = '';
+
+      if (data.data?.order) {
+        order.value = data.data.order;
+      } else {
+        await loadOrder();
+      }
+    }
+  } catch (e: any) {
+    couponMessage.value = e?.response?.data?.message || $t('Failed to apply coupon.');
+    couponSuccess.value = false;
+  } finally {
+    couponLoading.value = false;
+  }
+};
+
+// ─── Coupon Picker ────────────────────────────────────────
+const loadCoupons = async (search = '') => {
+  couponPickerLoading.value = true;
+  try {
+    const params: any = { active: 1, per_page: 50 };
+    if (search) params.search = search;
+    const { data } = await axios.get('/api/v1/coupons', { params });
+    couponPickerList.value = data.data || data;
+  } catch (e) {
+    console.error(e);
+    couponPickerList.value = [];
+  } finally {
+    couponPickerLoading.value = false;
+  }
+};
+
+const openCouponPicker = () => {
+  showCouponPicker.value = true;
+  couponSearch.value = '';
+  loadCoupons();
+};
+
+let searchTimeout: any = null;
+const searchCouponsDebounced = () => {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    loadCoupons(couponSearch.value);
+  }, 300);
+};
+
+const selectCouponFromPicker = (coupon: any) => {
+  couponCode.value = coupon.code;
+  showCouponPicker.value = false;
+  applyCoupon();
+};
+
+// ─── Notes CRUD ───────────────────────────────────────────
+const addNote = async () => {
+  if (!newNote.value.content.trim()) return;
+  noteLoading.value = true;
+
+  try {
+    const { data } = await axios.post(`/api/v1/orders/${order.value.id}/notes`, {
+      content: newNote.value.content,
+      type: newNote.value.type,
+      is_customer_visible: newNote.value.is_customer_visible,
+    });
+
+    // Prepend to local list
+    if (!order.value.notes) order.value.notes = [];
+    order.value.notes.unshift(data.data);
+
+    newNote.value.content = '';
+    newNote.value.type = 'note';
+    newNote.value.is_customer_visible = false;
+    dialog.success($t('Note added successfully.'));
+  } catch (e: any) {
+    dialog.error(e?.response?.data?.message || $t('Failed to add note.'));
+  } finally {
+    noteLoading.value = false;
+  }
+};
+
+const startEditNote = (note: any) => {
+  editingNoteId.value = note.id;
+  editNoteContent.value = note.content;
+};
+
+const cancelEditNote = () => {
+  editingNoteId.value = null;
+  editNoteContent.value = '';
+};
+
+const saveEditNote = async (note: any) => {
+  if (!editNoteContent.value.trim()) return;
+  noteLoading.value = true;
+
+  try {
+    const { data } = await axios.put(`/api/v1/orders/${order.value.id}/notes/${note.id}`, {
+      content: editNoteContent.value,
+    });
+
+    // Update local
+    const idx = order.value.notes.findIndex((n: any) => n.id === note.id);
+    if (idx !== -1) {
+      order.value.notes[idx] = data.data;
+    }
+
+    editingNoteId.value = null;
+    editNoteContent.value = '';
+    dialog.success($t('Note updated successfully.'));
+  } catch (e: any) {
+    dialog.error(e?.response?.data?.message || $t('Failed to update note.'));
+  } finally {
+    noteLoading.value = false;
+  }
+};
+
+const deleteNote = async (note: any) => {
+  const confirmed = await dialog.confirm({
+    title: $t('Delete Note'),
+    message: $t('Are you sure you want to delete this note? This action cannot be undone.'),
+    confirmText: $t('Delete'),
+    type: 'danger',
+  });
+  if (!confirmed) return;
+
+  try {
+    await axios.delete(`/api/v1/orders/${order.value.id}/notes/${note.id}`);
+    order.value.notes = order.value.notes.filter((n: any) => n.id !== note.id);
+    dialog.success($t('Note deleted successfully.'));
+  } catch (e: any) {
+    dialog.error(e?.response?.data?.message || $t('Failed to delete note.'));
+  }
 };
 
 onMounted(loadOrder);

@@ -108,26 +108,53 @@ watch(demoRestriction, () => {
         </aside>
 
         <!-- Mobile Menu (Top) -->
-        <div class="md:hidden w-full bg-white dark:bg-black border-b border-gray-200 dark:border-zinc-800 overflow-x-auto whitespace-nowrap fixed top-8 z-20 mt-8 transition-colors duration-300">
-            <nav class="flex px-4 py-2 space-x-4">
+        <div class="md:hidden w-full bg-white dark:bg-black border-b border-gray-200 dark:border-zinc-800 overflow-x-auto whitespace-nowrap sticky top-0 z-20 transition-colors duration-300">
+            <nav class="flex items-center px-4 py-2 space-x-2">
                  <Link
                     v-for="item in menuItems"
                     :key="item.route"
                     :href="route(item.route)"
-                    class="px-3 py-2 text-sm font-medium rounded-md transition-colors"
+                    class="flex items-center px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex-shrink-0"
                     :class="[
                         currentRoute === item.route || currentRoute?.startsWith(item.route + '.')
-                            ? 'bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white'
+                            ? 'bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white font-semibold'
                             : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                     ]"
                 >
+                    <svg
+                        class="mr-1.5 h-4 w-4 flex-shrink-0"
+                        :class="[
+                            currentRoute === item.route || currentRoute?.startsWith(item.route + '.')
+                                ? 'text-gray-900 dark:text-white'
+                                : 'text-gray-400 dark:text-gray-500'
+                        ]"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="item.icon" />
+                    </svg>
                     {{ t(item.label) }}
                 </Link>
+
+                <!-- Mobile Log Out Button -->
+                <form :action="route('logout')" method="POST" class="inline-block flex-shrink-0">
+                    <input type="hidden" name="_token" :value="csrfToken" />
+                    <button
+                        type="submit"
+                        class="flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    >
+                        <svg class="mr-1.5 h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        {{ t('Log Out') }}
+                    </button>
+                </form>
             </nav>
         </div>
 
         <!-- Main Content -->
-        <main class="flex-1 md:ml-64 p-4 md:p-8 pt-20 md:pt-8 transition-colors duration-300">
+        <main class="flex-1 md:ml-64 p-4 md:p-8 pt-4 md:pt-8 transition-colors duration-300">
             <div class="max-w-8xl mx-auto">
                  <header v-if="$slots.header" class="mb-8">
                     <h1 class="text-2xl font-bold text-gray-900 dark:text-white">

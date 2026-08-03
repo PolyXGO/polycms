@@ -9,8 +9,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OrderNote extends Model
 {
-    public $timestamps = false;
-
     protected $fillable = [
         'order_id',
         'user_id',
@@ -18,7 +16,6 @@ class OrderNote extends Model
         'content',
         'metadata',
         'is_customer_visible',
-        'created_at',
     ];
 
     protected function casts(): array
@@ -27,8 +24,23 @@ class OrderNote extends Model
             'metadata' => 'array',
             'is_customer_visible' => 'boolean',
             'created_at' => 'datetime',
+            'updated_at' => 'datetime',
         ];
     }
+
+    /**
+     * Available note types for categorization.
+     */
+    public const TYPES = [
+        'note',           // General admin note
+        'status_change',  // Order status change
+        'payment',        // Payment related
+        'refund',         // Refund related
+        'shipping',       // Shipping related
+        'coupon',         // Coupon/Discount applied
+        'license',        // License related
+        'system',         // System auto-generated
+    ];
 
     // ─── Relationships ───────────────────────────────────────
 
@@ -56,7 +68,6 @@ class OrderNote extends Model
             'content' => "Order status changed from \"{$oldStatus}\" to \"{$newStatus}\"",
             'metadata' => ['old_status' => $oldStatus, 'new_status' => $newStatus],
             'is_customer_visible' => true,
-            'created_at' => now(),
         ]);
     }
 
@@ -72,7 +83,6 @@ class OrderNote extends Model
             'content' => $content,
             'metadata' => $metadata ?: null,
             'is_customer_visible' => false,
-            'created_at' => now(),
         ]);
     }
 
@@ -87,7 +97,6 @@ class OrderNote extends Model
             'type' => 'note',
             'content' => $content,
             'is_customer_visible' => $customerVisible,
-            'created_at' => now(),
         ]);
     }
 

@@ -295,6 +295,7 @@ class LicenseController extends Controller
             'license_key' => 'required|string',
             'domain' => 'nullable|string',
             'hardware_id' => 'nullable|string',
+            'module' => 'nullable|string',
         ]);
 
         $key = trim($validated['license_key']);
@@ -302,6 +303,7 @@ class LicenseController extends Controller
             ? trim(preg_replace('#^https?://#', '', strtolower($validated['domain'])), '/')
             : strtolower($request->getHost());
         $hwid = $validated['hardware_id'] ?? null;
+        $moduleKey = trim($validated['module'] ?? '');
 
         $licenseManager = app(\App\Services\Ecommerce\LicenseManager::class);
 
@@ -312,6 +314,17 @@ class LicenseController extends Controller
                     'success' => false,
                     'message' => 'Invalid license key.',
                 ], 404);
+            }
+
+            // Enforce product scope: if module is provided, license must belong to a product linked to that module's project
+            if (!empty($moduleKey)) {
+                $productScopeValid = $this->validateLicenseProductScope($license, $moduleKey);
+                if (!$productScopeValid) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'License key does not match this product. This key belongs to a different product.',
+                    ], 403);
+                }
             }
 
             $existingActivation = $license->activations()
@@ -359,6 +372,48 @@ class LicenseController extends Controller
     }
 
     /**
+     * Validate that a license's product matches the module/project requesting activation.
+     * Returns true if valid, false if product mismatch.
+     */
+    private function validateLicenseProductScope(ProductLicense $license, string $moduleKey): bool
+    {
+        if (!class_exists(\Modules\Polyx\ProjectHub\Models\Project::class)) {
+            return true; // ProjectHub not installed, skip validation
+        }
+
+        $cleanModule = str_replace(['Polyx.', 'polyx.'], '', $moduleKey);
+        $cleanLower = strtolower($cleanModule);
+
+        $candidates = array_unique(array_filter([
+            $moduleKey,
+            $cleanModule,
+            $cleanLower,
+            "{$cleanLower}_polycms",
+            "{$cleanLower}-polycms",
+            "{$cleanLower}-for-polycms",
+            "polyx_{$cleanLower}",
+            "polyx-{$cleanLower}",
+        ]));
+
+        $project = \Modules\Polyx\ProjectHub\Models\Project::where(function ($q) use ($candidates) {
+            $q->whereIn('project_code', $candidates)
+                ->orWhereIn(\Illuminate\Support\Facades\DB::raw('LOWER(project_code)'), array_map('strtolower', $candidates));
+        })->first();
+
+        if (!$project) {
+            return true; // Project not found in ProjectHub, allow (backward compat)
+        }
+
+        $projectProductIds = $project->products()->pluck('products.id')->toArray();
+        if (empty($projectProductIds)) {
+            return true; // No products linked to project, allow
+        }
+
+        $licenseProductId = $license->subscription?->product_id;
+        return $licenseProductId && in_array($licenseProductId, $projectProductIds);
+    }
+
+    /**
      * Public API endpoint to verify a license for a site domain.
      */
     public function verifyPublic(Request $request): JsonResponse
@@ -375,64 +430,40 @@ class LicenseController extends Controller
             : strtolower($request->getHost());
         $activationToken = trim($validated['activation_token'] ?? '');
 
-        $license = ProductLicense::where('license_key', $key)->first();
+        $licenseManager = app(\App\Services\Ecommerce\LicenseManager::class);
+        $verified = $licenseManager->verifyLicense($key, $domain, $activationToken ?: null);
 
-        if (!$license || $license->status !== 'active') {
+        if (empty($verified['valid'])) {
             return response()->json([
                 'success' => false,
                 'active' => false,
-                'message' => 'License key is invalid or inactive.',
+                'is_expired' => $verified['is_expired'] ?? false,
+                'license_status' => $verified['license_status'] ?? 'invalid',
+                'message' => $verified['message'] ?? 'License key is invalid or inactive.',
+                'renew_url' => $verified['renew_url'] ?? url('/account/licenses'),
             ], 404);
         }
 
-        if ($license->subscription) {
-            if ($license->subscription->status !== 'active' || ($license->subscription->expires_at && $license->subscription->expires_at->isPast())) {
-                return response()->json([
-                    'success' => false,
-                    'active' => false,
-                    'message' => 'Subscription associated with this license is inactive or expired.',
-                ], 422);
-            }
-        }
-
-        $activation = $license->activations()->where('domain', $domain)->first();
-
-        if (!$activation) {
-            return response()->json([
-                'success' => true,
-                'active' => false,
-                'message' => "License is valid, but domain {$domain} is not activated.",
-                'data' => [
-                    'license_key' => $license->license_key,
-                    'status' => $license->status,
-                    'max_activations' => $license->max_activations,
-                    'activation_count' => $license->activation_count,
-                ]
-            ]);
-        }
-
-        // Verify activation_token if provided (enhanced security)
-        if (!empty($activationToken) && !empty($activation->activation_token)) {
-            if (!hash_equals($activation->activation_token, $activationToken)) {
-                return response()->json([
-                    'success' => false,
-                    'active' => false,
-                    'message' => 'Activation token is invalid. Please re-activate your license.',
-                ], 401);
-            }
-        }
+        $license = $verified['license'];
 
         return response()->json([
             'success' => true,
             'active' => true,
-            'message' => "License is active and valid for domain {$domain}.",
+            'license_status' => $verified['license_status'],
+            'is_expired' => $verified['is_expired'],
+            'expires_at' => $verified['expires_at'] ?? null,
+            'expires_at_formatted' => $verified['expires_at_formatted'] ?? null,
+            'message' => $verified['message'],
+            'renew_url' => $verified['renew_url'],
             'data' => [
                 'license_key' => $license->license_key,
-                'status' => $license->status,
+                'status' => $verified['license_status'],
+                'is_expired' => $verified['is_expired'],
                 'domain' => $domain,
                 'max_activations' => $license->max_activations,
                 'activation_count' => $license->activation_count,
-                'activated_at' => $activation->activated_at ?? null,
+                'expires_at' => $verified['expires_at'] ?? null,
+                'renew_url' => $verified['renew_url'],
             ]
         ]);
     }
@@ -572,29 +603,58 @@ class LicenseController extends Controller
                                 'download_type' => 'free',
                             ]
                         );
+                        $updateEligible = true;
                     } else {
                         // Check if valid license provided for paid module
                         $licenseValid = false;
+                        $isExpired = false;
+                        $updateEligible = false;
+                        $licenseStatus = 'none';
+
                         if (!empty($licenseKey)) {
                             $licenseManager = app(\App\Services\Ecommerce\LicenseManager::class);
-                            if (method_exists($licenseManager, 'verifyLicense')) {
-                                $verified = $licenseManager->verifyLicense($licenseKey, $domain, $activationToken ?: null);
-                                if (!empty($verified['valid'])) {
+                            $verified = $licenseManager->verifyLicense($licenseKey, $domain, $activationToken ?: null);
+
+                            if (!empty($verified['valid'])) {
+                                $licenseObj = $verified['license'];
+                                $licenseProductId = $licenseObj->subscription?->product_id;
+                                $projectProductIds = $project->products()->pluck('products.id')->toArray();
+                                if ($licenseProductId && in_array($licenseProductId, $projectProductIds)) {
                                     $licenseValid = true;
+                                    $isExpired = !empty($verified['is_expired']);
+                                    $licenseStatus = $verified['license_status'] ?? ($isExpired ? 'expired' : 'active');
+
+                                    // Model A Expiration Check: check if latest release was published AFTER subscription expires_at
+                                    $expiresAt = $licenseObj->subscription?->expires_at;
+                                    if ($isExpired && $expiresAt) {
+                                        if ($latestRelease->released_at > $expiresAt) {
+                                            $updateEligible = false;
+                                            $customMessage = "Version {$latestRelease->version} was released on " . $latestRelease->released_at->format('Y-m-d') . ", which is after your subscription expired on " . $expiresAt->format('Y-m-d') . ". Please renew your subscription to access this update.";
+                                        } else {
+                                            $updateEligible = true;
+                                        }
+                                    } else {
+                                        $updateEligible = true;
+                                    }
                                 }
                             }
                         }
 
-                        if ($licenseValid) {
+                        if ($licenseValid && $updateEligible) {
+                            $routeParams = [
+                                'release_id'    => $latestRelease->id,
+                                'license_key'   => $licenseKey,
+                                'domain'        => $domain,
+                                'download_type' => 'paid',
+                            ];
+                            if (!empty($activationToken)) {
+                                $routeParams['activation_token'] = $activationToken;
+                            }
+
                             $downloadUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
                                 'api.v1.licenses.download-release-public',
                                 now()->addMinutes(15),
-                                [
-                                    'release_id'  => $latestRelease->id,
-                                    'license_key' => $licenseKey,
-                                    'domain'      => $domain,
-                                    'download_type' => 'paid',
-                                ]
+                                $routeParams
                             );
                         } else {
                             if (!empty($latestRelease->free_download_url)) {
@@ -607,7 +667,7 @@ class LicenseController extends Controller
                                     ]
                                 );
                             } else {
-                                $downloadUrl = ''; // Paid module requires valid active license key
+                                $downloadUrl = '';
                             }
                         }
                     }
@@ -616,6 +676,7 @@ class LicenseController extends Controller
         }
 
         $hasUpdate = version_compare($latestVersion, $clientVersion, '>');
+        $renewUrl = url('/account/licenses');
 
         return response()->json([
             'success'         => true,
@@ -623,9 +684,15 @@ class LicenseController extends Controller
             'current_version' => $clientVersion,
             'latest_version'  => $latestVersion,
             'has_update'      => $hasUpdate,
+            'update_eligible' => $updateEligible ?? true,
+            'license_status'  => $licenseStatus ?? 'none',
+            'is_expired'      => $isExpired ?? false,
+            'expires_at'      => isset($expiresAt) && $expiresAt ? $expiresAt->toIso8601String() : null,
             'changelog'       => $changelog,
             'download_url'    => $downloadUrl,
             'is_free'         => $isFree,
+            'message'         => $customMessage ?? ($hasUpdate ? 'Update available.' : 'Your software is up to date.'),
+            'renew_url'       => $renewUrl,
         ]);
     }
 
@@ -639,7 +706,8 @@ class LicenseController extends Controller
         if (!$request->hasValidSignature() && !$request->hasValidRelativeSignature()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Link tải đã hết hạn (chỉ có hiệu lực trong 15 phút) hoặc Chữ ký bảo mật (Signature) không hợp lệ. Vui lòng thực hiện Check Update lại để lấy link mới.',
+                'message' => 'Download link has expired or security signature is invalid. Please run check update to request a new download link.',
+                'renew_url' => url('/account/licenses'),
             ], 403);
         }
 
@@ -647,9 +715,10 @@ class LicenseController extends Controller
         $domain = strtolower((string) $request->input('domain', $request->getHost()));
         $releaseId = (int) $request->input('release_id', 0);
         $downloadType = $request->input('download_type', 'paid');
+        $renewUrl = url('/account/licenses');
 
         if ($releaseId <= 0) {
-            return response()->json(['success' => false, 'message' => 'Invalid release ID.'], 400);
+            return response()->json(['success' => false, 'message' => 'Invalid release ID.', 'renew_url' => $renewUrl], 400);
         }
 
         $release = \Modules\Polyx\ProjectHub\Models\ProjectRelease::findOrFail($releaseId);
@@ -662,15 +731,49 @@ class LicenseController extends Controller
 
         if (!$isFree && $downloadType === 'paid') {
             if (empty($licenseKey)) {
-                return response()->json(['success' => false, 'message' => 'Active license key required to download paid release.'], 403);
+                return response()->json(['success' => false, 'message' => 'Active license key required to download paid release.', 'renew_url' => $renewUrl], 403);
             }
 
             $licenseManager = app(\App\Services\Ecommerce\LicenseManager::class);
-            if (method_exists($licenseManager, 'verifyLicense')) {
-                $verified = $licenseManager->verifyLicense($licenseKey, $domain, $activationToken ?: null);
-                if (empty($verified['valid'])) {
-                     return response()->json(['success' => false, 'message' => $verified['message'] ?? 'Invalid or expired license key.'], 403);
+            $verified = $licenseManager->verifyLicense($licenseKey, $domain, $activationToken ?: null);
+
+            if (empty($verified['valid'])) {
+                 return response()->json([
+                     'success' => false,
+                     'is_expired' => $verified['is_expired'] ?? false,
+                     'license_status' => $verified['license_status'] ?? 'invalid',
+                     'message' => $verified['message'] ?? 'Invalid or expired license key.',
+                     'renew_url' => $renewUrl,
+                 ], 403);
+            }
+
+            $licenseObj = $verified['license'];
+            $subscription = $licenseObj->subscription;
+
+            // Model A Expiration Check: block if release was published after subscription expires_at
+            if ($subscription && $subscription->expires_at && $subscription->expires_at->isPast()) {
+                if ($release->released_at > $subscription->expires_at) {
+                    $expiresFormatted = $subscription->expires_at->format('Y-m-d');
+                    return response()->json([
+                        'success' => false,
+                        'is_expired' => true,
+                        'license_status' => 'expired',
+                        'expires_at' => $subscription->expires_at->toIso8601String(),
+                        'message' => "This release (published {$release->released_at->format('Y-m-d')}) was released after your subscription expired on {$expiresFormatted}. Please renew your subscription to download this update.",
+                        'renew_url' => $renewUrl,
+                    ], 403);
                 }
+            }
+
+            // Enforce product scope: license must belong to the same product as this release's project
+            $licenseProductId = $subscription?->product_id;
+            $releaseProjectProductIds = $project->products()->pluck('products.id')->toArray();
+            if (!in_array($licenseProductId, $releaseProjectProductIds)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'License key does not match this product.',
+                    'renew_url' => $renewUrl,
+                ], 403);
             }
 
             $rawUrl = $release->download_url;

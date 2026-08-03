@@ -105,22 +105,45 @@ class LicenseManager
      */
     public function verifyLicense($key, $domain, $activationToken = null)
     {
+        $renewUrl = url('/account/licenses');
+
         if (empty($key)) {
-            return ['valid' => false, 'message' => 'License key is required.'];
+            return [
+                'valid' => false,
+                'is_expired' => false,
+                'license_status' => 'invalid',
+                'message' => 'License key is required.',
+                'renew_url' => $renewUrl,
+            ];
         }
 
         $license = ProductLicense::where('license_key', $key)->first();
 
         if (!$license || $license->status !== 'active') {
-            return ['valid' => false, 'message' => 'Invalid or inactive license key.'];
+            return [
+                'valid' => false,
+                'is_expired' => false,
+                'license_status' => $license ? $license->status : 'invalid',
+                'message' => 'Invalid or inactive license key.',
+                'renew_url' => $renewUrl,
+            ];
         }
 
+        $isExpired = false;
+        $expiresAt = $license->subscription?->expires_at;
+
         if ($license->subscription) {
-            if ($license->subscription->status !== 'active') {
-                return ['valid' => false, 'message' => 'Associated subscription is inactive.'];
+            if (in_array($license->subscription->status, ['inactive', 'suspended', 'revoked'])) {
+                return [
+                    'valid' => false,
+                    'is_expired' => false,
+                    'license_status' => $license->subscription->status,
+                    'message' => 'Associated subscription is inactive or suspended.',
+                    'renew_url' => $renewUrl,
+                ];
             }
-            if ($license->subscription->expires_at && $license->subscription->expires_at->isPast()) {
-                return ['valid' => false, 'message' => 'Associated subscription has expired.'];
+            if ($expiresAt && $expiresAt->isPast()) {
+                $isExpired = true;
             }
         }
 
@@ -133,16 +156,41 @@ class LicenseManager
         }
 
         if (!$activation) {
-            return ['valid' => false, 'message' => "License is active, but domain {$domain} is not activated."];
+            return [
+                'valid' => false,
+                'is_expired' => $isExpired,
+                'license_status' => $isExpired ? 'expired' : 'unactivated',
+                'message' => "License is active, but domain {$domain} is not activated.",
+                'renew_url' => $renewUrl,
+            ];
         }
 
         // If activation_token exists on the activation record, enforce strict token verification
         if (!empty($activation->activation_token)) {
             if (empty($activationToken) || !hash_equals($activation->activation_token, $activationToken)) {
-                return ['valid' => false, 'message' => 'Activation token is missing or invalid. Please re-activate your license.'];
+                return [
+                    'valid' => false,
+                    'is_expired' => $isExpired,
+                    'license_status' => 'token_invalid',
+                    'message' => 'Activation token is missing or invalid. Please re-activate your license.',
+                    'renew_url' => $renewUrl,
+                ];
             }
         }
 
-        return ['valid' => true, 'message' => 'License verified successfully.', 'license' => $license];
+        $message = $isExpired
+            ? 'License verified for installed features. Subscription expired on ' . ($expiresAt ? $expiresAt->format('Y-m-d') : 'N/A') . '. Renew subscription to receive new updates.'
+            : 'License verified successfully.';
+
+        return [
+            'valid' => true,
+            'is_expired' => $isExpired,
+            'license_status' => $isExpired ? 'expired' : 'active',
+            'expires_at' => $expiresAt ? $expiresAt->toIso8601String() : null,
+            'expires_at_formatted' => $expiresAt ? $expiresAt->format('Y-m-d H:i:s') : null,
+            'message' => $message,
+            'renew_url' => $renewUrl,
+            'license' => $license,
+        ];
     }
 }

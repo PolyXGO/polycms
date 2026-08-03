@@ -54,8 +54,23 @@
  <h3 class="text-lg font-medium text-admin-theme-text mb-4">Usage Limits</h3>
  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div>
- <label class="block text-sm font-medium text-admin-theme-text-secondary mb-1">Total Limit</label>
- <input v-model="form.usage_limit" type="number" class="w-full px-3 py-2 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text" placeholder="Leave empty for unlimited" />
+ <div class="flex items-center justify-between mb-1">
+   <label class="block text-sm font-medium text-admin-theme-text-secondary">Total Limit</label>
+ </div>
+ <div class="flex items-center gap-1.5">
+   <input v-model="form.usage_limit" type="number" class="w-full px-3 py-2 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text" placeholder="Leave empty for unlimited" />
+   <button
+     type="button"
+     @click="fillLimitFromRestrictedEmails"
+     class="px-2.5 py-2 text-xs font-medium bg-admin-theme-hover text-admin-theme-text border border-admin-theme-border rounded-lg hover:bg-admin-theme-primary hover:text-white transition-colors flex items-center gap-1 whitespace-nowrap"
+     :title="t('Set Total Limit equal to count of restricted emails')"
+   >
+     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+     </svg>
+     <span>{{ form.restricted_emails?.length ? `Sync (${form.restricted_emails.length})` : 'Sync' }}</span>
+   </button>
+ </div>
  </div>
  
  <div>
@@ -75,13 +90,21 @@
 
 
  <div class="col-span-2">
- <label class="block text-sm font-medium text-admin-theme-text-secondary mb-1">Restricted to Users</label>
- <UserSearch v-model="form.restricted_emails" />
- <p class="text-xs text-gray-500 mt-1">If set, only these users can use the coupon.</p>
- </div>
- </div>
- </div>
- </div>
+  <div class="col-span-2">
+  <label class="block text-sm font-medium text-admin-theme-text-secondary mb-1">Restricted to Users</label>
+  <UserSearch v-model="form.restricted_emails" />
+  <p class="text-xs text-gray-500 mt-1">If set, only these users can use the coupon.</p>
+  </div>
+
+  <div class="col-span-2 mt-4">
+  <label class="block text-sm font-medium text-admin-theme-text-secondary mb-1">Restricted to Products</label>
+  <ProductSearch v-model="productIds" :initial-products="form.selected_products" />
+  <p class="text-xs text-gray-500 mt-1">If set, coupon will only apply to these specific products in the cart.</p>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
  
  <div class="space-y-6">
  <!-- Status & Schedule -->
@@ -130,6 +153,7 @@ import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { useDialog } from '../../composables/useDialog';
 import UserSearch from '../../components/UserSearch.vue';
+import ProductSearch from '../../components/ProductSearch.vue';
 import { useTranslation } from '../../composables/useTranslation';
 
 const { t } = useTranslation();
@@ -140,12 +164,13 @@ const couponGuideText = `
   <li><strong>Discount Type & Value:</strong> Choose between a <em>Percentage (%)</em> reduction or a <em>Fixed Amount</em> deduction applied to the cart total.</li>
   <li><strong>Usage Limits:</strong> 
     <ul class="list-circle pl-4 mt-1 space-y-1">
-      <li><em>Total Limit:</em> Maximum number of times the coupon can be used overall (leave empty for unlimited).</li>
+      <li><em>Total Limit:</em> Maximum number of times the coupon can be used overall (leave empty for unlimited). <span class="text-xs text-blue-400 block mt-1">💡 <strong>Restricted List Strategy:</strong> For 1-time coupons restricted to specific emails, set <code>Total Limit</code> equal to the total count of restricted emails (or click the <strong>Sync</strong> button next to Total Limit) and set <code>Limit Per User</code> to 1. This guarantees every listed user gets exactly 1 use.</span></li>
       <li><em>Limit Per User:</em> Maximum times a single registered customer can use the coupon.</li>
     </ul>
   </li>
   <li><strong>Order Thresholds:</strong> Set a <em>Min Order Value</em> to restrict usage to larger orders, or define a <em>Max Discount Value</em> to cap the maximum discount savings on percentage-based coupons.</li>
   <li><strong>Restricted Users:</strong> Specify target emails to restrict the coupon to exclusive customers.</li>
+  <li><strong>Restricted Products:</strong> Select specific products to restrict discount applicability. The discount will only calculate against matching products in the cart.</li>
   <li><strong>Publishing Flags:</strong>
     <ul class="list-circle pl-4 mt-1 space-y-1">
       <li><em>Active:</em> Instantly enable or disable coupon eligibility.</li>
@@ -170,19 +195,39 @@ const form = ref({
  value: 0,
  min_order_value: 0,
  max_discount_value: null,
- usage_limit: null,
+ usage_limit: null as number | null,
  usage_limit_per_user: 1,
  starts_at:'',
  expires_at:'',
  restricted_emails: [] as string[],
+ scope_config: { product_ids: [] as number[] } as any,
+ selected_products: [] as any[],
  is_active: true,
  is_public: false,
  is_exclusive: false,
 });
 
-// Removed manual textarea logic since UserSearch handles it
+const productIds = computed({
+  get() {
+    return form.value.scope_config?.product_ids || [];
+  },
+  set(val: number[]) {
+    if (!form.value.scope_config) {
+      form.value.scope_config = {};
+    }
+    form.value.scope_config.product_ids = val;
+  }
+});
 
-// Sync array to textarea (removed as UserSearch handles array directly) -> logic removed
+const fillLimitFromRestrictedEmails = () => {
+ const count = form.value.restricted_emails?.length || 0;
+ if (count > 0) {
+  form.value.usage_limit = count;
+  dialog.success(`Total Limit automatically set to ${count} (equal to restricted emails count).`);
+ } else {
+  dialog.error('No restricted emails added yet. Please add emails in "Restricted to Users" first.');
+ }
+};
 
 const loadCoupon = async () => {
  if (!isEditing.value) return;

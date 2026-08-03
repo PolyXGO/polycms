@@ -82,11 +82,18 @@ class AccountController extends Controller
     public function subscriptions(Request $request): Response
     {
         $subscriptions = \App\Models\Ecommerce\UserSubscription::where('user_id', Auth::id())
-            ->with(['product', 'service'])
+            ->with(['service'])
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $subscriptions->each->append('order');
+        $subscriptions->each(function ($subscription) {
+            $subscription->append('order');
+            $product = $this->resolveLocalizedProduct($subscription->product_id);
+            if ($product) {
+                $product->append('frontend_url');
+                $subscription->setRelation('product', $product);
+            }
+        });
 
         return Inertia::render('Account/SubscriptionList', [
             'subscriptions' => $subscriptions,
@@ -188,6 +195,44 @@ class AccountController extends Controller
     }
 
     /**
+     * Resolve a product for display in account area, matching current locale or falling back to primary language product.
+     */
+    protected function resolveLocalizedProduct(?int $productId): ?\App\Models\Product
+    {
+        if (!$productId) {
+            return null;
+        }
+
+        $baseProduct = \App\Models\Product::withoutGlobalScope('locale')->with('media')->find($productId);
+        if (!$baseProduct) {
+            return null;
+        }
+
+        $currentLocale = \App\Helpers\LanguageHelper::getCurrentLanguage() ?? \Illuminate\Support\Facades\App::getLocale() ?: 'en';
+
+        // If base product matches requested locale, return it
+        if ($baseProduct->locale === $currentLocale) {
+            return $baseProduct;
+        }
+
+        // Try finding translation in current locale
+        if (!empty($baseProduct->translation_group_id)) {
+            $translatedProduct = \App\Models\Product::withoutGlobalScope('locale')
+                ->with('media')
+                ->where('translation_group_id', $baseProduct->translation_group_id)
+                ->where('locale', $currentLocale)
+                ->first();
+
+            if ($translatedProduct) {
+                return $translatedProduct;
+            }
+        }
+
+        // Fallback to base product (primary language)
+        return $baseProduct;
+    }
+
+    /**
      * Display the user's licenses.
      */
     public function licenses(Request $request): Response
@@ -195,12 +240,20 @@ class AccountController extends Controller
         $licenses = \App\Models\Ecommerce\ProductLicense::whereHas('subscription', function($q) {
                 $q->where('user_id', Auth::id());
             })
-            ->with(['subscription.product.media', 'activations'])
+            ->with(['subscription', 'activations'])
             ->orderBy('created_at', 'desc')
             ->get();
 
         $licenses->each(function ($license) {
             $license->append('order');
+
+            if ($license->subscription) {
+                $product = $this->resolveLocalizedProduct($license->subscription->product_id);
+                if ($product) {
+                    $product->append('frontend_url');
+                    $license->subscription->setRelation('product', $product);
+                }
+            }
             
             $product = $license->subscription?->product;
             if ($product) {

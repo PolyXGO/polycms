@@ -66,6 +66,7 @@ class LanguageRoutingMiddleware
                        $firstSegment !== 'register' &&
                        $firstSegment !== 'logout' &&
                        $firstSegment !== 'account' &&
+                       $firstSegment !== 'external-auth' &&
                        $firstSegment !== 'robots.txt' &&
                        !str_ends_with((string)$firstSegment, '.xml') &&
                        !str_starts_with((string)$firstSegment, 'sitemap') &&

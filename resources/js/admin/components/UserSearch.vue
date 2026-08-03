@@ -17,14 +17,27 @@
  type="text" 
  v-model="searchQuery" 
  @input="handleInput"
+ @keydown.enter.prevent="handleEnter"
  class="w-full px-3 py-2 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text"
- placeholder="Search users by name or email..."
+ :placeholder="placeholder || t('Search users by name or email...')"
  />
+ <p class="text-[11px] text-admin-theme-text-muted mt-1">{{ t('Type an email and press Enter to add directly, or search for existing users.') }}</p>
  
  <!-- Dropdown -->
- <div v-if="showDropdown && (results.length > 0 || loading)" class="absolute z-10 w-full mt-1 bg-admin-theme-surface border border-admin-theme-border rounded-md shadow-lg max-h-60 overflow-y-auto">
- <div v-if="loading" class="p-3 text-sm text-admin-theme-text-muted text-center">Loading...</div>
+ <div v-if="showDropdown && (results.length > 0 || loading || showDirectAdd)" class="absolute z-10 w-full mt-1 bg-admin-theme-surface border border-admin-theme-border rounded-md shadow-lg max-h-60 overflow-y-auto">
+ <div v-if="loading" class="p-3 text-sm text-admin-theme-text-muted text-center">{{ t('Loading...') }}</div>
  <ul v-else>
+ <!-- Direct email add option -->
+ <li
+   v-if="showDirectAdd"
+   @click="addDirect"
+   class="px-4 py-2 hover:bg-admin-theme-base cursor-pointer text-sm text-admin-theme-text border-b border-admin-theme-border bg-admin-theme-primary/5"
+ >
+   <div class="font-medium flex items-center gap-1.5">
+     <svg class="w-4 h-4 text-admin-theme-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+     {{ t('Add email') }}: <span class="text-admin-theme-primary font-semibold">{{ searchQuery.trim() }}</span>
+   </div>
+ </li>
  <li 
  v-for="user in results" 
  :key="user.id" 
@@ -40,9 +53,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from'vue';
+import { ref, computed, getCurrentInstance } from'vue';
 import axios from'axios';
 import { debounce } from'lodash';
+
+const instance = getCurrentInstance();
+const t = instance?.appContext.config.globalProperties.$t || ((v: string) => v);
 
 const props = defineProps({
  modelValue: {
@@ -52,6 +68,10 @@ const props = defineProps({
  label: {
  type: String,
  default:''
+ },
+ placeholder: {
+  type: String,
+  default: ''
  }
 });
 
@@ -62,10 +82,21 @@ const results = ref<any[]>([]);
 const loading = ref(false);
 const showDropdown = ref(false);
 
+// Check if current query looks like a valid email
+const isValidEmail = (str: string) => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str.trim());
+};
+
+// Show "Add email directly" option when input looks like an email and not already added
+const showDirectAdd = computed(() => {
+  const q = searchQuery.value.trim();
+  return q.length > 0 && isValidEmail(q) && !props.modelValue.includes(q);
+});
+
 const handleInput = debounce(async () => {
  if (searchQuery.value.length < 2) {
  results.value = [];
- showDropdown.value = false;
+ showDropdown.value = showDirectAdd.value;
  return;
  }
  
@@ -82,8 +113,33 @@ const handleInput = debounce(async () => {
  results.value = [];
  } finally {
  loading.value = false;
+ showDropdown.value = true;
  }
 }, 300);
+
+// Handle Enter key — add email directly if valid
+const handleEnter = () => {
+  const q = searchQuery.value.trim();
+  if (isValidEmail(q) && !props.modelValue.includes(q)) {
+    const newValue = [...props.modelValue, q];
+    emit('update:modelValue', newValue);
+    searchQuery.value = '';
+    showDropdown.value = false;
+    results.value = [];
+  }
+};
+
+// Add email directly from dropdown option
+const addDirect = () => {
+  const q = searchQuery.value.trim();
+  if (isValidEmail(q) && !props.modelValue.includes(q)) {
+    const newValue = [...props.modelValue, q];
+    emit('update:modelValue', newValue);
+    searchQuery.value = '';
+    showDropdown.value = false;
+    results.value = [];
+  }
+};
 
 const select = (user: any) => {
  if (!props.modelValue.includes(user.email)) {

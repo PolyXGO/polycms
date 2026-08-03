@@ -174,6 +174,15 @@ Route::prefix('api/v1')->group(function () {
         Route::post('orders/{id}/refund/preview', [\App\Http\Controllers\Api\V1\OrderController::class, 'previewRefund'])->name('api.v1.orders.refund.preview');
         Route::post('orders/{id}/refund', [\App\Http\Controllers\Api\V1\OrderController::class, 'refund'])->name('api.v1.orders.refund');
         Route::get('orders/{id}/stock-movements', [\App\Http\Controllers\Api\V1\OrderController::class, 'stockMovements'])->name('api.v1.orders.stock-movements');
+
+        // Order Notes CRUD
+        Route::get('orders/{id}/notes', [\App\Http\Controllers\Api\V1\OrderController::class, 'listNotes'])->name('api.v1.orders.notes.index');
+        Route::post('orders/{id}/notes', [\App\Http\Controllers\Api\V1\OrderController::class, 'storeNote'])->name('api.v1.orders.notes.store');
+        Route::put('orders/{id}/notes/{noteId}', [\App\Http\Controllers\Api\V1\OrderController::class, 'updateNote'])->name('api.v1.orders.notes.update');
+        Route::delete('orders/{id}/notes/{noteId}', [\App\Http\Controllers\Api\V1\OrderController::class, 'deleteNote'])->name('api.v1.orders.notes.destroy');
+
+        // Apply Coupon to Pending Order
+        Route::post('orders/{id}/apply-coupon', [\App\Http\Controllers\Api\V1\OrderController::class, 'applyCoupon'])->name('api.v1.orders.apply-coupon');
     });
 });
 

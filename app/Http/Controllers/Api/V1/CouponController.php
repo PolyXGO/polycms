@@ -48,6 +48,7 @@ class CouponController extends Controller
             'max_discount_value' => 'nullable|numeric|min:0',
             'restricted_emails' => 'nullable|array',
             'restricted_emails.*' => 'email',
+            'scope_config' => 'nullable|array',
             'is_active' => 'boolean',
             'is_exclusive' => 'boolean',
             'is_public' => 'boolean',
@@ -64,7 +65,21 @@ class CouponController extends Controller
      */
     public function show($id): JsonResponse
     {
-        return response()->json(ProductCoupon::findOrFail($id));
+        $coupon = ProductCoupon::findOrFail($id);
+        $data = $coupon->toArray();
+
+        // Attach selected products info for admin UI
+        $productIds = $coupon->scope_config['product_ids'] ?? [];
+        if (!empty($productIds)) {
+            $products = \App\Models\Product::withoutGlobalScope('locale')
+                ->whereIn('id', $productIds)
+                ->get(['id', 'name', 'sku', 'price', 'locale']);
+            $data['selected_products'] = $products;
+        } else {
+            $data['selected_products'] = [];
+        }
+
+        return response()->json($data);
     }
 
     /**
@@ -88,6 +103,7 @@ class CouponController extends Controller
             'max_discount_value' => 'nullable|numeric|min:0',
             'restricted_emails' => 'nullable|array',
             'restricted_emails.*' => 'email',
+            'scope_config' => 'nullable|array',
             'is_active' => 'boolean',
             'is_exclusive' => 'boolean',
             'is_public' => 'boolean',
