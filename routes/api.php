@@ -206,6 +206,7 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('subscriptions', \App\Http\Controllers\Api\V1\SubscriptionController::class)->only(['index', 'show']);
             Route::apiResource('licenses', \App\Http\Controllers\Api\V1\LicenseController::class)->only(['index', 'show', 'update']);
             Route::delete('licenses/{license}/activations/{activation}', [\App\Http\Controllers\Api\V1\LicenseController::class, 'deleteActivation'])->name('licenses.activations.destroy');
+            Route::post('licenses/{license}/activations/{activation}/regenerate-token', [\App\Http\Controllers\Api\V1\LicenseController::class, 'regenerateTokenAdmin'])->name('licenses.activations.regenerate-token');
             Route::apiResource('shipping-zones', ShippingZoneController::class);
             Route::apiResource('tax-rates', TaxRateController::class);
             Route::post('settings/ecommerce/currencies/sync', [\App\Http\Controllers\Api\V1\CurrencySyncController::class, 'sync'])->name('settings.ecommerce.currencies.sync');

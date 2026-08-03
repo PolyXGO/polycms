@@ -329,11 +329,12 @@ class LicenseController extends Controller
                         'max_activations' => $license->max_activations,
                         'activation_count' => $license->activation_count,
                         'activated_at' => $existingActivation->activated_at ?? now()->toDateTimeString(),
+                        'activation_token' => $existingActivation->activation_token,
                     ]
                 ]);
             }
 
-            $licenseManager->activateLicense($key, $domain, $hwid);
+            $activation = $licenseManager->activateLicense($key, $domain, $hwid);
             $license->refresh();
 
             return response()->json([
@@ -346,6 +347,7 @@ class LicenseController extends Controller
                     'max_activations' => $license->max_activations,
                     'activation_count' => $license->activation_count,
                     'activated_at' => now()->toDateTimeString(),
+                    'activation_token' => $activation->activation_token,
                 ]
             ]);
         } catch (\Exception $e) {
@@ -364,12 +366,14 @@ class LicenseController extends Controller
         $validated = $request->validate([
             'license_key' => 'required|string',
             'domain' => 'nullable|string',
+            'activation_token' => 'nullable|string',
         ]);
 
         $key = trim($validated['license_key']);
         $domain = !empty($validated['domain'])
             ? trim(preg_replace('#^https?://#', '', strtolower($validated['domain'])), '/')
             : strtolower($request->getHost());
+        $activationToken = trim($validated['activation_token'] ?? '');
 
         $license = ProductLicense::where('license_key', $key)->first();
 
@@ -407,6 +411,17 @@ class LicenseController extends Controller
             ]);
         }
 
+        // Verify activation_token if provided (enhanced security)
+        if (!empty($activationToken) && !empty($activation->activation_token)) {
+            if (!hash_equals($activation->activation_token, $activationToken)) {
+                return response()->json([
+                    'success' => false,
+                    'active' => false,
+                    'message' => 'Activation token is invalid. Please re-activate your license.',
+                ], 401);
+            }
+        }
+
         return response()->json([
             'success' => true,
             'active' => true,
@@ -430,12 +445,14 @@ class LicenseController extends Controller
         $validated = $request->validate([
             'license_key' => 'required|string',
             'domain' => 'nullable|string',
+            'activation_token' => 'nullable|string',
         ]);
 
         $key = trim($validated['license_key']);
         $domain = !empty($validated['domain'])
             ? trim(preg_replace('#^https?://#', '', strtolower($validated['domain'])), '/')
             : strtolower($request->getHost());
+        $activationToken = trim($validated['activation_token'] ?? '');
 
         $license = ProductLicense::where('license_key', $key)->first();
         if (!$license) {
@@ -451,6 +468,16 @@ class LicenseController extends Controller
                 'success' => false,
                 'message' => "Domain {$domain} is not currently activated for this license key.",
             ], 404);
+        }
+
+        // Verify activation_token if provided (prevents unauthorized deactivation)
+        if (!empty($activationToken) && !empty($activation->activation_token)) {
+            if (!hash_equals($activation->activation_token, $activationToken)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Activation token is invalid. Cannot deactivate.',
+                ], 401);
+            }
         }
 
         $licenseManager = app(\App\Services\Ecommerce\LicenseManager::class);
@@ -472,6 +499,7 @@ class LicenseController extends Controller
         $licenseKey = trim((string) $request->input('license_key', ''));
         $domain = strtolower((string) $request->input('domain', $request->getHost()));
         $platform = strtolower((string) $request->input('platform', 'polycms'));
+        $activationToken = trim((string) $request->input('activation_token', ''));
 
         $latestVersion = $clientVersion;
         $changelog = '';
@@ -550,7 +578,7 @@ class LicenseController extends Controller
                         if (!empty($licenseKey)) {
                             $licenseManager = app(\App\Services\Ecommerce\LicenseManager::class);
                             if (method_exists($licenseManager, 'verifyLicense')) {
-                                $verified = $licenseManager->verifyLicense($licenseKey, $domain);
+                                $verified = $licenseManager->verifyLicense($licenseKey, $domain, $activationToken ?: null);
                                 if (!empty($verified['valid'])) {
                                     $licenseValid = true;
                                 }
@@ -630,6 +658,8 @@ class LicenseController extends Controller
         $linkedProduct = $project?->products()?->first();
         $isFree = !$linkedProduct || (float) $linkedProduct->price <= 0;
 
+        $activationToken = trim((string) $request->input('activation_token', ''));
+
         if (!$isFree && $downloadType === 'paid') {
             if (empty($licenseKey)) {
                 return response()->json(['success' => false, 'message' => 'Active license key required to download paid release.'], 403);
@@ -637,7 +667,7 @@ class LicenseController extends Controller
 
             $licenseManager = app(\App\Services\Ecommerce\LicenseManager::class);
             if (method_exists($licenseManager, 'verifyLicense')) {
-                $verified = $licenseManager->verifyLicense($licenseKey, $domain);
+                $verified = $licenseManager->verifyLicense($licenseKey, $domain, $activationToken ?: null);
                 if (empty($verified['valid'])) {
                      return response()->json(['success' => false, 'message' => $verified['message'] ?? 'Invalid or expired license key.'], 403);
                 }
@@ -674,5 +704,27 @@ class LicenseController extends Controller
         }
 
         return redirect($rawUrl);
+    }
+
+    /**
+     * Admin endpoint to regenerate activation_token for a specific activation.
+     * Used when admin suspects token compromise — the old token is immediately invalidated.
+     */
+    public function regenerateTokenAdmin(Request $request, $licenseId, $activationId): JsonResponse
+    {
+        $license = ProductLicense::findOrFail($licenseId);
+        $activation = \App\Models\Ecommerce\LicenseActivation::where('license_id', $license->id)
+            ->where('id', $activationId)
+            ->firstOrFail();
+
+        $newToken = bin2hex(random_bytes(32));
+        $activation->activation_token = $newToken;
+        $activation->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Activation token regenerated for domain {$activation->domain}. The client must re-activate to receive the new token.",
+            'data' => $license->fresh(['subscription.user', 'subscription.product', 'activations']),
+        ]);
     }
 }

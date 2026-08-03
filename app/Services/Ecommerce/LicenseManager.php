@@ -68,14 +68,18 @@ class LicenseManager
             throw new \Exception("Max activations reached.");
         }
 
-        $license->activations()->create([
+        // Generate a cryptographically secure activation token (64-char hex)
+        $activationToken = bin2hex(random_bytes(32));
+
+        $activation = $license->activations()->create([
             'domain' => $domain,
-            'hardware_id' => $hwid
+            'hardware_id' => $hwid,
+            'activation_token' => $activationToken,
         ]);
         
         $license->increment('activation_count');
         
-        return true;
+        return $activation;
     }
     public function deactivateLicense($activationId)
     {
@@ -94,8 +98,12 @@ class LicenseManager
 
     /**
      * Verify if a license key is active and assigned/activated for a specific domain.
+     * 
+     * @param string $key License key
+     * @param string $domain Domain to verify
+     * @param string|null $activationToken Optional activation token for enhanced security
      */
-    public function verifyLicense($key, $domain)
+    public function verifyLicense($key, $domain, $activationToken = null)
     {
         if (empty($key)) {
             return ['valid' => false, 'message' => 'License key is required.'];
@@ -126,6 +134,13 @@ class LicenseManager
 
         if (!$activation) {
             return ['valid' => false, 'message' => "License is active, but domain {$domain} is not activated."];
+        }
+
+        // Verify activation_token if provided (enhanced security)
+        if (!empty($activationToken) && !empty($activation->activation_token)) {
+            if (!hash_equals($activation->activation_token, $activationToken)) {
+                return ['valid' => false, 'message' => 'Activation token is invalid. Please re-activate your license.'];
+            }
         }
 
         return ['valid' => true, 'message' => 'License verified successfully.', 'license' => $license];
