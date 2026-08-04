@@ -295,6 +295,12 @@ class TopbarMenuService
             ],
         ]);
 
+        // Allow modules to inject items into the user dropdown menu.
+        // Hook: 'topbar.user_menu.items' — filters the $userItems array.
+        // Modules should insert items with 'priority' key for ordering.
+        // Items without 'priority' default to 50. Logout is always last.
+        $userItems = Hook::applyFilters('topbar.user_menu.items', $userItems, $user);
+
         $items[] = [
             'id' => 'user-menu',
             'label' => $user->name ?: ($user->email ?: 'User'),

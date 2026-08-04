@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Link, usePage, router } from '@inertiajs/vue3';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useTranslation } from '@/admin/composables/useTranslation';
+import DialogProvider from '@/admin/components/dialogs/DialogProvider.vue';
 
 const { t } = useTranslation();
 
@@ -10,32 +11,60 @@ const user = computed(() => page.props.auth.user as any);
 const brandLogo = computed(() => (page.props.settings as any)?.brand_logo);
 const brandName = computed(() => (page.props.settings as any)?.brand_name || 'PolyCMS');
 
-const menuItems = [
-    { label: 'Dashboard', route: 'dashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
-    { label: 'Orders', route: 'account.orders', icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z' },
-    { label: 'Subscriptions', route: 'account.subscriptions', icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' },
-    { label: 'Licenses', route: 'account.licenses', icon: 'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z' },
-    { label: 'Addresses', route: 'account.addresses.index', icon: 'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z' },
-    { label: 'Profile', route: 'profile.edit', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
+const coreMenuItems = [
+    { label: 'Dashboard', route: 'dashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6', order: 10 },
+    { label: 'Orders', route: 'account.orders', icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z', order: 20 },
+    { label: 'Subscriptions', route: 'account.subscriptions', icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15', order: 30 },
+    { label: 'Licenses', route: 'account.licenses', icon: 'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z', order: 40 },
+    { label: 'Addresses', route: 'account.addresses.index', icon: 'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z', order: 80 },
+    { label: 'Profile', route: 'profile.edit', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z', order: 90 },
 ];
+
+// Merge extra menu items from modules (via AccountMenuRegistry + Inertia shared props)
+const menuItems = computed(() => {
+    const extraItems = (page.props.account_menu_extra as any[]) || [];
+    const allItems = [...coreMenuItems, ...extraItems];
+    allItems.sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+    return allItems;
+});
 
 const currentRoute = computed(() => {
     return route().current();
 });
 
 const csrfToken = computed(() => page.props.csrf_token as string);
-const demoRestriction = computed(() => page.props.demo_restriction as any);
+const demoRestrictionProp = computed(() => page.props.demo_restriction as any);
+const eventDemoRestriction = ref<any>(null);
 const showDemoRestrictionModal = ref(false);
 
+const activeDemoRestriction = computed(() => {
+    return eventDemoRestriction.value || demoRestrictionProp.value;
+});
+
+const handleDemoRestrictionEvent = (event: Event) => {
+    const customEvent = event as CustomEvent;
+    if (customEvent.detail) {
+        eventDemoRestriction.value = customEvent.detail;
+        showDemoRestrictionModal.value = true;
+    }
+};
+
 const openDemoRestrictionModal = () => {
-    showDemoRestrictionModal.value = Boolean(demoRestriction.value?.is_demo_restriction);
+    if (demoRestrictionProp.value?.is_demo_restriction) {
+        showDemoRestrictionModal.value = true;
+    }
 };
 
 onMounted(() => {
     openDemoRestrictionModal();
+    window.addEventListener('polycms:demo_restriction', handleDemoRestrictionEvent);
 });
 
-watch(demoRestriction, () => {
+onUnmounted(() => {
+    window.removeEventListener('polycms:demo_restriction', handleDemoRestrictionEvent);
+});
+
+watch(demoRestrictionProp, () => {
     openDemoRestrictionModal();
 });
 </script>
@@ -177,21 +206,22 @@ watch(demoRestriction, () => {
                             </svg>
                         </div>
                         <h3 class="text-lg font-semibold">
-                            {{ demoRestriction?.title || 'Demo Actions Restricted' }}
+                            {{ activeDemoRestriction?.title || 'Demo Actions Restricted' }}
                         </h3>
                     </div>
-                    <div class="px-6 py-5 text-sm leading-6 text-slate-300" v-html="demoRestriction?.message || ''"></div>
+                    <div class="px-6 py-5 text-sm leading-6 text-slate-300" v-html="activeDemoRestriction?.message || ''"></div>
                     <div class="flex justify-end bg-slate-900/50 px-6 py-4">
                         <button
                             type="button"
                             class="rounded-lg bg-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-600"
                             @click="showDemoRestrictionModal = false"
                         >
-                            {{ demoRestriction?.confirm_text || 'Close' }}
+                            {{ activeDemoRestriction?.confirm_text || 'Close' }}
                         </button>
                     </div>
                 </div>
             </div>
         </Teleport>
+        <DialogProvider />
     </div>
 </template>

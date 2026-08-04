@@ -34,10 +34,11 @@
     $columns = (int) theme_get_option('flexiwhite_products_columns', 3);
     $defaultView = theme_get_option('flexiwhite_products_default_view', 'grid');
     $showCategoryProductToggle = !isset($category) || ((isset($products) && method_exists($products, 'count')) ? $products->count() > 0 : !empty($products));
+    $showSidebar = theme_get_option('flexiwhite_products_show_sidebar', 'show') === 'show';
 @endphp
 
 <div class="container section">
-    <div class="grid-sidebar">
+    <div class="grid-sidebar {{ !$showSidebar ? 'no-sidebar' : '' }}" {!! !$showSidebar ? 'style="grid-template-columns: 1fr;"' : '' !!}>
 
         <!-- Main Content Column -->
         <div>
@@ -61,11 +62,18 @@
                     <div></div>
                     @endif
                 @endif
-                @include('partials.listing-toolbar', [
-                    'defaultView' => $defaultView,
-                    'target' => 'products-listing',
-                    'showViewToggle' => $showCategoryProductToggle,
-                ])
+
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    @include('partials.admin-sidebar-toggle', [
+                        'settingKey' => 'flexiwhite_products_show_sidebar',
+                        'showSidebar' => $showSidebar
+                    ])
+                    @include('partials.listing-toolbar', [
+                        'defaultView' => $defaultView,
+                        'target' => 'products-listing',
+                        'showViewToggle' => $showCategoryProductToggle,
+                    ])
+                </div>
             </div>
 
             <div id="products-listing"
@@ -174,7 +182,7 @@
             @endif
         </div>
 
-        <aside>
+        <aside style="{{ !$showSidebar ? 'display: none;' : '' }}">
             @if(theme_widget_area_has_content('sidebar_shop'))
                 @include('partials.widget-area', [
                     'key' => 'sidebar_shop',

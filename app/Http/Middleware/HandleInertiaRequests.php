@@ -87,6 +87,25 @@ class HandleInertiaRequests extends Middleware
             ],
             'csrf_token' => csrf_token(),
             'demo_restriction' => fn () => $request->session()->get('demo_restriction'),
+            'account_menu_extra' => fn () => $this->getAccountMenuExtra(),
         ];
+    }
+
+    /**
+     * Collect extra account menu items from modules via hook.
+     *
+     * @return array
+     */
+    protected function getAccountMenuExtra(): array
+    {
+        try {
+            $registry = app(\App\Services\AccountMenuRegistry::class);
+            \App\Facades\Hook::doAction('account.menu.build');
+            $items = array_values($registry->all());
+            $registry->clear(); // Reset for next request
+            return $items;
+        } catch (\Throwable $e) {
+            return [];
+        }
     }
 }

@@ -94,15 +94,16 @@
           id="product-envato-item-id"
           v-model="form.settings.envato_item_id"
           type="text"
-          class="flex-1 px-3 py-2 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text placeholder-admin-theme-text-muted focus:ring-admin-theme-primary focus:border-admin-theme-primary"
+          :disabled="!isDefaultLanguage"
+          class="flex-1 px-3 py-2 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text placeholder-admin-theme-text-muted focus:ring-admin-theme-primary focus:border-admin-theme-primary disabled:bg-gray-100 disabled:text-gray-400 dark:disabled:bg-gray-800"
           placeholder="e.g. 12345678"
         />
         <button
           type="button"
-          :disabled="!form.settings.envato_item_id || isSyncingEnvato"
+          :disabled="!isDefaultLanguage || !form.settings.envato_item_id || isSyncingEnvato"
           class="px-3.5 py-2 text-xs font-semibold rounded-lg border transition-all inline-flex items-center gap-1.5 shrink-0"
           :class="[
-            form.settings.envato_item_id && !isSyncingEnvato
+            isDefaultLanguage && form.settings.envato_item_id && !isSyncingEnvato
               ? 'bg-sky-600 hover:bg-sky-700 text-white border-sky-600 shadow-sm cursor-pointer dark:bg-sky-500 dark:hover:bg-sky-600'
               : 'bg-admin-theme-border text-admin-theme-text-muted border-admin-theme-border cursor-not-allowed opacity-60'
           ]"
@@ -130,6 +131,9 @@
           <span>{{ isSyncingEnvato ? $t('Syncing...') : $t('Sync Sales') }}</span>
         </button>
       </div>
+      <p v-if="!isDefaultLanguage" class="mt-1 text-xs text-amber-600 dark:text-amber-400">
+        {{ $t('Envato Item ID and Market Sales Sync are managed in the primary language version and automatically synchronized to all language variants.') || 'Envato Item ID và dữ liệu Sync Sales được quản lý ở phiên bản ngôn ngữ gốc và tự động đồng bộ sang tất cả các phiên bản ngôn ngữ.' }}
+      </p>
     </div>
 
     <div>
@@ -765,6 +769,26 @@ if (!context) {
 
 const form = context.form;
 const helpers = context.helpers ?? {};
+
+const activeLanguages = ref<any[]>([]);
+const isDefaultLanguage = computed(() => {
+  if (activeLanguages.value.length === 0) {
+    return !form.value?.locale || form.value?.locale === 'en';
+  }
+  const match = activeLanguages.value.find(l => l.code === (form.value?.locale || 'en'));
+  return match ? match.is_default : true;
+});
+
+onMounted(async () => {
+  try {
+    const res = await axios.get('/api/v1/languages');
+    if (res.data?.success) {
+      activeLanguages.value = res.data.data.filter((l: any) => l.is_active);
+    }
+  } catch (err) {
+    console.error('Failed to load languages:', err);
+  }
+});
 
 const isSyncingEnvato = ref(false);
 

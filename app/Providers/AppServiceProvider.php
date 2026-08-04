@@ -49,6 +49,11 @@ class AppServiceProvider extends ServiceProvider
             return new \App\Services\MenuRegistry();
         });
 
+        // Register Account Menu Registry as singleton
+        $this->app->singleton(\App\Services\AccountMenuRegistry::class, function ($app) {
+            return new \App\Services\AccountMenuRegistry();
+        });
+
         // Register Core Menu Service
         $this->app->singleton(\App\Services\CoreMenuService::class);
 

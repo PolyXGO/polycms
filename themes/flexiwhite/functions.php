@@ -1207,6 +1207,38 @@ Hook::addFilter('settings.defaults', function ($defaults) {
         'section_order' => 70,
     ];
 
+    $defaults['theme_options']['flexiwhite_products_show_sidebar'] = [
+        'key'           => 'flexiwhite_products_show_sidebar',
+        'label'         => _l('Show Sidebar on Product Categories / Listing'),
+        'type'          => 'select',
+        'options'       => ['show' => _l('Show'), 'hide' => _l('Hide')],
+        'default'       => 'show',
+        'group'         => 'theme_options',
+        'section'       => 'flexiwhite',
+        'section_label' => _l('FlexiWhite Theme Settings'),
+        'section_description' => _l('Settings for the FlexiWhite theme. These options only apply when FlexiWhite is active as the Main Theme or a Sub Theme.'),
+        'category'      => 'flexiwhite_listing',
+        'category_label'=> _l('Listing Layout'),
+        'category_description' => _l('Control how blog posts and product listings appear: grid columns, default view mode (grid vs list), and card image placement.'),
+        'section_order' => 70,
+    ];
+
+    $defaults['theme_options']['flexiwhite_product_show_sidebar'] = [
+        'key'           => 'flexiwhite_product_show_sidebar',
+        'label'         => _l('Show Sidebar on Product Detail Page'),
+        'type'          => 'select',
+        'options'       => ['show' => _l('Show'), 'hide' => _l('Hide')],
+        'default'       => 'show',
+        'group'         => 'theme_options',
+        'section'       => 'flexiwhite',
+        'section_label' => _l('FlexiWhite Theme Settings'),
+        'section_description' => _l('Settings for the FlexiWhite theme. These options only apply when FlexiWhite is active as the Main Theme or a Sub Theme.'),
+        'category'      => 'flexiwhite_listing',
+        'category_label'=> _l('Listing Layout'),
+        'category_description' => _l('Control how blog posts and product listings appear: grid columns, default view mode (grid vs list), and card image placement.'),
+        'section_order' => 70,
+    ];
+
     $defaults['theme_options']['flexiwhite_brands_header_show'] = [
         'key'           => 'flexiwhite_brands_header_show',
         'label'         => _l('Show Brands Header'),

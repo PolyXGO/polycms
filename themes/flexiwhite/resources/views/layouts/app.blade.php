@@ -222,6 +222,7 @@
     <script src="{{ theme_asset('js/main.js') }}?v={{ time() }}"></script>
 
     @stack('theme-scripts')
+    @stack('scripts')
     @includeIf('system.partials.theme-scripts')
     {!! \App\Facades\Hook::doAction('cms_footer') !!}
 </body>

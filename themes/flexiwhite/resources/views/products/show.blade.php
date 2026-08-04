@@ -252,8 +252,17 @@
 @endsection
 
 @section('content')
+@php
+    $showSidebar = theme_get_option('flexiwhite_product_show_sidebar', 'show') === 'show';
+@endphp
 <div class="container section">
-    <div class="grid-sidebar">
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+        @include('partials.admin-sidebar-toggle', [
+            'settingKey' => 'flexiwhite_product_show_sidebar',
+            'showSidebar' => $showSidebar
+        ])
+    </div>
+    <div class="grid-sidebar {{ !$showSidebar ? 'no-sidebar' : '' }}" {!! !$showSidebar ? 'style="grid-template-columns: 1fr;"' : '' !!}>
         
         <!-- Main Content Column -->
         <div>
@@ -531,9 +540,6 @@
                                     } catch (\Throwable $e) {}
                                 }
 
-                                $yearlyService = $product->services->firstWhere('access_type', 'subscription');
-                                $lifetimeService = $product->services->first(fn($s) => in_array($s->access_type, ['lifetime', 'permanent']));
-
                                 $getActivationCount = function($svc) {
                                     if (!$svc) return 1;
                                     $policy = $svc->license_policy;
@@ -552,15 +558,37 @@
                                     return 1;
                                 };
 
+                                $monthlyService = $product->services->first(function($s) {
+                                    return ($s->access_type === 'subscription' && strtolower($s->duration_unit ?? '') === 'month')
+                                        || str_contains(strtolower($s->code ?? ''), 'month')
+                                        || str_contains(strtolower($s->name ?? ''), 'month');
+                                });
+
+                                $yearlyService = $product->services->first(function($s) {
+                                    return ($s->access_type === 'subscription' && (in_array(strtolower($s->duration_unit ?? ''), ['year', 'annual']) || empty($s->duration_unit)))
+                                        || str_contains(strtolower($s->code ?? ''), 'year')
+                                        || str_contains(strtolower($s->name ?? ''), 'year')
+                                        || ($s->access_type === 'subscription' && strtolower($s->duration_unit ?? '') !== 'month');
+                                });
+
+                                $lifetimeService = $product->services->first(function($s) {
+                                    return in_array($s->access_type, ['lifetime', 'permanent'])
+                                        || str_contains(strtolower($s->code ?? ''), 'lifetime')
+                                        || str_contains(strtolower($s->name ?? ''), 'lifetime')
+                                        || strtolower($s->duration_unit ?? '') === 'lifetime';
+                                });
+
                                 $yearlyPrice = $yearlyService ? (float) ($yearlyService->price ?? 0) : 0;
                                 $lifetimePrice = $lifetimeService ? (float) ($lifetimeService->price ?? 0) : 0;
+                                $monthlyPrice = $monthlyService ? (float) ($monthlyService->price ?? 0) : 0;
+
                                 $yearlyKeys = $getActivationCount($yearlyService);
                                 $lifetimeKeys = $getActivationCount($lifetimeService);
 
+                                $settingsService = app(\App\Services\SettingsService::class);
                                 $savingsText = null;
+
                                 if ($lifetimeService && $yearlyService && $yearlyPrice > 0 && $lifetimePrice > 0) {
-                                    $settingsService = app(\App\Services\SettingsService::class);
-                                    
                                     if ($lifetimeKeys > $yearlyKeys) {
                                         $years = 2;
                                         $cost = $yearlyPrice * $lifetimeKeys * $years;
@@ -568,7 +596,7 @@
                                         if ($savings > 0) {
                                             $savingsFormatted = format_currency($savings);
                                             $customCta = $settingsService->get('ecommerce_savings_cta_lifetime');
-                                            if ($customCta) {
+                                            if ($customCta && !str_contains($customCta, 'monthly')) {
                                                 $savingsText = str_replace(
                                                     [':amount', ':years', ':keys'],
                                                     [$savingsFormatted, $years, $lifetimeKeys],
@@ -588,22 +616,46 @@
                                         $savings = max(0, $cost - $lifetimePrice);
                                         if ($savings > 0) {
                                             $savingsFormatted = format_currency($savings);
-                                            $customCta = $settingsService->get('ecommerce_savings_cta_yearly');
-                                            if ($customCta) {
+                                            $customCta = $settingsService->get('ecommerce_savings_cta_lifetime_single') ?: $settingsService->get('ecommerce_savings_cta_lifetime');
+                                            if ($customCta && !str_contains($customCta, 'monthly') && str_contains($customCta, ':years')) {
                                                 $savingsText = str_replace(
                                                     [':amount', ':years', ':keys'],
                                                     [$savingsFormatted, $years, $lifetimeKeys],
                                                     $customCta
                                                 );
                                             } else {
-                                                $savingsText = _l('Save :amount+ over :years yrs vs annual renewals • Pay once, use forever', [
+                                                $savingsText = _l('Save :amount+ over :years yrs vs yearly renewal • Pay once, use forever', [
                                                     'amount' => $savingsFormatted,
                                                     'years' => $years,
                                                 ]);
                                             }
                                         }
                                     }
+                                } elseif ($lifetimeService && $monthlyService && $monthlyPrice > 0 && $lifetimePrice > 0) {
+                                    $years = 2;
+                                    $cost = $monthlyPrice * 12 * $years;
+                                    $savings = max(0, $cost - $lifetimePrice);
+                                    if ($savings > 0) {
+                                        $savingsFormatted = format_currency($savings);
+                                        $savingsText = _l('Save :amount+ over :years yrs vs monthly renewal • Pay once, use forever', [
+                                            'amount' => $savingsFormatted,
+                                            'years' => $years,
+                                        ]);
+                                    }
                                 }
+
+                                // Apply Hook Filter so CommerceOffers module can override/optimize the savings text
+                                $savingsText = \App\Facades\Hook::applyFilters('commerceoffers.package_savings_cta', $savingsText, [
+                                    'product' => $product,
+                                    'yearly_service' => $yearlyService,
+                                    'lifetime_service' => $lifetimeService,
+                                    'monthly_service' => $monthlyService,
+                                    'yearly_price' => $yearlyPrice,
+                                    'lifetime_price' => $lifetimePrice,
+                                    'monthly_price' => $monthlyPrice,
+                                    'yearly_keys' => $yearlyKeys,
+                                    'lifetime_keys' => $lifetimeKeys,
+                                ]);
                             @endphp
 
                                 <div class="product-packages-selector mb-4" style="margin-top: 10px; margin-bottom: 20px; width: 100%; max-width: 360px;">
@@ -677,12 +729,45 @@
                                                         </div>
                                                     </div>
 
-                                                    @if($isLifetime && !empty($savingsText))
+                                                    @php
+                                                        $serviceSavingsText = null;
+                                                        if ($isSubscription && $monthlyService && $monthlyPrice > 0 && $rawServicePrice > 0 && $service->id === $yearlyService?->id) {
+                                                            $annualMonthlyCost = $monthlyPrice * 12;
+                                                            $yearlySavings = max(0, $annualMonthlyCost - $rawServicePrice);
+                                                            if ($yearlySavings > 0) {
+                                                                $yearlySavingsFormatted = format_currency($yearlySavings);
+                                                                $customCta = $settingsService->get('ecommerce_savings_cta_yearly');
+                                                                if ($customCta && str_contains($customCta, 'monthly')) {
+                                                                    $serviceSavingsText = str_replace(
+                                                                        [':amount', ':keys'],
+                                                                        [$yearlySavingsFormatted, $serviceKeys],
+                                                                        $customCta
+                                                                    );
+                                                                } else {
+                                                                    $serviceSavingsText = _l('Save :amount+ per year vs monthly renewal', [
+                                                                        'amount' => $yearlySavingsFormatted,
+                                                                    ]);
+                                                                }
+                                                            }
+                                                        } elseif ($isLifetime && !empty($savingsText)) {
+                                                            $serviceSavingsText = $savingsText;
+                                                        }
+
+                                                        $serviceSavingsText = \App\Facades\Hook::applyFilters('commerceoffers.service_savings_cta', $serviceSavingsText, [
+                                                            'service' => $service,
+                                                            'product' => $product,
+                                                            'monthly_service' => $monthlyService,
+                                                            'yearly_service' => $yearlyService,
+                                                            'lifetime_service' => $lifetimeService,
+                                                        ]);
+                                                    @endphp
+
+                                                    @if(!empty($serviceSavingsText))
                                                         <div style="margin-top: 8px; display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; color: #059669; font-weight: 600; font-size: 0.78rem; line-height: 1.3;" class="lifetime-savings-nudge">
                                                             <svg xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px; color: #10b981; flex-shrink: 0;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                                                             </svg>
-                                                            <span>{{ $savingsText }}</span>
+                                                            <span>{{ $serviceSavingsText }}</span>
                                                         </div>
                                                     @endif
 
@@ -1701,7 +1786,7 @@
             @endif
         </div>
 
-        <aside>
+        <aside style="{{ !$showSidebar ? 'display: none;' : '' }}">
             @if(theme_widget_area_has_content('sidebar_shop'))
                 @include('partials.widget-area', [
                     'key' => 'sidebar_shop',
