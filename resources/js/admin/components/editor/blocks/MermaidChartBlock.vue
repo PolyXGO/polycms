@@ -1,49 +1,112 @@
 <template>
-  <div v-if="mode === 'settings'" class="mermaid-block-settings space-y-4">
-    <div class="form-group">
-      <label class="mb-2 block text-[10px] font-bold uppercase tracking-wider text-gray-400 font-bold">Mermaid Diagram Code</label>
+  <div v-if="mode === 'settings'" class="mermaid-block-settings space-y-4 p-1 select-none">
+    <!-- Quick Tab Selector: Project Hub Select vs Raw Code -->
+    <div class="flex items-center space-x-2 border-b border-admin-theme-border pb-2">
+      <button
+        type="button"
+        @click="settingsTab = 'project_hub'"
+        :class="settingsTab === 'project_hub' ? 'bg-indigo-600 text-white font-bold shadow-sm' : 'bg-admin-theme-input-bg text-admin-theme-text-muted hover:text-admin-theme-text'"
+        class="px-2.5 py-1 text-[11px] rounded-md transition-all flex items-center cursor-pointer"
+      >
+        <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+        Product / Diagram
+      </button>
+      <button
+        type="button"
+        @click="settingsTab = 'raw_code'"
+        :class="settingsTab === 'raw_code' ? 'bg-indigo-600 text-white font-bold shadow-sm' : 'bg-admin-theme-input-bg text-admin-theme-text-muted hover:text-admin-theme-text'"
+        class="px-2.5 py-1 text-[11px] rounded-md transition-all flex items-center cursor-pointer"
+      >
+        <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+        </svg>
+        Edit Raw Code
+      </button>
+    </div>
+
+    <!-- Tab 1: Project Hub Selector -->
+    <div v-if="settingsTab === 'project_hub'" class="space-y-3">
+      <!-- Select Product / Project Field -->
+      <div class="form-group space-y-1">
+        <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400">Select Product / Project</label>
+        <input
+          v-model="projectSearchQuery"
+          type="text"
+          class="w-full rounded-lg border border-admin-theme-border bg-admin-theme-input-bg px-2.5 py-1.5 text-xs text-admin-theme-text focus:ring-2 focus:ring-admin-theme-primary placeholder-gray-400"
+          placeholder="🔍 Search product or project..."
+        />
+        <select
+          :value="selectedProjectCode"
+          @change="onProjectSelectChange"
+          class="w-full rounded-lg border border-admin-theme-border bg-admin-theme-base p-2 text-xs text-admin-theme-text focus:ring-2 focus:ring-admin-theme-primary font-semibold cursor-pointer"
+          :disabled="projectsLoading"
+        >
+          <option value="">-- {{ projectsLoading ? 'Loading...' : 'Select Product / Project' }} --</option>
+          <option v-for="p in filteredProjects" :key="p.id || p.code" :value="p.code || p.slug || p.id">
+            {{ p.name }} ({{ p.diagrams?.length || 0 }} diagrams)
+          </option>
+        </select>
+      </div>
+
+      <!-- Select Related Diagram Field -->
+      <div class="form-group space-y-1">
+        <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400">Select Related Diagram</label>
+        <input
+          v-model="diagramSearchQuery"
+          type="text"
+          class="w-full rounded-lg border border-admin-theme-border bg-admin-theme-input-bg px-2.5 py-1.5 text-xs text-admin-theme-text focus:ring-2 focus:ring-admin-theme-primary placeholder-gray-400"
+          placeholder="🔍 Search diagram..."
+          :disabled="!availableDiagrams.length"
+        />
+        <select
+          :value="selectedDiagramCode"
+          @change="onDiagramSelectChange"
+          class="w-full rounded-lg border border-admin-theme-border bg-admin-theme-base p-2 text-xs text-admin-theme-text focus:ring-2 focus:ring-admin-theme-primary font-semibold cursor-pointer"
+          :disabled="!availableDiagrams.length"
+        >
+          <option value="">-- {{ availableDiagrams.length ? 'Select Diagram' : 'No diagrams available' }} --</option>
+          <option v-for="d in filteredDiagrams" :key="d.code || d.id" :value="d.code || d.id">
+            {{ d.title }} [code: {{ d.code || d.id }}]
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Tab 2: Raw Code Input -->
+    <div v-else class="form-group space-y-1">
+      <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400">Mermaid Diagram Code</label>
       <textarea
         v-model="state.code"
-        rows="10"
+        rows="8"
         class="w-full rounded-lg border border-admin-theme-border bg-admin-theme-base p-2.5 text-xs focus:ring-2 focus:ring-admin-theme-primary font-mono"
-        placeholder="graph TD&#10;  A[Start] --> B(Process)&#10;  B --> C{Decision}&#10;  C -->|Yes| D[Success]&#10;  C -->|No| E[Fail]"
+        placeholder="graph TD&#10;  A[Start] --> B(Process)"
       ></textarea>
-      <p class="mt-2 text-[10px] leading-4 text-admin-theme-text-muted">
-        Use standard Mermaid syntax. The output is generated automatically.
-      </p>
     </div>
   </div>
 
-  <div v-else class="mermaid-chart-block-preview my-4 border border-admin-theme-border rounded-xl bg-admin-theme-base overflow-hidden relative shadow-sm transition-all">
-    <div class="bg-admin-theme-input-bg px-3 py-2 flex items-center border-b border-admin-theme-border select-none">
-      <svg class="w-5 h-5 text-emerald-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
-      </svg>
-      <span class="font-medium text-sm text-admin-theme-text">Mermaid Diagram</span>
+  <div v-else class="mermaid-chart-block-preview my-4 w-full flex flex-col items-center justify-center overflow-x-auto">
+    <div v-if="!state.code" class="text-center text-admin-theme-text-muted py-4 text-xs font-mono">
+      No Mermaid diagram code provided. Choose settings to add diagram code.
     </div>
-    
-    <div class="p-6">
-      <div v-if="!state.code" class="text-center text-admin-theme-text-muted py-8 text-sm bg-admin-theme-input-bg rounded-lg border border-dashed border-admin-theme-border">
-        No Mermaid diagram code provided. Choose settings to add diagram code.
+    <div v-else class="w-full flex flex-col items-center justify-center">
+      <!-- Render target: Borderless, Transparent, 100% Full Width -->
+      <div ref="mermaidContainerRef" class="mermaid-render-output w-full flex justify-center items-center overflow-x-auto p-0 border-0 bg-transparent shadow-none">
+        <span class="text-xs text-admin-theme-text-muted">Rendering diagram...</span>
       </div>
-      <div v-else class="w-full flex flex-col items-center justify-center">
-        <!-- Render target -->
-        <div ref="mermaidContainerRef" class="mermaid-render-output w-full flex justify-center bg-admin-theme-input-bg border border-admin-theme-border rounded-lg p-6 min-h-[150px] items-center overflow-x-auto transition-all">
-          <span class="text-xs text-admin-theme-text-muted">Rendering diagram...</span>
-        </div>
-        <!-- Raw code preview toggler for debug -->
-        <details class="w-full mt-4 text-xs">
-          <summary class="cursor-pointer text-admin-theme-text-secondary select-none font-semibold">View Source Code</summary>
-          <pre class="bg-admin-theme-input-bg p-3 border border-admin-theme-border rounded-lg mt-2 overflow-x-auto font-mono text-[11px] text-admin-theme-text-muted">{{ state.code }}</pre>
-        </details>
-      </div>
+      <!-- Raw code preview toggler for debug -->
+      <details class="w-full mt-2 text-xs opacity-60 hover:opacity-100 transition-opacity">
+        <summary class="cursor-pointer text-admin-theme-text-muted select-none text-[11px] font-mono">View Source Code</summary>
+        <pre class="bg-admin-theme-input-bg p-2 border border-admin-theme-border rounded mt-1 overflow-x-auto font-mono text-[10px] text-admin-theme-text-muted">{{ state.code }}</pre>
+      </details>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, onMounted, nextTick, onBeforeUnmount } from 'vue';
+import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue';
+import axios from 'axios';
 
 const props = defineProps<{
   modelValue: Record<string, any> | null;
@@ -53,8 +116,15 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:modelValue']);
 const isSyncingFromProps = ref(false);
-
 const mermaidContainerRef = ref<HTMLElement | null>(null);
+
+const settingsTab = ref<'project_hub' | 'raw_code'>('project_hub');
+const projectsList = ref<any[]>([]);
+const projectsLoading = ref(true);
+const projectSearchQuery = ref('');
+const diagramSearchQuery = ref('');
+const selectedProjectCode = ref('');
+const selectedDiagramCode = ref('');
 
 function cloneValue<T>(value: T): T {
   if (value === undefined || value === null) return value;
@@ -87,17 +157,105 @@ function buildPayload() {
   };
 }
 
-function syncState(source?: Record<string, any>) {
-  if (!source) return;
-  isSyncingFromProps.value = true;
-  state.code = source.code || '';
-  nextTick(() => {
-    isSyncingFromProps.value = false;
-    renderChart();
-  });
-}
+const loadProjectsList = async () => {
+  try {
+    projectsLoading.value = true;
+    const res = await axios.get('/api/v1/projects', { params: { per_page: 100 } });
+    projectsList.value = res.data.data?.data || res.data.data || res.data || [];
+  } catch (e) {
+    console.error('Failed to load projects for Mermaid settings:', e);
+  } finally {
+    projectsLoading.value = false;
+  }
+};
 
-// Load self-hosted Mermaid library dynamically
+const filteredProjects = computed(() => {
+  if (!projectSearchQuery.value.trim()) {
+    return projectsList.value;
+  }
+  const q = projectSearchQuery.value.toLowerCase().trim();
+  return projectsList.value.filter(p => 
+    (p.name && p.name.toLowerCase().includes(q)) ||
+    (p.code && p.code.toLowerCase().includes(q)) ||
+    (p.slug && p.slug.toLowerCase().includes(q))
+  );
+});
+
+const selectedProjectObj = computed(() => {
+  if (!selectedProjectCode.value) return null;
+  const searchProj = selectedProjectCode.value.toLowerCase().trim();
+  return projectsList.value.find(p => 
+    String(p.code || '').toLowerCase() === searchProj ||
+    String(p.slug || '').toLowerCase() === searchProj ||
+    String(p.id) === searchProj
+  ) || null;
+});
+
+const availableDiagrams = computed(() => {
+  if (!selectedProjectObj.value || !Array.isArray(selectedProjectObj.value.diagrams)) return [];
+  return selectedProjectObj.value.diagrams;
+});
+
+const filteredDiagrams = computed(() => {
+  if (!diagramSearchQuery.value.trim()) {
+    return availableDiagrams.value;
+  }
+  const q = diagramSearchQuery.value.toLowerCase().trim();
+  return availableDiagrams.value.filter((d: any) => 
+    (d.title && d.title.toLowerCase().includes(q)) ||
+    (d.code && d.code.toLowerCase().includes(q)) ||
+    (d.id && String(d.id).toLowerCase().includes(q))
+  );
+});
+
+const onProjectSelectChange = (e: Event) => {
+  const target = e.target as HTMLSelectElement;
+  selectedProjectCode.value = target.value;
+  diagramSearchQuery.value = '';
+  if (availableDiagrams.value.length > 0) {
+    const firstDiag = availableDiagrams.value[0];
+    selectedDiagramCode.value = firstDiag.code || firstDiag.id || '';
+    state.code = firstDiag.mermaid || firstDiag.code || firstDiag.id || '';
+  } else {
+    selectedDiagramCode.value = '';
+  }
+};
+
+const onDiagramSelectChange = (e: Event) => {
+  const target = e.target as HTMLSelectElement;
+  selectedDiagramCode.value = target.value;
+  const foundDiag = availableDiagrams.value.find((d: any) => (d.code || d.id) === target.value);
+  if (foundDiag) {
+    state.code = foundDiag.mermaid || foundDiag.code || foundDiag.id || '';
+  }
+};
+
+const resolveMermaidCode = async (rawCode: string) => {
+  if (!rawCode) return '';
+  const trimmed = rawCode.trim();
+  const isDirect = /^(flowchart|graph|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|C4Context)/i.test(trimmed);
+  if (isDirect) return trimmed;
+
+  try {
+    if (!projectsList.value.length) {
+      const res = await axios.get('/api/v1/projects', { params: { per_page: 100 } });
+      projectsList.value = res.data.data?.data || res.data.data || res.data || [];
+    }
+    const searchCode = trimmed.toLowerCase();
+    for (const p of projectsList.value) {
+      if (Array.isArray(p.diagrams)) {
+        for (const d of p.diagrams) {
+          const dCode = (d.code || d.id || '').toLowerCase().trim();
+          if (dCode === searchCode && d.mermaid) {
+            return d.mermaid;
+          }
+        }
+      }
+    }
+  } catch (e) {}
+  return rawCode;
+};
+
 const initMermaid = () => {
   if (typeof (window as any).mermaid !== 'undefined') {
     (window as any).mermaid.initialize({
@@ -121,8 +279,11 @@ const renderChart = async () => {
   if (!m) return;
 
   try {
+    const codeToRender = await resolveMermaidCode(state.code);
+    if (!codeToRender) return;
+
     const id = `mermaid-block-${Math.round(Math.random() * 10000000)}`;
-    const { svg } = await m.render(id, state.code);
+    const { svg } = await m.render(id, codeToRender);
     if (mermaidContainerRef.value) {
       mermaidContainerRef.value.innerHTML = svg;
     }
@@ -131,7 +292,6 @@ const renderChart = async () => {
     if (mermaidContainerRef.value) {
       mermaidContainerRef.value.innerHTML = `<div class="text-xs text-red-500 font-mono p-4">Error parsing diagram: ${error}</div>`;
     }
-    // Reset syntax error states in library
     try {
       m.parseError = () => {};
     } catch (_) {}
@@ -152,7 +312,6 @@ const loadMermaidScript = () => {
     renderChart();
   };
   script.onerror = () => {
-    // CDN fallback
     const cdnScript = document.createElement('script');
     cdnScript.src = 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js';
     cdnScript.onload = () => {
@@ -164,7 +323,18 @@ const loadMermaidScript = () => {
   document.head.appendChild(script);
 };
 
+function syncState(source?: Record<string, any>) {
+  if (!source) return;
+  isSyncingFromProps.value = true;
+  state.code = source.code || '';
+  nextTick(() => {
+    isSyncingFromProps.value = false;
+    renderChart();
+  });
+}
+
 onMounted(() => {
+  loadProjectsList();
   if (props.mode !== 'settings') {
     loadMermaidScript();
   }

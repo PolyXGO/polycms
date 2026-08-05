@@ -1020,6 +1020,10 @@ if (!function_exists('render_dynamic_blocks')) {
             return '';
         }
 
+        if (str_contains($content, '[')) {
+            $content = do_shortcode($content);
+        }
+
         if (!str_contains($content, 'pricing-matrix-') && 
             !str_contains($content, 'data-type="landing-block"') && 
             !str_contains($content, 'data-block-type="') &&

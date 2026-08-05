@@ -77,6 +77,11 @@ class PostController extends Controller
             $query->where('type', $request->type);
         }
 
+        // Slug filter
+        if ($request->has('slug')) {
+            $query->where('slug', $request->slug);
+        }
+
         // Category filter
         if ($request->has('category_id')) {
             $query->whereHas('categories', fn($q) => $q->where('categories.id', $request->category_id));

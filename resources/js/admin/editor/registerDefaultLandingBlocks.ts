@@ -23,6 +23,7 @@ import LatestProductsBlock from '../components/editor/blocks/LatestProductsBlock
 import ProjectHubRoadmapBlock from '../components/editor/blocks/ProjectHubRoadmapBlock.vue';
 import ProjectHubReleaseBannerBlock from '../components/editor/blocks/ProjectHubReleaseBannerBlock.vue';
 import ProjectHubChartBlock from '../components/editor/blocks/ProjectHubChartBlock.vue';
+import ProjectHubDiagramBlock from '../components/editor/blocks/ProjectHubDiagramBlock.vue';
 import YoutubeGalleryBlock from '../components/editor/blocks/YoutubeGalleryBlock.vue';
 import ModalLinkBlock from '../components/editor/blocks/ModalLinkBlock.vue';
 import MermaidChartBlock from '../components/editor/blocks/MermaidChartBlock.vue';
@@ -543,6 +544,28 @@ export function registerDefaultLandingBlocks() {
         component: ProjectHubChartBlock,
         defaultAttrs: {
             product_id: ''
+        }
+    });
+
+    landingBlockRegistry.register({
+        key: 'project_diagram',
+        label: 'Project Diagram Block',
+        category: 'general',
+        icon: `<svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>`,
+        component: MermaidChartBlock,
+        defaultAttrs: {
+            code: ''
+        }
+    });
+
+    landingBlockRegistry.register({
+        key: 'project_hub_diagram',
+        label: 'Project Hub Diagram Block',
+        category: 'general',
+        icon: `<svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>`,
+        component: MermaidChartBlock,
+        defaultAttrs: {
+            code: ''
         }
     });
 
