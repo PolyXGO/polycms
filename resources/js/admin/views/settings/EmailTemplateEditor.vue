@@ -37,39 +37,88 @@
  </div>
  </div>
 
- <div class="bg-admin-theme-surface rounded-lg shadow p-6">
- <div class="flex items-center justify-between gap-3 mb-4">
- <div>
- <h3 class="font-bold text-admin-theme-text">{{ t('Preview') }}</h3>
- <p class="text-xs text-admin-theme-text-muted">
- {{ t('Preview only: variables are rendered using random real data from your database.') }}
- </p>
- </div>
- <button
- type="button"
- @click="loadPreview"
- :disabled="previewLoading"
- class="px-3 py-1.5 rounded-lg border border-admin-theme-border text-sm text-admin-theme-text-secondary hover:bg-admin-theme-base disabled:opacity-50"
- >
- {{ previewLoading ? t('Loading...') : t('Randomize Preview') }}
- </button>
- </div>
+  <div class="bg-admin-theme-surface rounded-lg shadow p-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+      <div>
+        <h3 class="font-bold text-admin-theme-text">{{ t('Preview') }}</h3>
+        <p class="text-xs text-admin-theme-text-muted">
+          {{ t('Preview only: variables are rendered using random real data from your database.') }}
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <!-- Preview Mode Switcher -->
+        <div class="inline-flex rounded-lg border border-admin-theme-border p-0.5 bg-admin-theme-base text-xs">
+          <button
+            type="button"
+            @click="previewTheme = 'auto'"
+            :class="['px-2.5 py-1 rounded-md font-medium transition-colors', previewTheme === 'auto' ? 'bg-admin-theme-surface text-admin-theme-text shadow-sm' : 'text-admin-theme-text-secondary hover:text-admin-theme-text']"
+            :title="t('Match Admin Theme')"
+          >
+            {{ t('Auto') }}
+          </button>
+          <button
+            type="button"
+            @click="previewTheme = 'light'"
+            :class="['px-2.5 py-1 rounded-md font-medium transition-colors', previewTheme === 'light' ? 'bg-white text-gray-900 shadow-sm' : 'text-admin-theme-text-secondary hover:text-admin-theme-text']"
+            :title="t('Light Client Preview')"
+          >
+            ☀️ {{ t('Light') }}
+          </button>
+          <button
+            type="button"
+            @click="previewTheme = 'dark'"
+            :class="['px-2.5 py-1 rounded-md font-medium transition-colors', previewTheme === 'dark' ? 'bg-slate-900 text-white shadow-sm' : 'text-admin-theme-text-secondary hover:text-admin-theme-text']"
+            :title="t('Dark Client Preview')"
+          >
+            🌙 {{ t('Dark') }}
+          </button>
+        </div>
 
- <div class="rounded-lg border border-admin-theme-border overflow-hidden">
- <div class="px-4 py-3 bg-admin-theme-base/40 border-b border-admin-theme-border">
- <p class="text-[11px] uppercase tracking-wide text-admin-theme-text-muted font-semibold">{{ t('Subject') }}</p>
- <p class="mt-1 text-sm font-semibold text-admin-theme-text break-words">
- {{ preview.subject || t('No preview yet') }}
- </p>
- </div>
- <div class="px-4 py-4 bg-admin-theme-surface">
- <p class="text-[11px] uppercase tracking-wide text-admin-theme-text-muted font-semibold mb-2">{{ t('Email Body') }}</p>
- <div
- class="email-preview-content text-sm text-gray-800 leading-7"
- v-html="preview.body ||'<p>' + t('No preview yet') +'</p>'"
- ></div>
- </div>
- </div>
+        <button
+          type="button"
+          @click="loadPreview"
+          :disabled="previewLoading"
+          class="px-3 py-1.5 rounded-lg border border-admin-theme-border text-sm text-admin-theme-text-secondary hover:bg-admin-theme-base disabled:opacity-50"
+        >
+          {{ previewLoading ? t('Loading...') : t('Randomize Preview') }}
+        </button>
+      </div>
+    </div>
+
+    <div class="rounded-lg border border-admin-theme-border overflow-hidden">
+      <div class="px-4 py-3 bg-admin-theme-base/40 border-b border-admin-theme-border">
+        <p class="text-[11px] uppercase tracking-wide text-admin-theme-text-muted font-semibold">{{ t('Subject') }}</p>
+        <p class="mt-1 text-sm font-semibold text-admin-theme-text break-words">
+          {{ preview.subject || t('No preview yet') }}
+        </p>
+      </div>
+      <div
+        class="px-4 py-4 transition-colors duration-200"
+        :class="{
+          'bg-admin-theme-surface text-admin-theme-text': previewTheme === 'auto',
+          'bg-white text-gray-900': previewTheme === 'light',
+          'bg-slate-900 text-slate-100': previewTheme === 'dark'
+        }"
+      >
+        <p
+          class="text-[11px] uppercase tracking-wide font-semibold mb-2"
+          :class="{
+            'text-admin-theme-text-muted': previewTheme === 'auto',
+            'text-gray-400': previewTheme === 'light',
+            'text-slate-400': previewTheme === 'dark'
+          }"
+        >{{ t('Email Body') }}</p>
+        <div
+          class="email-preview-content text-sm leading-7"
+          :class="{
+            'mode-auto': previewTheme === 'auto',
+            'mode-light': previewTheme === 'light',
+            'mode-dark': previewTheme === 'dark'
+          }"
+          v-html="preview.body || '<p>' + t('No preview yet') + '</p>'"
+        ></div>
+      </div>
+    </div>
 
  <div class="mt-4 rounded-lg border border-indigo-200 dark:border-indigo-900/40 bg-admin-theme-primary/10 p-3">
  <div class="flex items-center justify-between mb-2">
@@ -171,116 +220,213 @@ const route = useRoute();
 const { t } = useTranslation();
 const dialog = useDialog();
 
+const previewTheme = ref<'auto' | 'light' | 'dark'>('auto');
 const editorRef = ref<any>(null);
 const loading = ref(true);
 const saving = ref(false);
 const previewLoading = ref(false);
 const template = ref<any>({});
 const preview = ref({
- subject:'',
- body:'',
- sample_data: {} as Record<string, any>,
+  subject: '',
+  body: '',
+  sample_data: {} as Record<string, any>,
 });
 let previewDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 const form = ref({
- subject:'',
- body:'',
- is_active: true
+  subject: '',
+  body: '',
+  is_active: true
 });
 
 const loadTemplate = async () => {
- try {
- const response = await axios.get(`/api/v1/email-templates/${route.params.id}`);
- template.value = response.data.data;
- form.value.subject = template.value.subject;
- form.value.body = template.value.body;
- form.value.is_active = template.value.is_active;
- await loadPreview();
- } catch (error) {
- console.error('Error loading template:', error);
- dialog.error(t('Failed to load template'));
- } finally {
- loading.value = false;
- }
+  try {
+    const response = await axios.get(`/api/v1/email-templates/${route.params.id}`);
+    template.value = response.data.data;
+    form.value.subject = template.value.subject;
+    form.value.body = template.value.body;
+    form.value.is_active = template.value.is_active;
+    await loadPreview();
+  } catch (error) {
+    console.error('Error loading template:', error);
+    dialog.error(t('Failed to load template'));
+  } finally {
+    loading.value = false;
+  }
 };
 
 const saveTemplate = async () => {
- saving.value = true;
- try {
- await axios.put(`/api/v1/email-templates/${route.params.id}`, form.value);
- dialog.success(t('Template saved successfully'));
- } catch (error) {
- console.error('Error saving template:', error);
- dialog.error(t('Failed to save template'));
- } finally {
- saving.value = false;
- }
+  saving.value = true;
+  try {
+    await axios.put(`/api/v1/email-templates/${route.params.id}`, form.value);
+    dialog.success(t('Template saved successfully'));
+  } catch (error) {
+    console.error('Error saving template:', error);
+    dialog.error(t('Failed to save template'));
+  } finally {
+    saving.value = false;
+  }
 };
 
 const loadPreview = async () => {
- previewLoading.value = true;
- try {
- const response = await axios.post(`/api/v1/email-templates/${route.params.id}/preview`, {
- subject: form.value.subject,
- body: form.value.body,
- });
- const data = response.data?.data || {};
- preview.value.subject = data.subject ||'';
- preview.value.body = data.body ||'';
- preview.value.sample_data = data.sample_data || {};
- } catch (error) {
- console.error('Error loading preview:', error);
- } finally {
- previewLoading.value = false;
- }
+  previewLoading.value = true;
+  try {
+    const response = await axios.post(`/api/v1/email-templates/${route.params.id}/preview`, {
+      subject: form.value.subject,
+      body: form.value.body,
+    });
+    const data = response.data?.data || {};
+    preview.value.subject = data.subject || '';
+    preview.value.body = data.body || '';
+    preview.value.sample_data = data.sample_data || {};
+  } catch (error) {
+    console.error('Error loading preview:', error);
+  } finally {
+    previewLoading.value = false;
+  }
 };
 
 const queuePreviewUpdate = () => {
- if (previewDebounceTimer) {
- clearTimeout(previewDebounceTimer);
- }
- previewDebounceTimer = setTimeout(() => {
- loadPreview();
- }, 450);
+  if (previewDebounceTimer) {
+    clearTimeout(previewDebounceTimer);
+  }
+  previewDebounceTimer = setTimeout(() => {
+    loadPreview();
+  }, 450);
 };
 
 const insertVariable = (variable: string) => {
- if (editorRef.value) {
- editorRef.value.insertContent(`{${variable}}`);
- }
+  if (editorRef.value) {
+    editorRef.value.insertContent(`{${variable}}`);
+  }
 };
 
 const templateIdentifier = computed(() => {
- return template.value?.name || template.value?.code || `#${route.params.id}`;
+  return template.value?.name || template.value?.code || `#${route.params.id}`;
 });
 
 const variableCount = computed(() => {
- if (!template.value?.variables) return 0;
- if (Array.isArray(template.value.variables)) return template.value.variables.length;
- return Object.keys(template.value.variables).length;
+  if (!template.value?.variables) return 0;
+  if (Array.isArray(template.value.variables)) return template.value.variables.length;
+  return Object.keys(template.value.variables).length;
 });
 
 const sampleVariableCount = computed(() => Object.keys(preview.value.sample_data || {}).length);
 
 watch(
- () => [form.value.subject, form.value.body],
- () => {
- if (loading.value) return;
- queuePreviewUpdate();
- }
+  () => [form.value.subject, form.value.body],
+  () => {
+    if (loading.value) return;
+    queuePreviewUpdate();
+  }
 );
 
 onMounted(loadTemplate);
 </script>
 
 <style scoped>
-.email-preview-content :deep(a) {
- color: rgb(var(--admin-theme-primary));
- text-decoration: underline;
- text-underline-offset: 2px;
+.email-preview-content {
+  word-break: break-word;
 }
 
-.dark .email-preview-content :deep(a) {
- color: #818cf8;
+/* Auto Mode (Default - inherits Admin Theme) */
+.email-preview-content.mode-auto {
+  color: var(--admin-theme-text, #1f2937);
+}
+
+.dark .email-preview-content.mode-auto {
+  color: #f3f4f6;
+}
+
+.email-preview-content.mode-auto :deep(*) {
+  color: inherit;
+}
+
+/* Forced Light Mode */
+.email-preview-content.mode-light {
+  color: #1f2937 !important;
+}
+.email-preview-content.mode-light :deep(*) {
+  color: #1f2937 !important;
+}
+.email-preview-content.mode-light :deep(a) {
+  color: #2563eb !important;
+}
+
+/* Forced Dark Mode */
+.email-preview-content.mode-dark {
+  color: #f8fafc !important;
+}
+.email-preview-content.mode-dark :deep(*) {
+  color: #f8fafc !important;
+}
+.email-preview-content.mode-dark :deep(a) {
+  color: #818cf8 !important;
+}
+
+/* Base Headings & Elements */
+.email-preview-content :deep(h1),
+.email-preview-content :deep(h2),
+.email-preview-content :deep(h3),
+.email-preview-content :deep(h4),
+.email-preview-content :deep(h5),
+.email-preview-content :deep(h6) {
+  font-weight: 700;
+  margin-top: 0.75em;
+  margin-bottom: 0.35em;
+}
+
+.email-preview-content :deep(h1) { font-size: 1.5rem; line-height: 2rem; }
+.email-preview-content :deep(h2) { font-size: 1.25rem; line-height: 1.75rem; }
+.email-preview-content :deep(h3) { font-size: 1.125rem; line-height: 1.5rem; }
+
+.email-preview-content :deep(p) {
+  margin-bottom: 0.75em;
+}
+
+.email-preview-content :deep(ul) {
+  list-style-type: disc;
+  padding-left: 1.25rem;
+  margin-bottom: 0.75em;
+}
+
+.email-preview-content :deep(ol) {
+  list-style-type: decimal;
+  padding-left: 1.25rem;
+  margin-bottom: 0.75em;
+}
+
+.email-preview-content :deep(li) {
+  margin-bottom: 0.25em;
+}
+
+.email-preview-content.mode-auto :deep(a) {
+  color: #4f46e5;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.dark .email-preview-content.mode-auto :deep(a) {
+  color: #818cf8;
+}
+
+.email-preview-content :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin-block: 0.75em;
+}
+
+.email-preview-content :deep(td),
+.email-preview-content :deep(th) {
+  padding: 0.5rem;
+  border: 1px solid rgba(156, 163, 175, 0.3);
+}
+
+.email-preview-content :deep(blockquote) {
+  border-left: 4px solid #6366f1;
+  padding-left: 1rem;
+  margin-left: 0;
+  margin-right: 0;
+  font-style: italic;
+  opacity: 0.9;
 }
 </style>

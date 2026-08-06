@@ -1,4 +1,5 @@
 <template>
+    <Head :title="t('Shopping Cart')" />
     <div class="min-h-screen bg-gray-100 dark:bg-gray-900 py-12">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
             <CheckoutSteps :step="1" />
@@ -271,12 +272,15 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
+import { Head } from '@inertiajs/vue3';
 import { useCartStore } from '@/Stores/cartStore';
 import { useCurrency } from '@/Composables/useCurrency';
+import { useTranslation } from '@/admin/composables/useTranslation';
 import CheckoutSteps from '@/Components/CheckoutSteps.vue';
 import OffersGuidelineModal from '@/Components/OffersGuidelineModal.vue';
 import axios from 'axios';
 
+const { t } = useTranslation();
 const offersModalRef = ref<any>(null);
 
 const props = defineProps({

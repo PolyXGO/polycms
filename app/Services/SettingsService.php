@@ -893,6 +893,8 @@ class SettingsService
             'email' => $this->getDefaultEmailSettings(),
             'reading' => $this->getDefaultReadingSettings(),
             'ecommerce' => $this->getDefaultEcommerceSettings(),
+            'invoices' => $this->getDefaultInvoiceSettings(),
+            'checkout' => $this->getDefaultCheckoutSettings(),
             'refund_policy' => $this->getDefaultRefundPolicySettings(),
             'global_faqs' => $this->getDefaultGlobalFaqSettings(),
             'global_tabs' => $this->getDefaultGlobalTabSettings(),
@@ -1495,6 +1497,219 @@ class SettingsService
                 'type' => 'text',
                 'label' => 'Default refund policy note',
                 'description' => 'Fallback note shown when a refundable product has no product-specific refund policy note.',
+            ],
+        ];
+    }
+
+    /**
+     * Get default invoice settings structure
+     *
+     * @return array<string, array{key: string, value: mixed, type: string, label: string, description?: string}>
+     */
+    public function getDefaultInvoiceSettings(): array
+    {
+        return [
+            'ecommerce_invoice_prefix' => [
+                'key' => 'ecommerce_invoice_prefix',
+                'value' => 'INV',
+                'type' => 'string',
+                'label' => 'Invoice Prefix',
+                'description' => 'Prefix added to generated invoice numbers (e.g. INV84921059).',
+                'section' => 'invoice_config',
+                'section_label' => 'Invoice Configuration',
+                'order' => 10,
+            ],
+            'ecommerce_invoice_auto_issue' => [
+                'key' => 'ecommerce_invoice_auto_issue',
+                'value' => true,
+                'type' => 'boolean',
+                'label' => 'Auto-Issue Invoice',
+                'description' => 'Automatically generate an invoice when an order is paid or completed.',
+                'section' => 'invoice_config',
+                'order' => 20,
+            ],
+            'ecommerce_invoice_logo' => [
+                'key' => 'ecommerce_invoice_logo',
+                'value' => null,
+                'type' => 'image',
+                'label' => 'Invoice Header Logo',
+                'description' => 'Custom logo image printed at the top of invoices. Uses brand logo if empty.',
+                'section' => 'invoice_config',
+                'order' => 30,
+            ],
+            'ecommerce_company_name' => [
+                'key' => 'ecommerce_company_name',
+                'value' => '',
+                'type' => 'string',
+                'label' => 'Company / Seller Name',
+                'description' => 'Legal business name displayed as seller on invoices.',
+                'section' => 'seller_info',
+                'section_label' => 'Company & Seller Info',
+                'order' => 40,
+                'translatable' => true,
+            ],
+            'ecommerce_tax_id' => [
+                'key' => 'ecommerce_tax_id',
+                'value' => '',
+                'type' => 'string',
+                'label' => 'Tax ID / VAT Number',
+                'description' => 'Tax registration or VAT number displayed on invoices.',
+                'section' => 'seller_info',
+                'order' => 50,
+            ],
+            'ecommerce_store_email' => [
+                'key' => 'ecommerce_store_email',
+                'value' => '',
+                'type' => 'string',
+                'label' => 'Invoice Contact Email',
+                'description' => 'Contact email printed on invoices for customer inquiries.',
+                'section' => 'seller_info',
+                'order' => 60,
+            ],
+            'ecommerce_phone_number' => [
+                'key' => 'ecommerce_phone_number',
+                'value' => '',
+                'type' => 'string',
+                'label' => 'Invoice Phone Number',
+                'description' => 'Support contact phone number on invoices.',
+                'section' => 'seller_info',
+                'order' => 70,
+            ],
+            'ecommerce_address_line1' => [
+                'key' => 'ecommerce_address_line1',
+                'value' => '',
+                'type' => 'string',
+                'label' => 'Street Address',
+                'section' => 'seller_address',
+                'section_label' => 'Company Address',
+                'order' => 80,
+                'translatable' => true,
+            ],
+            'ecommerce_address_city' => [
+                'key' => 'ecommerce_address_city',
+                'value' => '',
+                'type' => 'string',
+                'label' => 'City',
+                'section' => 'seller_address',
+                'order' => 90,
+                'translatable' => true,
+            ],
+            'ecommerce_address_state' => [
+                'key' => 'ecommerce_address_state',
+                'value' => '',
+                'type' => 'string',
+                'label' => 'State / Province',
+                'section' => 'seller_address',
+                'order' => 100,
+                'translatable' => true,
+            ],
+            'ecommerce_address_country' => [
+                'key' => 'ecommerce_address_country',
+                'value' => 'US',
+                'type' => 'string',
+                'label' => 'Country Code (ISO 2)',
+                'description' => 'Two-letter country code (e.g. US, VN, UK).',
+                'section' => 'seller_address',
+                'order' => 110,
+            ],
+            'ecommerce_invoice_footer_note' => [
+                'key' => 'ecommerce_invoice_footer_note',
+                'value' => 'Thank you for your business!',
+                'type' => 'textarea',
+                'label' => 'Invoice Footer Note & Terms',
+                'description' => 'Default note, payment instructions or tax disclaimer printed at the bottom of invoices.',
+                'section' => 'invoice_footer',
+                'section_label' => 'Invoice Terms & Footer',
+                'order' => 120,
+                'translatable' => true,
+            ],
+        ];
+    }
+
+    /**
+     * Get default checkout & coupons settings structure
+     *
+     * @return array<string, array{key: string, value: mixed, type: string, label: string, description?: string}>
+     */
+    public function getDefaultCheckoutSettings(): array
+    {
+        return [
+            'checkout_coupons_enabled' => [
+                'key' => 'checkout_coupons_enabled',
+                'value' => true,
+                'type' => 'boolean',
+                'label' => 'Enable Coupon & Discount Codes',
+                'description' => 'Allow customers to apply coupon codes on cart and checkout pages.',
+                'section' => 'coupons',
+                'section_label' => 'Coupons & Discount Rules',
+                'order' => 10,
+            ],
+            'checkout_multiple_coupons' => [
+                'key' => 'checkout_multiple_coupons',
+                'value' => false,
+                'type' => 'boolean',
+                'label' => 'Allow Stacking Multiple Coupons',
+                'description' => 'When enabled, customers can apply multiple discount codes to a single order.',
+                'section' => 'coupons',
+                'order' => 20,
+            ],
+            'checkout_guest_enabled' => [
+                'key' => 'checkout_guest_enabled',
+                'value' => true,
+                'type' => 'boolean',
+                'label' => 'Enable Guest Checkout',
+                'description' => 'Allow customers to place orders without creating or logging into an account.',
+                'section' => 'guest_account',
+                'section_label' => 'Checkout Account Behavior',
+                'order' => 30,
+            ],
+            'checkout_auto_create_account' => [
+                'key' => 'checkout_auto_create_account',
+                'value' => true,
+                'type' => 'boolean',
+                'label' => 'Auto-create Customer Account on Guest Checkout',
+                'description' => 'Automatically create a customer account and email access credentials upon guest checkout completion.',
+                'section' => 'guest_account',
+                'order' => 40,
+            ],
+            'checkout_require_billing_address' => [
+                'key' => 'checkout_require_billing_address',
+                'value' => false,
+                'type' => 'boolean',
+                'label' => 'Require Full Billing Address for Digital Orders',
+                'description' => 'Require full street address, city, and zip code during checkout.',
+                'section' => 'checkout_fields',
+                'section_label' => 'Checkout Fields & Requirements',
+                'order' => 50,
+            ],
+            'checkout_require_phone' => [
+                'key' => 'checkout_require_phone',
+                'value' => false,
+                'type' => 'boolean',
+                'label' => 'Require Phone Number',
+                'description' => 'Make phone number a mandatory field during checkout.',
+                'section' => 'checkout_fields',
+                'order' => 60,
+            ],
+            'checkout_terms_consent' => [
+                'key' => 'checkout_terms_consent',
+                'value' => true,
+                'type' => 'boolean',
+                'label' => 'Require Terms & Conditions Acceptance Checkbox',
+                'description' => 'Customers must check a box agreeing to terms and refund policies before submitting orders.',
+                'section' => 'checkout_fields',
+                'order' => 70,
+            ],
+            'checkout_thankyou_message' => [
+                'key' => 'checkout_thankyou_message',
+                'value' => 'Thank you for your order! Your purchase has been completed successfully.',
+                'type' => 'textarea',
+                'label' => 'Order Success Page Message',
+                'description' => 'Custom message displayed on the order success page after payment.',
+                'section' => 'order_success',
+                'section_label' => 'Order Success Confirmation',
+                'order' => 80,
+                'translatable' => true,
             ],
         ];
     }

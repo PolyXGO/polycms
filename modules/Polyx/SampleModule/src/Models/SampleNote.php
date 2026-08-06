@@ -99,9 +99,10 @@ class SampleNote extends Model
      */
     public function scopeSearch($query, string $keyword)
     {
-        return $query->where(function ($q) use ($keyword) {
-            $q->where('title', 'ILIKE', "%{$keyword}%")
-              ->orWhere('content', 'ILIKE', "%{$keyword}%");
+        $likeOp = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
+        return $query->where(function ($q) use ($keyword, $likeOp) {
+            $q->where('title', $likeOp, "%{$keyword}%")
+              ->orWhere('content', $likeOp, "%{$keyword}%");
         });
     }
 

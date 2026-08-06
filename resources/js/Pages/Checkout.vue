@@ -2,6 +2,7 @@
 import { ref, onMounted, computed, watch, onUnmounted } from 'vue';
 import { useCartStore } from '../Stores/cartStore';
 import { useCurrency } from '@/Composables/useCurrency';
+import { useTranslation } from '@/admin/composables/useTranslation';
 import CheckoutSteps from '@/Components/CheckoutSteps.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputLabel from '@/Components/InputLabel.vue';
@@ -9,11 +10,12 @@ import InputError from '@/Components/InputError.vue';
 import axios from 'axios';
 import DialogProvider from '@/admin/components/dialogs/DialogProvider.vue';
 import { useDialog } from '@/admin/composables/useDialog';
-import { usePage } from '@inertiajs/vue3';
+import { Head, usePage } from '@inertiajs/vue3';
 import Modal from '@/Components/Modal.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import OffersGuidelineModal from '@/Components/OffersGuidelineModal.vue';
 
+const { t } = useTranslation();
 const offersModalRef = ref<any>(null);
 
 const dialog = useDialog();
@@ -274,6 +276,7 @@ const finishPayment = () => {
 </script>
 
 <template>
+    <Head :title="t('Checkout')" />
     <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 transition-colors duration-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <!-- Checkout Header & Steps -->

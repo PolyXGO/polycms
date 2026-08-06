@@ -35,10 +35,41 @@ export async function loadTranslations(): Promise<void> {
 /**
  * Translate function for Vue components
  * @param key Translation key
- * @param fallback Fallback text if translation not found
+ * @param fallbackOrParams Fallback text OR parameters object
+ * @param params Parameters object when fallback text is provided
  */
-export function t(key: string, fallback?: string): string {
-    return translations[key] || fallback || key;
+export function t(key: string, fallbackOrParams?: string | Record<string, any>, params?: Record<string, any>): string {
+    let result = translations[key];
+    let replacements: Record<string, any> | undefined;
+
+    if (!result) {
+        if (typeof fallbackOrParams === 'string') {
+            result = fallbackOrParams;
+            replacements = params;
+        } else if (typeof fallbackOrParams === 'object' && fallbackOrParams !== null) {
+            result = key;
+            replacements = fallbackOrParams;
+        } else {
+            result = key;
+        }
+    } else {
+        if (typeof fallbackOrParams === 'object' && fallbackOrParams !== null) {
+            replacements = fallbackOrParams;
+        } else {
+            replacements = params;
+        }
+    }
+
+    if (replacements && typeof result === 'string') {
+        Object.keys(replacements).forEach((paramKey) => {
+            const val = replacements[paramKey];
+            const strVal = String(val !== undefined && val !== null ? val : '');
+            result = (result as string).replace(new RegExp(`\\{${paramKey}\\}`, 'g'), strVal);
+            result = (result as string).replace(new RegExp(`:${paramKey}`, 'g'), strVal);
+        });
+    }
+
+    return typeof result === 'string' ? result : String(result || key);
 }
 
 /**

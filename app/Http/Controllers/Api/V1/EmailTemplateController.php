@@ -19,7 +19,8 @@ class EmailTemplateController extends Controller
 
     public function index(): JsonResponse
     {
-        $templates = EmailTemplate::all();
+        $this->templateManager->syncDatabase();
+        $templates = EmailTemplate::orderBy('group')->orderBy('key')->get();
         return response()->json([
             'success' => true,
             'data' => $templates,

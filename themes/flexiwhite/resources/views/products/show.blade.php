@@ -374,26 +374,47 @@
                         {!! \App\Facades\Hook::doAction('theme.product.single.after_title', $product) !!}
 
                         @php
-                            $effectivePrice = (float) $product->effective_price;
-                            $regularPrice = (float) $product->price;
-                            $salePrice = (float) ($product->sale_price ?? 0);
+                            $mainProductPrice = (float) ($product->price ?? 0);
+                            $isCommerceOffersActive = class_exists(\App\Services\ModuleManager::class) 
+                                && app(\App\Services\ModuleManager::class)->isModuleEnabled('Polyx.CommerceOffers');
+
+                            $mainOfferPrice = $mainProductPrice;
+                            if ($isCommerceOffersActive && class_exists(\Modules\Polyx\CommerceOffers\Services\CommerceOffersService::class)) {
+                                try {
+                                    $offersService = app(\Modules\Polyx\CommerceOffers\Services\CommerceOffersService::class);
+                                    $mainOfferPrice = $offersService->calculateEffectivePrice($product, $mainProductPrice);
+                                } catch (\Throwable $e) {}
+                            }
+
+                            $offerRatio = ($mainProductPrice > 0 && $mainOfferPrice > 0 && $mainOfferPrice < $mainProductPrice)
+                                ? ($mainOfferPrice / $mainProductPrice)
+                                : 1.0;
                             
                             if ($product->services && $product->services->isNotEmpty()) {
                                 $firstService = $product->services->first();
-                                $currentPrice = (float) ($firstService->price ?? $regularPrice);
-                                $hasSale = false;
-                                $strikePrice = null;
+                                $rawFirstPrice = (float) ($firstService->price ?? $mainProductPrice);
+                                if ($offerRatio < 1.0) {
+                                    $currentPrice = round($rawFirstPrice * $offerRatio, 2);
+                                    $hasSale = true;
+                                    $strikePrice = $rawFirstPrice;
+                                } else {
+                                    $currentPrice = $rawFirstPrice;
+                                    $hasSale = false;
+                                    $strikePrice = null;
+                                }
                             } else {
-                                $hasSale = ($salePrice > 0 && $salePrice < $regularPrice) || ($effectivePrice > 0 && $effectivePrice < $regularPrice);
-                                $currentPrice = ($effectivePrice > 0 && $effectivePrice < $regularPrice) ? $effectivePrice : (($salePrice > 0 && $salePrice < $regularPrice) ? $salePrice : $regularPrice);
-                                $strikePrice = $hasSale ? $regularPrice : null;
+                                $salePrice = (float) ($product->sale_price ?? 0);
+                                $effectivePrice = (float) $product->effective_price;
+                                $hasSale = ($salePrice > 0 && $salePrice < $mainProductPrice) || ($effectivePrice > 0 && $effectivePrice < $mainProductPrice);
+                                $currentPrice = ($effectivePrice > 0 && $effectivePrice < $mainProductPrice) ? $effectivePrice : (($salePrice > 0 && $salePrice < $mainProductPrice) ? $salePrice : $mainProductPrice);
+                                $strikePrice = $hasSale ? $mainProductPrice : null;
                             }
                         @endphp
                         <div class="single-product-price-row">
                             @if($hasSale)
                                 <span class="product-price single-product-price">{{ format_currency($currentPrice) }}</span>
                                 <span class="product-price-strike single-product-price-strike">{{ format_currency($strikePrice) }}</span>
-                                @if($effectivePrice > 0 && $effectivePrice < $regularPrice)
+                                @if($mainOfferPrice > 0 && $mainOfferPrice < $mainProductPrice)
                                     <span class="badge" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; font-weight: 700;">{{ _l('Offer Deal') }}</span>
                                 @else
                                     <span class="badge">{{ _l('Sale') }}</span>
@@ -521,9 +542,16 @@
                                     $baseRefPrice = (float) ($product->services->first()->price ?? 1);
                                 }
 
-                                $currentOfferPrice = $isCommerceOffersActive ? (float) $product->effective_price : (float) ($product->price ?? 0);
-                                $offerRatio = ($isCommerceOffersActive && $baseRefPrice > 0 && $currentOfferPrice > 0 && $currentOfferPrice < $baseRefPrice)
-                                    ? ($currentOfferPrice / $baseRefPrice)
+                                $mainOfferPrice = $baseRefPrice;
+                                if ($isCommerceOffersActive && class_exists(\Modules\Polyx\CommerceOffers\Services\CommerceOffersService::class)) {
+                                    try {
+                                        $offersService = app(\Modules\Polyx\CommerceOffers\Services\CommerceOffersService::class);
+                                        $mainOfferPrice = $offersService->calculateEffectivePrice($product, $baseRefPrice);
+                                    } catch (\Throwable $e) {}
+                                }
+
+                                $offerRatio = ($baseRefPrice > 0 && $mainOfferPrice > 0 && $mainOfferPrice < $baseRefPrice)
+                                    ? ($mainOfferPrice / $baseRefPrice)
                                     : 1.0;
 
                                 $tierRatios = [];
@@ -666,6 +694,12 @@
                                                 $rawServicePrice = (float) ($service->price ?? $baseRefPrice);
                                                 $serviceOfferPrice = $rawServicePrice;
                                                 $hasServiceSale = false;
+
+                                                if ($isCommerceOffersActive && $offerRatio < 1.0) {
+                                                    $serviceOfferPrice = round($rawServicePrice * $offerRatio, 2);
+                                                    $hasServiceSale = $serviceOfferPrice < $rawServicePrice;
+                                                }
+
                                                 $serviceTiers = [];
                                                 foreach ($tierRatios as $ratio) {
                                                     $serviceTiers[] = format_currency(round($rawServicePrice * $ratio, 2));
@@ -1106,6 +1140,9 @@
                                     }
                                         
                                     $freeDownloadRequiresAuth = (data_get($projectHubProject->settings, 'free_download_requires_auth', true) !== false);
+                                    $disableFreeOnPaused = (data_get($projectHubProject->settings, 'disable_free_download_on_sale_paused', true) !== false);
+                                    $isSalePaused = ($product->isSalesPaused() || $product->stock_status === 'disabled_add_to_cart');
+                                    $isFreeDownloadDisabled = ($isSalePaused && $disableFreeOnPaused);
                                     
                                     if ($projectHubFreeRelease) {
                                         $freeDownloadUrl = $projectHubFreeRelease->free_download_url;
@@ -1120,7 +1157,7 @@
                             }
                         @endphp
 
-                        @if($projectHubFreeRelease)
+                        @if($projectHubFreeRelease && !$isFreeDownloadDisabled)
                              <!-- 1. Download Button (Visible when logged in OR when auth is not required) -->
                              <div id="free-download-button-wrapper" style="width: 100%; max-width: 340px; margin-top: 12px; margin-bottom: 8px; display: {{ (!$freeDownloadRequiresAuth || auth()->check()) ? 'block' : 'none' }};">
                                  <a id="free-download-link"
@@ -1155,9 +1192,17 @@
                              <script>
                                  (function() {
                                      function checkClientAuth() {
-                                         const hasAuthToken = !!localStorage.getItem('auth_token');
+                                         const isFreeDisabled = {{ $isFreeDownloadDisabled ? 'true' : 'false' }};
                                          const downloadBtn = document.getElementById('free-download-button-wrapper');
                                          const loginBtn = document.getElementById('free-login-button-wrapper');
+                                         
+                                         if (isFreeDisabled) {
+                                             if (loginBtn) loginBtn.style.display = 'none';
+                                             if (downloadBtn) downloadBtn.style.display = 'none';
+                                             return;
+                                         }
+
+                                         const hasAuthToken = !!localStorage.getItem('auth_token');
                                          
                                          if (hasAuthToken) {
                                              if (loginBtn) loginBtn.style.display = 'none';

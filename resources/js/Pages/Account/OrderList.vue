@@ -49,6 +49,13 @@
                                         <span v-if="item.quantity > 1" class="text-gray-400 text-xs ml-1">
                                             (x{{ item.quantity }})
                                         </span>
+                                        <!-- Package / Plan Snapshot Info -->
+                                        <div v-if="getItemPlanInfo(item)" class="text-[11px] text-gray-500 dark:text-gray-400 font-normal">
+                                            <span class="inline-flex items-center gap-1 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded text-[10px] font-medium">
+                                                <i class="fas fa-cube text-[8px] text-indigo-500"></i>
+                                                {{ getItemPlanInfo(item) }}
+                                            </span>
+                                        </div>
                                     </div>
                                 </template>
                             </div>
@@ -92,6 +99,19 @@ import { useTranslation } from '@/admin/composables/useTranslation';
 
 const { formatCurrency } = useCurrency();
 const { t } = useTranslation();
+
+const getItemPlanInfo = (item) => {
+    if (!item) return '';
+    let planName = item.metadata?.service_label || item.metadata?.service_name || item.service?.name || item.variant_label || '';
+    let price = item.price !== undefined && item.price !== null ? item.price : null;
+    if (!planName && (price === null || price === undefined)) return '';
+    if (planName && price !== null && price !== undefined) {
+        return `${planName} - ${formatCurrency(price)}`;
+    }
+    if (planName) return planName;
+    if (price !== null && price !== undefined) return formatCurrency(price);
+    return '';
+};
 
 defineProps({
     orders: Object,

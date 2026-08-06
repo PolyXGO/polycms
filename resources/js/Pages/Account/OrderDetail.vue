@@ -1,5 +1,6 @@
 <template>
     <AccountLayout>
+        <Head :title="`${t('Order')} #${props.order?.code || ''}`" />
         <template #header>
             {{ t('My Account') }}
         </template>
@@ -167,6 +168,14 @@
                                             </a>
                                             <span v-else class="font-medium block text-gray-900 dark:text-gray-100">{{ item.name }}</span>
                                             
+                                            <!-- Package / Plan Info -->
+                                            <div v-if="getPlanName(item)" class="mt-1">
+                                                <span class="inline-flex items-center gap-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded border border-indigo-100 dark:border-indigo-900/50 text-xs font-semibold">
+                                                    <i class="fas fa-cube text-[10px]"></i>
+                                                    <span>{{ t('Plan') }}: {{ getPlanName(item) }}</span>
+                                                </span>
+                                            </div>
+                                            
                                             <!-- Applied Offer Badge -->
                                             <div v-if="item.metadata?.offer_label" class="mt-1 inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded border border-emerald-100 dark:border-emerald-900/50 text-xs font-semibold">
                                                 <i class="fas fa-tag text-[10px]"></i>
@@ -176,13 +185,46 @@
                                                 </span>
                                             </div>
 
-                                            <!-- Bidirectional links to Subscription / License -->
-                                            <div v-if="item.metadata?.subscription_id || item.metadata?.license_id" class="mt-1 flex flex-wrap gap-2 text-xs">
-                                                <Link v-if="item.metadata?.subscription_id" :href="route('account.subscriptions', { search: props.order?.code })" class="inline-flex items-center gap-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded border border-indigo-100 dark:border-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors font-medium">
-                                                    <i class="fas fa-redo-alt text-[10px]"></i>
-                                                    {{ t('View Subscription') }}
-                                                </Link>
-                                                <div v-if="item.metadata?.license_key" class="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2.5 py-1 rounded border border-emerald-100 dark:border-emerald-900/50 font-medium">
+                                            <!-- Bidirectional links to Subscription / Licenses -->
+                                            <div v-if="item.metadata?.subscription_id || item.metadata?.license_id || item.metadata?.licenses?.length" class="mt-2 space-y-1.5">
+                                                <div class="flex flex-wrap gap-2 text-xs">
+                                                    <Link v-if="item.metadata?.subscription_id" :href="route('account.subscriptions', { search: props.order?.code })" class="inline-flex items-center gap-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded border border-indigo-100 dark:border-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors font-medium">
+                                                        <i class="fas fa-redo-alt text-[10px]"></i>
+                                                        {{ t('View Subscriptions') }}
+                                                    </Link>
+                                                </div>
+
+                                                <!-- Multiple Independent Licenses List -->
+                                                <template v-if="item.metadata?.licenses && item.metadata.licenses.length > 0">
+                                                    <div v-for="(lic, lIdx) in item.metadata.licenses" :key="lic.id || lIdx" class="flex flex-wrap items-center gap-2 text-xs">
+                                                        <span v-if="item.metadata.licenses.length > 1" class="text-[11px] font-semibold text-gray-500 dark:text-gray-400">
+                                                            {{ t('License') }} #{{ lIdx + 1 }}:
+                                                        </span>
+                                                        <div class="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2.5 py-1 rounded border border-emerald-100 dark:border-emerald-900/50 font-medium">
+                                                            <i class="fas fa-key text-[10px]"></i>
+                                                            <strong class="font-mono text-xs">{{ formatMaskedKey(lic.key, revealedKeys[item.id + '_' + lIdx]) }}</strong>
+                                                            <button 
+                                                                @click.prevent="toggleRevealKey(item.id + '_' + lIdx)" 
+                                                                type="button" 
+                                                                class="text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-200 transition-colors ml-1 p-0.5 cursor-pointer"
+                                                                :title="revealedKeys[item.id + '_' + lIdx] ? t('Hide Key') : t('Show Key')"
+                                                            >
+                                                                <i class="fas text-[10px]" :class="revealedKeys[item.id + '_' + lIdx] ? 'fa-eye-slash' : 'fa-eye'"></i>
+                                                            </button>
+                                                            <button 
+                                                                @click.prevent="copyToClipboard(lic.key)" 
+                                                                type="button" 
+                                                                class="text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-200 transition-colors p-0.5 cursor-pointer"
+                                                                :title="t('Copy Key')"
+                                                            >
+                                                                <i class="far text-[10px]" :class="copiedKey === lic.key ? 'fa-check-circle text-green-500' : 'fa-copy'"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </template>
+
+                                                <!-- Single License Fallback -->
+                                                <div v-else-if="item.metadata?.license_key" class="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2.5 py-1 rounded border border-emerald-100 dark:border-emerald-900/50 font-medium text-xs">
                                                     <i class="fas fa-key text-[10px]"></i>
                                                     <span>{{ t('License') }}: <strong class="font-mono text-xs">{{ formatMaskedKey(item.metadata.license_key, revealedKeys[item.id]) }}</strong></span>
                                                     <button 
@@ -227,13 +269,22 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import AccountLayout from '@/Layouts/AccountLayout.vue';
-import { Link, router } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { useCurrency } from '@/Composables/useCurrency';
 import { useTranslation } from '@/admin/composables/useTranslation';
 import axios from 'axios';
 
 const { formatCurrency } = useCurrency();
 const { t } = useTranslation();
+
+const getPlanName = (item: any) => {
+    if (!item) return '';
+    if (item.metadata?.service_label) return item.metadata.service_label;
+    if (item.metadata?.service_name) return item.metadata.service_name;
+    if (item.service?.name) return item.service.name;
+    if (item.variant_label) return item.variant_label;
+    return '';
+};
 
 const revealedKeys = ref<Record<string | number, boolean>>({});
 const copiedKey = ref('');

@@ -67,6 +67,13 @@
                                 <i class="fas fa-shopping-bag text-[10px]"></i>
                                 {{ t('Order') }}: #{{ sub.order.code }}
                             </Link>
+                            <!-- Package / Plan Snapshot Info -->
+                            <div v-if="getSubscriptionPackageInfo(sub)" class="mt-1">
+                                <span class="inline-flex items-center gap-1 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded text-[11px] font-medium">
+                                    <i class="fas fa-cube text-[9px] text-indigo-500"></i>
+                                    {{ getSubscriptionPackageInfo(sub) }}
+                                </span>
+                            </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-gray-100">
                             {{ formatCurrency(sub.paid_price !== undefined && sub.paid_price !== null ? sub.paid_price : (sub.recurring_price || sub.service?.price || sub.product?.price)) }}
@@ -125,6 +132,21 @@ import { useTranslation } from '@/admin/composables/useTranslation';
 
 const { formatCurrency } = useCurrency();
 const { t } = useTranslation();
+
+const getSubscriptionPackageInfo = (sub) => {
+    if (!sub) return '';
+    const item = sub.order_item;
+    let planName = item?.metadata?.service_label || item?.metadata?.service_name || item?.service?.name || sub?.service?.name || item?.variant_label || '';
+    let price = item?.price !== undefined && item?.price !== null ? item.price : (sub?.paid_price !== undefined && sub?.paid_price !== null ? sub.paid_price : null);
+    
+    if (!planName && (price === null || price === undefined)) return '';
+    if (planName && price !== null && price !== undefined) {
+        return `${planName} - ${formatCurrency(price)}`;
+    }
+    if (planName) return planName;
+    if (price !== null && price !== undefined) return formatCurrency(price);
+    return '';
+};
 
 const renewingId = ref(null);
 

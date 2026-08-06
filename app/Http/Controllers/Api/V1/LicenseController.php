@@ -332,6 +332,11 @@ class LicenseController extends Controller
                 ->first();
 
             if ($existingActivation) {
+                if (empty($existingActivation->activation_token)) {
+                    $existingActivation->activation_token = bin2hex(random_bytes(32));
+                    $existingActivation->save();
+                }
+
                 return response()->json([
                     'success' => true,
                     'message' => 'License is already active for this domain.',
@@ -395,22 +400,41 @@ class LicenseController extends Controller
             "polyx-{$cleanLower}",
         ]));
 
-        $project = \Modules\Polyx\ProjectHub\Models\Project::where(function ($q) use ($candidates) {
+        $projects = \Modules\Polyx\ProjectHub\Models\Project::where(function ($q) use ($candidates) {
             $q->whereIn('project_code', $candidates)
                 ->orWhereIn(\Illuminate\Support\Facades\DB::raw('LOWER(project_code)'), array_map('strtolower', $candidates));
-        })->first();
+        })->get();
 
-        if (!$project) {
+        if ($projects->isEmpty()) {
             return true; // Project not found in ProjectHub, allow (backward compat)
         }
 
-        $projectProductIds = $project->products()->pluck('products.id')->toArray();
+        $projectProductIds = [];
+        foreach ($projects as $project) {
+            $ids = $project->products()->pluck('products.id')->toArray();
+            $projectProductIds = array_merge($projectProductIds, $ids);
+        }
+        $projectProductIds = array_unique(array_filter($projectProductIds));
+
         if (empty($projectProductIds)) {
-            return true; // No products linked to project, allow
+            return true; // No products linked to project(s), allow
         }
 
-        $licenseProductId = $license->subscription?->product_id;
-        return $licenseProductId && in_array($licenseProductId, $projectProductIds);
+        // Get license product ID and all its multilingual sibling product IDs (translation_group_id)
+        $licenseProduct = $license->subscription?->product;
+        $licenseProductIds = [];
+        if ($licenseProduct) {
+            $licenseProductIds[] = (int) $licenseProduct->id;
+            if (!empty($licenseProduct->translation_group_id)) {
+                $siblings = \App\Models\Product::where('translation_group_id', $licenseProduct->translation_group_id)
+                    ->pluck('id')
+                    ->toArray();
+                $licenseProductIds = array_merge($licenseProductIds, array_map('intval', $siblings));
+            }
+        }
+        $licenseProductIds = array_unique(array_filter($licenseProductIds));
+
+        return !empty(array_intersect($licenseProductIds, array_map('intval', $projectProductIds)));
     }
 
     /**
@@ -617,9 +641,8 @@ class LicenseController extends Controller
 
                             if (!empty($verified['valid'])) {
                                 $licenseObj = $verified['license'];
-                                $licenseProductId = $licenseObj->subscription?->product_id;
-                                $projectProductIds = $project->products()->pluck('products.id')->toArray();
-                                if ($licenseProductId && in_array($licenseProductId, $projectProductIds)) {
+                                $productScopeValid = $this->validateLicenseProductScope($licenseObj, $moduleKey);
+                                if ($productScopeValid) {
                                     $licenseValid = true;
                                     $isExpired = !empty($verified['is_expired']);
                                     $licenseStatus = $verified['license_status'] ?? ($isExpired ? 'expired' : 'active');
@@ -765,10 +788,9 @@ class LicenseController extends Controller
                 }
             }
 
-            // Enforce product scope: license must belong to the same product as this release's project
-            $licenseProductId = $subscription?->product_id;
-            $releaseProjectProductIds = $project->products()->pluck('products.id')->toArray();
-            if (!in_array($licenseProductId, $releaseProjectProductIds)) {
+            // Enforce product scope: license must belong to the same product/project as this release's project (multilingual scope aware)
+            $productScopeValid = $this->validateLicenseProductScope($licenseObj, $project->project_code);
+            if (!$productScopeValid) {
                 return response()->json([
                     'success' => false,
                     'message' => 'License key does not match this product.',

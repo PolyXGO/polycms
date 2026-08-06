@@ -280,7 +280,7 @@ class SettingsController extends Controller
                         'label' => 'Email templates',
                         'description' => 'Customize notification templates using variables',
                         'icon' => 'DocumentTextIcon',
-                        'route' => ['name' => 'admin.settings.group', 'params' => ['group' => 'email_templates']],
+                        'route' => ['name' => 'admin.settings.email-templates'],
                     ],
                     [
                         'key' => 'media',
@@ -322,7 +322,7 @@ class SettingsController extends Controller
                         'label' => 'Custom Icons',
                         'description' => 'Manage custom SVG icons for frontend and backend use.',
                         'icon' => 'PaintBrushIcon',
-                        'route' => ['name' => 'admin.settings.custom_icons'],
+                        'route' => ['name' => 'admin.settings.custom-icons'],
                     ],
                     [
                         'key' => 'contacts',

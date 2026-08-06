@@ -86,6 +86,9 @@
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             {{ t('Status') }}
                         </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            {{ t('Expires At') }}
+                        </th>
                          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             {{ t('Actions') }}
                         </th>
@@ -105,6 +108,13 @@
                                     <i class="fas fa-shopping-bag text-[10px]"></i>
                                     {{ t('Order') }}: #{{ license.order.code }}
                                 </Link>
+                                <!-- Package / Plan Snapshot Info -->
+                                <div v-if="getLicensePackageInfo(license)" class="mt-1">
+                                    <span class="inline-flex items-center gap-1 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded text-[11px] font-medium">
+                                        <i class="fas fa-cube text-[9px] text-indigo-500"></i>
+                                        {{ getLicensePackageInfo(license) }}
+                                    </span>
+                                </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 font-mono">
                                 <div class="flex items-center gap-2">
@@ -145,6 +155,11 @@
                                     'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400': license.status === 'suspended'
                                     }">
                                     {{ t(license.status) }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-medium">
+                                <span :class="license.subscription?.expires_at ? '' : 'text-emerald-600 dark:text-emerald-400 font-bold'">
+                                    {{ getExpiresAtText(license.subscription) }}
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
@@ -391,8 +406,42 @@ import { ref, computed, onMounted } from 'vue';
 import AccountLayout from '@/Layouts/AccountLayout.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { useTranslation } from '@/admin/composables/useTranslation';
+import { useCurrency } from '@/Composables/useCurrency';
 
 const { t } = useTranslation();
+const { formatCurrency } = useCurrency();
+
+const getExpiresAtText = (sub) => {
+    if (!sub) return '-';
+    if (!sub.expires_at) {
+        return t('Lifetime / Never Expires');
+    }
+    const expDate = new Date(sub.expires_at);
+    const now = new Date();
+    if (expDate < now) {
+        return t('Expired');
+    }
+    const diffTime = Math.abs(expDate.getTime() - now.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return `${expDate.toLocaleDateString()} (${diffDays} ${t('days remaining')})`;
+};
+
+const getLicensePackageInfo = (license) => {
+    if (!license) return '';
+    const item = license.order_item || license.subscription?.order_item;
+    const sub = license.subscription;
+    
+    let planName = item?.metadata?.service_label || item?.metadata?.service_name || item?.service?.name || sub?.service?.name || item?.variant_label || '';
+    let price = item?.price !== undefined && item?.price !== null ? item.price : (sub?.paid_price !== undefined && sub?.paid_price !== null ? sub.paid_price : null);
+    
+    if (!planName && (price === null || price === undefined)) return '';
+    if (planName && price !== null && price !== undefined) {
+        return `${planName} - ${formatCurrency(price)}`;
+    }
+    if (planName) return planName;
+    if (price !== null && price !== undefined) return formatCurrency(price);
+    return '';
+};
 
 const props = defineProps({
     licenses: Array,

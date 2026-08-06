@@ -151,17 +151,84 @@ const state = reactive({
 
 function buildPayload() {
   const base = props.modelValue || props.data || {};
+  const selectedProj = selectedProjectObj.value;
+  const projectVal = selectedProj
+    ? (selectedProj.slug || selectedProj.code || String(selectedProj.id))
+    : selectedProjectCode.value;
+  const codeVal = selectedDiagramCode.value || state.code;
+
   return {
     ...base,
-    code: state.code
+    project: projectVal,
+    code: codeVal
   };
 }
+
+const syncActiveSelections = () => {
+  const currentProjAttr = readAttr('project', readAttr('project_code', readAttr('slug', '')));
+  const currentDiagAttr = readAttr('code', readAttr('diagram_code', ''));
+
+  if (!projectsList.value.length) return;
+
+  let matchedProj: any = null;
+
+  if (currentProjAttr) {
+    const searchProj = String(currentProjAttr).toLowerCase().trim();
+    matchedProj = projectsList.value.find(p => 
+      String(p.code || '').toLowerCase() === searchProj ||
+      String(p.slug || '').toLowerCase() === searchProj ||
+      String(p.id) === searchProj
+    );
+  }
+
+  if (!matchedProj && currentDiagAttr) {
+    const searchDiag = String(currentDiagAttr).toLowerCase().trim();
+    const isDirect = /^(flowchart|graph|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|C4Context)/i.test(searchDiag);
+    if (!isDirect) {
+      for (const p of projectsList.value) {
+        if (Array.isArray(p.diagrams)) {
+          const found = p.diagrams.find((d: any) =>
+            String(d.code || d.id || '').toLowerCase().trim() === searchDiag
+          );
+          if (found) {
+            matchedProj = p;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  if (matchedProj) {
+    selectedProjectCode.value = matchedProj.code || matchedProj.slug || String(matchedProj.id);
+    if (currentDiagAttr && Array.isArray(matchedProj.diagrams)) {
+      const searchDiag = String(currentDiagAttr).toLowerCase().trim();
+      const matchedDiag = matchedProj.diagrams.find((d: any) =>
+        String(d.code || d.id || '').toLowerCase().trim() === searchDiag
+      );
+      if (matchedDiag) {
+        selectedDiagramCode.value = matchedDiag.code || matchedDiag.id || '';
+      } else if (matchedProj.diagrams.length > 0) {
+        selectedDiagramCode.value = matchedProj.diagrams[0].code || matchedProj.diagrams[0].id || '';
+      }
+    }
+  } else if (currentDiagAttr) {
+    const isDirect = /^(flowchart|graph|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|C4Context)/i.test(currentDiagAttr.trim());
+    if (isDirect) {
+      settingsTab.value = 'raw_code';
+      state.code = currentDiagAttr;
+    } else {
+      selectedDiagramCode.value = currentDiagAttr;
+    }
+  }
+};
 
 const loadProjectsList = async () => {
   try {
     projectsLoading.value = true;
     const res = await axios.get('/api/v1/projects', { params: { per_page: 100 } });
     projectsList.value = res.data.data?.data || res.data.data || res.data || [];
+    syncActiveSelections();
   } catch (e) {
     console.error('Failed to load projects for Mermaid settings:', e);
   } finally {
@@ -215,7 +282,7 @@ const onProjectSelectChange = (e: Event) => {
   if (availableDiagrams.value.length > 0) {
     const firstDiag = availableDiagrams.value[0];
     selectedDiagramCode.value = firstDiag.code || firstDiag.id || '';
-    state.code = firstDiag.mermaid || firstDiag.code || firstDiag.id || '';
+    state.code = firstDiag.code || firstDiag.id || firstDiag.mermaid || '';
   } else {
     selectedDiagramCode.value = '';
   }
@@ -226,7 +293,7 @@ const onDiagramSelectChange = (e: Event) => {
   selectedDiagramCode.value = target.value;
   const foundDiag = availableDiagrams.value.find((d: any) => (d.code || d.id) === target.value);
   if (foundDiag) {
-    state.code = foundDiag.mermaid || foundDiag.code || foundDiag.id || '';
+    state.code = foundDiag.code || foundDiag.id || foundDiag.mermaid || '';
   }
 };
 

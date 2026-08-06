@@ -278,14 +278,24 @@ class CartService
                     ->first();
                 if ($service) {
                     $serviceName = $service->name;
-                    if ($service->price !== null && $service->price > 0) {
+                    if ($service->price !== null && (float)$service->price > 0) {
                         $rawServicePrice = (float) $service->price;
-                        $effectiveProductPrice = (float) $product->effective_price;
-                        if ($effectiveProductPrice > 0 && $effectiveProductPrice < $rawServicePrice) {
-                            $price = $effectiveProductPrice;
-                        } else {
-                            $price = $rawServicePrice;
+                        $mainProductPrice = (float) ($product->price ?? 0);
+                        
+                        $offerRatio = 1.0;
+                        if (class_exists(\App\Services\ModuleManager::class) 
+                            && app(\App\Services\ModuleManager::class)->isModuleEnabled('Polyx.CommerceOffers')
+                            && class_exists(\Modules\Polyx\CommerceOffers\Services\CommerceOffersService::class)) {
+                            try {
+                                $offersService = app(\Modules\Polyx\CommerceOffers\Services\CommerceOffersService::class);
+                                $mainOfferPrice = $offersService->calculateEffectivePrice($product, $mainProductPrice);
+                                if ($mainProductPrice > 0 && $mainOfferPrice > 0 && $mainOfferPrice < $mainProductPrice) {
+                                    $offerRatio = $mainOfferPrice / $mainProductPrice;
+                                }
+                            } catch (\Throwable $e) {}
                         }
+
+                        $price = ($offerRatio < 1.0) ? round($rawServicePrice * $offerRatio, 2) : $rawServicePrice;
                     }
                 }
             }

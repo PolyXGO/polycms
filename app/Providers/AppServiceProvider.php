@@ -31,6 +31,10 @@ class AppServiceProvider extends ServiceProvider
         // Register alias for Hook facade
         $this->app->alias('hook', HookManager::class);
 
+        $this->commands([
+            \App\Console\Commands\BackfillMissingLicensesCommand::class,
+        ]);
+
         // Register Module Manager as singleton
         $this->app->singleton(ModuleManager::class, function ($app) {
             return new ModuleManager();
@@ -438,6 +442,10 @@ class AppServiceProvider extends ServiceProvider
         }
 
 
+        $this->commands([
+            \App\Console\Commands\BackfillMissingLicensesCommand::class,
+        ]);
+
         if (app()->runningInConsole()) {
             $argv = $_SERVER['argv'] ?? [];
             if (collect($argv)->contains(fn($arg) => str_contains($arg, 'migrate'))) {
@@ -477,12 +485,6 @@ class AppServiceProvider extends ServiceProvider
                 $permissionRegistry->syncDatabase();
             }
 
-            // Register core email templates
-            $this->registerCoreEmailTemplates();
-
-            // Allow modules to register their own templates
-            Hook::doAction('register_email_templates', app(\App\Services\EmailTemplateManager::class));
-
             // Sync to database
             if (Schema::hasTable('email_templates')) {
                 app(\App\Services\EmailTemplateManager::class)->syncDatabase();
@@ -497,6 +499,10 @@ class AppServiceProvider extends ServiceProvider
             $layoutAssetManager->syncDatabase();
             $this->markBootstrapDataSynced($moduleManager);
         }
+
+        // Register core & module email templates
+        $this->registerCoreEmailTemplates();
+        Hook::doAction('register_email_templates', app(\App\Services\EmailTemplateManager::class));
 
         // Register core atomic landing block renderers
         $this->registerCoreLandingBlocks();

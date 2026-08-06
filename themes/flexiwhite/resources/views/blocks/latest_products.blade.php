@@ -119,12 +119,19 @@
                                 @php
                                     $effectivePrice = (float) $product->effective_price;
                                     $regularPrice = (float) $product->price;
+                                    $services = $product->relationLoaded('services') ? $product->services : $product->services()->get();
+                                    if ($services && $services->isNotEmpty()) {
+                                        $validServicePrices = $services->pluck('price')->filter(fn($p) => $p !== null && (float)$p > 0)->map(fn($p) => (float)$p);
+                                        if ($validServicePrices->isNotEmpty()) {
+                                            $regularPrice = $validServicePrices->min();
+                                        }
+                                    }
                                     $salePrice = (float) ($product->sale_price ?? 0);
-                                    $hasSale = ($salePrice > 0 && $salePrice < $regularPrice);
+                                    $hasSale = ($salePrice > 0 && $salePrice < $regularPrice) || ($effectivePrice > 0 && $effectivePrice < $regularPrice);
                                     $currentPrice = $effectivePrice > 0 ? $effectivePrice : $regularPrice;
                                     $strikePrice = $hasSale ? $regularPrice : null;
                                 @endphp
-                                @if($hasSale)
+                                @if($hasSale && $strikePrice > $currentPrice)
                                     <span class="price-current">{{ format_currency($currentPrice) }}</span>
                                     <span class="price-original">{{ format_currency($strikePrice) }}</span>
                                     <span class="price-badge">{{ _l('SALE') }}</span>

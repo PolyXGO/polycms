@@ -25,7 +25,7 @@
             <div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800 p-6">
                 <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Create New API Key</h2>
                 <form @submit.prevent="createToken" class="space-y-4">
-                    <div class="grid gap-4 md:grid-cols-3">
+                    <div class="grid gap-4 md:grid-cols-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Display Name</label>
                             <input type="text" v-model="newToken.name" required
@@ -48,27 +48,40 @@
                                 </option>
                             </select>
                         </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('Billing Cycle') }}</label>
+                            <select v-model="newToken.billing_cycle" :disabled="!newToken.package_id"
+                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <option value="monthly">{{ t('Monthly (1 Month)') }}</option>
+                                <option value="quarterly">{{ t('Quarterly (3 Months)') }}</option>
+                                <option value="yearly">{{ t('Yearly (1 Year)') }}</option>
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Selected Package Details Box -->
                     <div v-if="selectedPackageInfo" class="p-3.5 rounded-lg bg-blue-50/60 dark:bg-zinc-800/80 border border-blue-200/80 dark:border-zinc-700 text-xs space-y-1.5">
                         <div class="font-bold text-blue-900 dark:text-blue-300 flex items-center justify-between">
-                            <span>Selected Plan: {{ selectedPackageInfo.name }} (${{ selectedPackageInfo.price_monthly }}/mo)</span>
-                            <span v-if="selectedPackageInfo.has_ai" class="px-2 py-0.5 text-[10px] bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 font-bold rounded">AI Enabled</span>
+                            <span>
+                                {{ t('Selected Plan') }}: {{ selectedPackageInfo.name }} —
+                                <strong class="text-blue-600 dark:text-blue-400 font-extrabold text-sm">${{ getPackageCyclePrice(selectedPackageInfo, newToken.billing_cycle) }}</strong>
+                                / {{ newToken.billing_cycle === 'yearly' ? t('year') : (newToken.billing_cycle === 'quarterly' ? t('quarter') : t('month')) }}
+                            </span>
+                            <span v-if="selectedPackageInfo.has_ai" class="px-2 py-0.5 text-[10px] bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 font-bold rounded">{{ t('AI Enabled') }}</span>
                         </div>
                         <div class="text-gray-700 dark:text-gray-300 flex flex-wrap gap-4">
-                            <span>API Daily: <strong>{{ formatNumber(selectedPackageInfo.api_limit_daily) }}</strong> req/day</span>
-                            <span>API Monthly: <strong>{{ formatNumber(selectedPackageInfo.api_limit_monthly) }}</strong> req/mo</span>
-                            <span v-if="selectedPackageInfo.has_ai">AI Daily: <strong>{{ formatNumber(selectedPackageInfo.ai_limit_daily) }}</strong> req/day</span>
+                            <span>{{ t('API Daily') }}: <strong>{{ formatNumber(selectedPackageInfo.api_limit_daily) }}</strong> {{ t('req/day') }}</span>
+                            <span>{{ t('API Monthly') }}: <strong>{{ formatNumber(selectedPackageInfo.api_limit_monthly) }}</strong> {{ t('req/mo') }}</span>
+                            <span v-if="selectedPackageInfo.has_ai">{{ t('AI Daily') }}: <strong>{{ formatNumber(selectedPackageInfo.ai_limit_daily) }}</strong> {{ t('req/day') }}</span>
                         </div>
                         <div class="text-gray-500 dark:text-gray-400">
-                            Scopes: <span class="font-medium text-gray-700 dark:text-gray-300">{{ selectedPackageInfo.is_full_access ? 'Full Access' : (selectedPackageInfo.scope_groups || []).map((s:any) => s.label).join(', ') || 'Standard' }}</span>
+                            {{ t('Scopes') }}: <span class="font-medium text-gray-700 dark:text-gray-300">{{ selectedPackageInfo.is_full_access ? t('Full Access') : (selectedPackageInfo.scope_groups || []).map((s:any) => s.label).join(', ') || 'Standard' }}</span>
                         </div>
                     </div>
 
                     <button type="submit" :disabled="creating"
                         class="inline-flex items-center px-4 py-2 bg-black dark:bg-white text-white dark:text-black text-sm font-semibold rounded-md hover:opacity-80 disabled:opacity-50 transition">
-                        {{ creating ? 'Creating...' : 'Create Key' }}
+                        {{ creating ? t('Creating...') : t('Create Key') }}
                     </button>
                 </form>
 
@@ -76,7 +89,7 @@
                 <div v-if="plainKey" class="mt-4 p-4 bg-green-50 dark:bg-green-900/30 rounded-lg border border-green-200 dark:border-green-800">
                     <p class="text-sm font-medium text-green-700 dark:text-green-300 mb-2 flex items-center gap-1.5">
                         <svg class="w-4 h-4 text-green-600 dark:text-green-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                        <span>Copy this API key now. It will not be shown again.</span>
+                        <span>{{ t('Copy this API key now. It will not be shown again.') }}</span>
                     </p>
                     <div class="flex items-center gap-2">
                         <input type="text" readonly :value="plainKey" @click="($event.target as HTMLInputElement).select()"
@@ -87,7 +100,7 @@
                             <svg v-if="copiedKey === plainKey" class="w-3.5 h-3.5 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                             </svg>
-                            <span>{{ copiedKey === plainKey ? 'Copied!' : 'Copy Key' }}</span>
+                            <span>{{ copiedKey === plainKey ? t('Copied!') : t('Copy Key') }}</span>
                         </button>
                     </div>
                 </div>
@@ -96,10 +109,10 @@
             <!-- Token List -->
             <div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800">
                 <div class="p-6 border-b border-gray-200 dark:border-zinc-800">
-                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Your API Keys</h2>
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('Your API Keys') }}</h2>
                 </div>
                 <div v-if="tokens.length === 0" class="p-6">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">No API keys yet. Create one above.</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('No API keys yet. Create one above.') }}</p>
                 </div>
                 <div v-else class="divide-y divide-gray-200 dark:divide-zinc-800">
                     <div v-for="token in tokens" :key="token.id" class="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -111,7 +124,7 @@
                                     'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 ring-1 ring-amber-500/40': token.payment_status === 'pending_payment',
                                     'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300': !token.is_active && token.payment_status !== 'pending_payment'
                                 }" class="px-2 py-0.5 text-xs font-semibold rounded">
-                                    {{ token.payment_status === 'pending_payment' ? 'Pending Payment' : (token.is_active ? 'Active' : 'Revoked') }}
+                                    {{ token.payment_status === 'pending_payment' ? t('Pending Payment') : (token.is_active ? t('Active') : t('Revoked')) }}
                                 </span>
                             </div>
 
@@ -127,6 +140,7 @@
                             <!-- Package Details Badge -->
                             <div class="mt-2 inline-flex flex-wrap items-center gap-2 p-2 rounded-md bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-700 text-xs">
                                 <span class="font-semibold text-blue-600 dark:text-blue-400">Package: {{ token.package_name }}</span>
+                                <span class="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 rounded font-semibold text-[11px]">{{ token.billing_cycle_label || 'Monthly' }}</span>
                                 <template v-if="token.package_info">
                                     <span class="text-gray-300 dark:text-zinc-600">•</span>
                                     <span class="text-gray-600 dark:text-gray-300">API: {{ formatNumber(token.package_info.api_limit_daily) }}/day</span>
@@ -136,8 +150,6 @@
                                         <span class="text-gray-300 dark:text-zinc-600">•</span>
                                         <span class="text-amber-600 dark:text-amber-400">AI: {{ formatNumber(token.package_info.ai_limit_daily) }}/day</span>
                                     </template>
-                                    <span class="text-gray-300 dark:text-zinc-600">•</span>
-                                    <span class="text-gray-500 dark:text-gray-400">Scopes: {{ (token.package_info.scope_labels || []).join(', ') }}</span>
                                 </template>
                             </div>
                         </div>
@@ -147,24 +159,24 @@
                             <button v-if="token.payment_status === 'pending_payment'" @click="openCheckoutForToken(token)"
                                 class="px-3 py-1.5 text-xs font-bold rounded-md bg-amber-500 hover:bg-amber-600 text-white shadow transition animate-pulse flex items-center gap-1.5">
                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                                <span>Complete Payment (${{ token.package_info?.price_monthly }})</span>
+                                <span>{{ t('Complete Payment') }} (${{ token.order_amount || token.package_info?.price_monthly }})</span>
                             </button>
                             <template v-else>
                                 <button @click="regenerateToken(token.id)"
                                     class="px-3 py-1.5 text-xs font-semibold rounded-md border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 transition">
-                                    Regenerate Key
+                                    {{ t('Regenerate Key') }}
                                 </button>
                                 <button @click="toggleToken(token.id)"
                                     class="px-3 py-1.5 text-xs font-semibold rounded-md border transition"
                                     :class="token.is_active
                                         ? 'border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
                                         : 'border-green-500 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30'">
-                                    {{ token.is_active ? 'Revoke Key' : 'Activate Key' }}
+                                    {{ token.is_active ? t('Revoke Key') : t('Activate Key') }}
                                 </button>
                             </template>
                             <button @click="deleteToken(token.id)"
                                 class="px-3 py-1.5 text-xs font-semibold rounded-md border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition">
-                                Delete
+                                {{ t('Delete') }}
                             </button>
                         </div>
                     </div>
@@ -173,11 +185,32 @@
 
             <!-- Available API Packages / Plans -->
             <div v-if="packages && packages.length > 0" class="space-y-4">
-                <div>
-                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Available API Subscription Packages</h2>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
-                        Choose an API tier tailored to your platform traffic and data requirements.
-                    </p>
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ t('Available API Subscription Packages') }}</h2>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            {{ t('Choose an API tier tailored to your platform traffic and data requirements.') }}
+                        </p>
+                    </div>
+
+                    <!-- Catalog Cycle Filter Pills -->
+                    <div class="inline-flex p-1 bg-gray-100 dark:bg-zinc-800 rounded-lg text-xs font-bold shrink-0 self-start sm:self-auto">
+                        <button type="button" @click="selectedCatalogCycle = 'monthly'"
+                            :class="selectedCatalogCycle === 'monthly' ? 'bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                            class="px-3 py-1.5 rounded-md transition">
+                            {{ t('Monthly') }}
+                        </button>
+                        <button type="button" @click="selectedCatalogCycle = 'quarterly'"
+                            :class="selectedCatalogCycle === 'quarterly' ? 'bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                            class="px-3 py-1.5 rounded-md transition">
+                            {{ t('Quarterly (3 Mos)') }}
+                        </button>
+                        <button type="button" @click="selectedCatalogCycle = 'yearly'"
+                            :class="selectedCatalogCycle === 'yearly' ? 'bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                            class="px-3 py-1.5 rounded-md transition">
+                            {{ t('Yearly (12 Mos)') }}
+                        </button>
+                    </div>
                 </div>
 
                 <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -193,10 +226,12 @@
                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{{ pkg.description }}</p>
 
                             <div class="mt-4 pb-4 border-b border-gray-100 dark:border-zinc-800">
-                                <span class="text-2xl font-extrabold text-gray-900 dark:text-white">${{ pkg.price_monthly }}</span>
-                                <span class="text-xs text-gray-500 dark:text-gray-400"> / month</span>
+                                <span class="text-2xl font-extrabold text-gray-900 dark:text-white">${{ getPackageCyclePrice(pkg, selectedCatalogCycle) }}</span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">
+                                    / {{ selectedCatalogCycle === 'yearly' ? 'year' : (selectedCatalogCycle === 'quarterly' ? 'quarter' : 'month') }}
+                                </span>
                                 <div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                                    ${{ pkg.price_yearly }} / year
+                                    {{ selectedCatalogCycle === 'monthly' ? `$${getPackageCyclePrice(pkg, 'yearly')} / year` : `$${pkg.price_monthly} / month` }}
                                 </div>
                             </div>
 
@@ -220,9 +255,9 @@
                             </ul>
                         </div>
 
-                        <button @click="selectPackageForNewKey(pkg.id)"
+                        <button @click="selectPackageForNewKey(pkg.id, selectedCatalogCycle)"
                             class="mt-6 w-full py-2 px-3 text-xs font-semibold rounded-lg border border-gray-300 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800 text-gray-800 dark:text-gray-200 transition text-center">
-                            Select Plan
+                            Select Plan ({{ selectedCatalogCycle.toUpperCase() }})
                         </button>
                     </div>
                 </div>
@@ -281,10 +316,11 @@
                     <div class="p-4 rounded-lg bg-blue-50/70 dark:bg-zinc-800/80 border border-blue-200/70 dark:border-zinc-700 space-y-2">
                         <div class="flex items-center justify-between font-bold text-gray-900 dark:text-white text-sm">
                             <span>Key: {{ pendingPayToken.name }}</span>
-                            <span class="text-blue-600 dark:text-blue-400 font-extrabold text-base">${{ pendingPayToken.package_info?.price_monthly }}/mo</span>
+                            <span class="text-blue-600 dark:text-blue-400 font-extrabold text-base">${{ pendingPayToken.order_amount || pendingPayToken.package_info?.price_monthly }}</span>
                         </div>
-                        <div class="text-xs text-gray-600 dark:text-gray-300">
-                            Package: <strong class="text-gray-900 dark:text-white">{{ pendingPayToken.package_name }}</strong>
+                        <div class="text-xs text-gray-600 dark:text-gray-300 flex items-center justify-between">
+                            <span>Package: <strong class="text-gray-900 dark:text-white">{{ pendingPayToken.package_name }}</strong></span>
+                            <span class="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 rounded font-semibold text-[11px]">{{ pendingPayToken.billing_cycle_label || 'Monthly (1 Month)' }}</span>
                         </div>
                         <div v-if="pendingPayToken.order_code" class="text-xs text-gray-600 dark:text-gray-300 flex items-center justify-between">
                             <span>Order Reference: <strong class="font-mono text-gray-900 dark:text-white">{{ pendingPayToken.order_code }}</strong></span>
@@ -321,7 +357,7 @@
                                 </div>
                                 <div class="flex justify-between items-center pt-0.5">
                                     <span class="text-gray-500 dark:text-gray-400 font-medium">Amount:</span>
-                                    <strong class="text-green-600 dark:text-emerald-400 font-extrabold text-sm">${{ pendingPayToken.package_info?.price_monthly }}</strong>
+                                    <strong class="text-green-600 dark:text-emerald-400 font-extrabold text-sm">${{ pendingPayToken.order_amount || pendingPayToken.package_info?.price_monthly }}</strong>
                                 </div>
                             </div>
                         </div>
@@ -361,11 +397,6 @@
                         <div class="flex items-center justify-between pt-1">
                             <button @click="showCheckoutModal = false" class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                                 Close Window
-                            </button>
-                            <button @click="completePayment" :disabled="processingPayment"
-                                class="text-xs text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 underline flex items-center gap-1">
-                                <svg class="w-3.5 h-3.5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                <span>Mark Paid (Instant Test / Demo)</span>
                             </button>
                         </div>
                     </div>
@@ -429,15 +460,32 @@ const selectedPaymentMethod = ref('bank_transfer');
 const processingPayment = ref(false);
 const checkingPayment = ref(false);
 
+const selectedCatalogCycle = ref('monthly');
+
 const newToken = ref<{
     name: string;
     domain: string;
     package_id: number | null;
+    billing_cycle: string;
 }>({
     name: '',
     domain: '',
     package_id: null,
+    billing_cycle: 'monthly',
 });
+
+const getPackageCyclePrice = (pkg: any, cycle: string) => {
+    if (!pkg) return '0.00';
+    if (cycle === 'yearly') {
+        const p = parseFloat(pkg.price_yearly);
+        return (p > 0 ? p : (parseFloat(pkg.price_monthly) * 12)).toFixed(2);
+    }
+    if (cycle === 'quarterly') {
+        const p = parseFloat(pkg.price_quarterly);
+        return (p > 0 ? p : (parseFloat(pkg.price_monthly) * 3)).toFixed(2);
+    }
+    return parseFloat(pkg.price_monthly || 0).toFixed(2);
+};
 
 const selectedPackageInfo = computed(() => {
     if (!newToken.value.package_id) {
@@ -446,8 +494,9 @@ const selectedPackageInfo = computed(() => {
     return packages.value.find(p => p.id === newToken.value.package_id) || null;
 });
 
-const selectPackageForNewKey = (packageId: number) => {
+const selectPackageForNewKey = (packageId: number, cycle: string = 'monthly') => {
     newToken.value.package_id = packageId;
+    newToken.value.billing_cycle = cycle;
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
@@ -464,7 +513,7 @@ const createToken = async () => {
         // Refresh token list
         const listResponse = await axios.get('/account/api/tokens');
         tokens.value = listResponse.data.tokens;
-        newToken.value = { name: '', domain: '', package_id: null };
+        newToken.value = { name: '', domain: '', package_id: null, billing_cycle: 'monthly' };
 
         // Refresh usage
         const usageResponse = await axios.get('/account/api/usage');

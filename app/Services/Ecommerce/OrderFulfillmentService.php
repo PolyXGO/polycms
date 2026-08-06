@@ -108,22 +108,40 @@ class OrderFulfillmentService
                         continue;
                     }
 
-                    // Activate subscription
-                    $subscription = $subscriptionManager->activateSubscription($user, $serviceId, $product->id);
-                    $metadata['subscription_id'] = $subscription->id;
+                    // Activate subscription and issue independent licenses for each unit in quantity
+                    $quantity = max(1, (int) ($item->quantity ?? 1));
+                    $createdSubscriptions = [];
+                    $createdLicenses = [];
 
-                    // Issue license key for the subscription
-                    $license = $licenseManager->issueLicense($subscription);
-                    if ($license) {
-                        $metadata['license_id'] = $license->id;
-                        $metadata['license_key'] = $license->license_key;
+                    for ($q = 0; $q < $quantity; $q++) {
+                        $subscription = $subscriptionManager->activateSubscription($user, $serviceId, $product->id);
+                        $license = $licenseManager->issueLicense($subscription);
+
+                        $createdSubscriptions[] = $subscription->id;
+                        if ($license) {
+                            $createdLicenses[] = [
+                                'id' => $license->id,
+                                'key' => $license->license_key,
+                                'unit' => $q + 1,
+                            ];
+                        }
+                    }
+
+                    // Store primary subscription/license for backward compatibility
+                    $metadata['subscription_id'] = $createdSubscriptions[0] ?? null;
+                    $metadata['subscription_ids'] = $createdSubscriptions;
+
+                    if (!empty($createdLicenses)) {
+                        $metadata['license_id'] = $createdLicenses[0]['id'];
+                        $metadata['license_key'] = $createdLicenses[0]['key'];
+                        $metadata['licenses'] = $createdLicenses;
                     }
 
                     // Mark as fulfilled
                     $metadata['fulfilled'] = true;
                     $item->update(['metadata' => $metadata]);
 
-                    Log::info("OrderFulfillmentService: Fulfilled order item #{$item->id} (Subscription #{$subscription->id}) for order #{$order->id}.");
+                    Log::info("OrderFulfillmentService: Fulfilled order item #{$item->id} (Quantity: {$quantity}, Licenses generated: " . count($createdLicenses) . ") for order #{$order->id}.");
                 } catch (\Throwable $e) {
                     Log::error("OrderFulfillmentService: Failed to fulfill order item #{$item->id} for order #{$order->id}: " . $e->getMessage());
                 }

@@ -459,11 +459,13 @@ const routes: Array<RouteRecordRaw> = [
             },
             {
                 path: 'settings/email-templates',
+                alias: ['settings/email_templates'],
                 name: 'admin.settings.email-templates',
                 component: EmailTemplateList,
             },
             {
                 path: 'settings/email-templates/:id',
+                alias: ['settings/email_templates/:id'],
                 name: 'admin.settings.email-templates.edit',
                 component: EmailTemplateEditor,
             },

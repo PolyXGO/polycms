@@ -71,7 +71,15 @@
             <!-- License Key Column -->
             <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-admin-theme-primary">
               <div class="flex items-center gap-2">
-                <span>{{ license.license_key }}</span>
+                <span class="tracking-wider font-semibold text-xs">{{ formatMaskedKey(license.license_key, revealedKeys[license.id]) }}</span>
+                <button
+                  @click="toggleRevealKey(license.id)"
+                  type="button"
+                  class="text-gray-400 hover:text-admin-theme-text transition-colors p-1"
+                  :title="revealedKeys[license.id] ? t('Hide Key') : t('Show Key')"
+                >
+                  <i class="fas text-xs" :class="revealedKeys[license.id] ? 'fa-eye-slash' : 'fa-eye'"></i>
+                </button>
                 <button
                   @click="copyToClipboard(license.license_key)"
                   type="button"
@@ -167,8 +175,24 @@
               <i class="fas fa-key text-admin-theme-primary"></i>
               Manage License & Activations
             </h3>
-            <p class="text-xs text-gray-500 dark:text-gray-400 font-mono mt-1">
-              Key: {{ editingLicense.license_key }}
+            <p class="text-xs text-gray-500 dark:text-gray-400 font-mono mt-1 flex items-center gap-2">
+              <span>Key: {{ formatMaskedKey(editingLicense.license_key, revealedKeys[editingLicense.id]) }}</span>
+              <button
+                @click="toggleRevealKey(editingLicense.id)"
+                type="button"
+                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-0.5"
+                :title="revealedKeys[editingLicense.id] ? t('Hide Key') : t('Show Key')"
+              >
+                <i class="fas text-xs" :class="revealedKeys[editingLicense.id] ? 'fa-eye-slash' : 'fa-eye'"></i>
+              </button>
+              <button
+                @click="copyToClipboard(editingLicense.license_key)"
+                type="button"
+                class="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors p-0.5"
+                :title="t('Copy Key')"
+              >
+                <i class="far text-xs" :class="copiedKey === editingLicense.license_key ? 'fa-check-circle text-green-500' : 'fa-copy'"></i>
+              </button>
             </p>
           </div>
           <button @click="closeManageModal" type="button" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-850 rounded-lg transition-all">
@@ -290,8 +314,24 @@
             <h3 class="text-base font-bold text-gray-900 dark:text-gray-100">
               {{ activeLicense.subscription?.product?.name }}
             </h3>
-            <p class="text-xs text-gray-500 dark:text-gray-400 font-mono mt-1">
-              {{ t('License') }}: {{ activeLicense.license_key }}
+            <p class="text-xs text-gray-500 dark:text-gray-400 font-mono mt-1 flex items-center gap-2">
+              <span>{{ t('License') }}: {{ formatMaskedKey(activeLicense.license_key, revealedKeys[activeLicense.id]) }}</span>
+              <button
+                @click="toggleRevealKey(activeLicense.id)"
+                type="button"
+                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-0.5"
+                :title="revealedKeys[activeLicense.id] ? t('Hide Key') : t('Show Key')"
+              >
+                <i class="fas text-xs" :class="revealedKeys[activeLicense.id] ? 'fa-eye-slash' : 'fa-eye'"></i>
+              </button>
+              <button
+                @click="copyToClipboard(activeLicense.license_key)"
+                type="button"
+                class="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors p-0.5"
+                :title="t('Copy Key')"
+              >
+                <i class="far text-xs" :class="copiedKey === activeLicense.license_key ? 'fa-check-circle text-green-500' : 'fa-copy'"></i>
+              </button>
             </p>
           </div>
           <button @click="closeModal" type="button" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-850 rounded-lg transition-all cursor-pointer">
@@ -360,6 +400,21 @@ const loading = ref(true);
 const filters = ref({ search: '', status: '' });
 const pagination = ref({ current_page: 1, last_page: 1, per_page: 15, total: 0 });
 const copiedKey = ref('');
+const revealedKeys = ref<Record<number, boolean>>({});
+
+const toggleRevealKey = (id: number) => {
+  revealedKeys.value[id] = !revealedKeys.value[id];
+};
+
+const formatMaskedKey = (key: string, isRevealed?: boolean) => {
+  if (!key) return '';
+  let normalized = key.replace(/^KEY-/, 'MTX-');
+  if (isRevealed) return normalized;
+  if (normalized.startsWith('MTX-')) {
+    return 'MTX-••••-••••-••••';
+  }
+  return '••••-••••-••••-••••';
+};
 
 const showModal = ref(false);
 const activeLicense = ref<any>(null);

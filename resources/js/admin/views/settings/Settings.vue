@@ -107,6 +107,8 @@ import { useTranslation } from'../../composables/useTranslation';
 import GeneralSettings from'./tabs/GeneralSettings.vue';
 import PermalinkSettings from'./tabs/PermalinkSettings.vue';
 import EcommerceSettings from'./tabs/EcommerceSettings.vue';
+import InvoicesSettings from './tabs/InvoicesSettings.vue';
+import CheckoutSettings from './tabs/CheckoutSettings.vue';
 import EmailSettings from'./tabs/EmailSettings.vue';
 import ReadingSettings from'./tabs/ReadingSettings.vue';
 import RefundPolicySettings from'./tabs/RefundPolicySettings.vue';
@@ -166,6 +168,8 @@ const availableTabs: Record<string, Tab & { module?: string }> = {
  permalinks: { id:'permalinks', label: $t('Permalinks'), component: PermalinkSettings },
  email: { id:'email', label: $t('Email'), component: EmailSettings },
  ecommerce: { id:'ecommerce', label: $t('Ecommerce'), component: EcommerceSettings },
+ invoices: { id: 'invoices', label: $t('Invoices'), component: InvoicesSettings },
+ checkout: { id: 'checkout', label: $t('Checkout & Coupons'), component: CheckoutSettings },
  refund_policy: { id:'refund_policy', label: $t('Refund Policy'), component: RefundPolicySettings },
  global_faqs: { id:'global_faqs', label: $t("Global FAQ's"), component: GlobalFaqSettings },
  global_tabs: { id:'global_tabs', label: $t('Global Tabs'), component: GlobalTabsSettings },

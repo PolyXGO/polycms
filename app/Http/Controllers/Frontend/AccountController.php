@@ -17,7 +17,7 @@ class AccountController extends Controller
     {
         $orders = \App\Models\Ecommerce\Order::where('user_id', Auth::id())
             ->orderBy('created_at', 'desc')
-            ->with(['items.product.media']) 
+            ->with(['items.product.media', 'items.service']) 
             ->paginate(10)->withQueryString();
             
         // Append localized frontend_url to products in order list
@@ -87,7 +87,7 @@ class AccountController extends Controller
             ->get();
 
         $subscriptions->each(function ($subscription) {
-            $subscription->append('order');
+            $subscription->append(['order', 'order_item']);
             $product = $this->resolveLocalizedProduct($subscription->product_id);
             if ($product) {
                 $product->append('frontend_url');
@@ -240,14 +240,15 @@ class AccountController extends Controller
         $licenses = \App\Models\Ecommerce\ProductLicense::whereHas('subscription', function($q) {
                 $q->where('user_id', Auth::id());
             })
-            ->with(['subscription', 'activations'])
+            ->with(['subscription.service', 'activations'])
             ->orderBy('created_at', 'desc')
             ->get();
 
         $licenses->each(function ($license) {
-            $license->append('order');
+            $license->append(['order', 'order_item']);
 
             if ($license->subscription) {
+                $license->subscription->append(['order', 'order_item']);
                 $product = $this->resolveLocalizedProduct($license->subscription->product_id);
                 if ($product) {
                     $product->append('frontend_url');
