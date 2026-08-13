@@ -13,10 +13,13 @@
     $showCategories = $attrs['show_categories'] ?? true;
     $showExcerpt = $attrs['show_excerpt'] ?? true;
 
-    $query = \App\Models\Product::where('status', 'published')
-        ->where('slug', 'not like', 'test-%')
-        ->where('locale', app()->getLocale())
+    $query = \App\Models\Product::where('locale', app()->getLocale())
         ->latest('published_at');
+
+    if (!is_admin_user()) {
+        $query->where('status', 'published');
+        $query->where('slug', 'not like', 'test-%');
+    }
 
     if (!empty($categoryId)) {
         // Resolve localized category if needed to match localized products

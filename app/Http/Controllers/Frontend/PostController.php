@@ -23,12 +23,17 @@ class PostController extends FrontendController
      */
     public function index(Request $request): View
     {
+        $isAdmin = $this->isAdmin($request);
+
         $query = Post::with([
             'user:id,name,email',
             'categories:categories.id,categories.name,categories.slug',
             'tags:post_tags.id,post_tags.name,post_tags.slug'
-        ])
-            ->where('status', 'published');
+        ]);
+
+        if (!$isAdmin) {
+            $query->where('status', 'published');
+        }
 
         // Type filter (post, page, news)
         if ($request->has('type')) {

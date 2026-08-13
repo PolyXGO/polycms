@@ -23,7 +23,11 @@
             @endif
             
             @php
-                $posts = $group->posts()->published()->orderBy('order')->orderBy('created_at', 'asc')->get();
+                $postsQuery = $group->posts();
+                if (!is_admin_user()) {
+                    $postsQuery->published();
+                }
+                $posts = $postsQuery->orderBy('order')->orderBy('created_at', 'asc')->get();
             @endphp
             
             @if($posts->isNotEmpty())
@@ -39,7 +43,12 @@
                         <li>
                             <a href="{{ $articleUrl }}" 
                                class="group block px-3 py-2 rounded-md text-sm transition-colors {{ $isActive ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 font-medium' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-white' }}">
-                                <span class="block">{{ $post->title }}</span>
+                                <span class="block flex items-center justify-between">
+                                    <span>{{ $post->title }}</span>
+                                    @if($post->status !== 'published')
+                                        <span class="inline-block px-1.5 py-0.5 text-[10px] font-semibold leading-none text-amber-700 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-300 rounded ml-2 uppercase">Draft</span>
+                                    @endif
+                                </span>
                                 @if($subtitle)
                                     <span class="block text-xs mt-0.5 {{ $isActive ? 'text-blue-400 dark:text-blue-500' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-500 dark:group-hover:text-slate-400' }}">
                                         {{ $subtitle }}

@@ -25,6 +25,7 @@ class SearchController extends FrontendController
         $search = trim((string) $request->get('search', $request->get('q', '')));
         $target = (string) $request->get('target', $request->get('type', 'all'));
         $locale = app()->getLocale();
+        $isAdmin = $this->isAdmin($request);
 
         $posts = collect();
         $products = collect();
@@ -35,15 +36,20 @@ class SearchController extends FrontendController
 
             // Search Posts & Pages if target is 'all' or 'posts'
             if (in_array($target, ['all', 'posts', 'post', 'pages', 'page'], true)) {
-                $posts = Post::query()
-                    ->where('status', 'published')
+                $postsQuery = Post::query()
                     ->where('locale', $locale)
                     ->whereIn('type', ['post', 'page'])
                     ->where(function ($q) use ($likePattern) {
                         $q->where('title', 'like', $likePattern)
                             ->orWhere('excerpt', 'like', $likePattern)
                             ->orWhere('content_html', 'like', $likePattern);
-                    })
+                    });
+
+                if (!$isAdmin) {
+                    $postsQuery->where('status', 'published');
+                }
+
+                $posts = $postsQuery
                     ->latest('published_at')
                     ->paginate(12, ['*'], 'posts_page')
                     ->appends($request->query());
@@ -51,16 +57,21 @@ class SearchController extends FrontendController
 
             // Search Products if target is 'all' or 'products'
             if (in_array($target, ['all', 'products', 'product'], true)) {
-                $products = Product::query()
-                    ->where('status', 'published')
+                $productsQuery = Product::query()
                     ->where('locale', $locale)
-                    ->where('slug', 'not like', 'test-%')
                     ->where(function ($q) use ($likePattern) {
                         $q->where('name', 'like', $likePattern)
                             ->orWhere('sku', 'like', $likePattern)
                             ->orWhere('short_description', 'like', $likePattern)
                             ->orWhere('description_html', 'like', $likePattern);
-                    })
+                    });
+
+                if (!$isAdmin) {
+                    $productsQuery->where('status', 'published');
+                    $productsQuery->where('slug', 'not like', 'test-%');
+                }
+
+                $products = $productsQuery
                     ->latest('published_at')
                     ->paginate(12, ['*'], 'products_page')
                     ->appends($request->query());

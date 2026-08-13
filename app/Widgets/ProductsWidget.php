@@ -18,10 +18,15 @@ class ProductsWidget
         $orderDirection = $this->sanitizeDirection($config['order_direction'] ?? 'desc');
         $categoryIds = $this->sanitizeIds($config['category_ids'] ?? []);
 
-        $query = Product::published()
-            ->where('locale', $instance->locale ?: app()->getLocale())
-            ->where('slug', 'not like', 'test-%')
-            ->orderBy($orderBy, $orderDirection);
+        $query = Product::query()
+            ->where('locale', $instance->locale ?: app()->getLocale());
+
+        if (!is_admin_user()) {
+            $query->published();
+            $query->where('slug', 'not like', 'test-%');
+        }
+
+        $query->orderBy($orderBy, $orderDirection);
 
         // Exclude currently viewed product and its translation group variants
         $currentProduct = view()->shared('product') ?? request()->route('product');

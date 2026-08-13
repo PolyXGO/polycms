@@ -18,10 +18,15 @@ class BlogPostsWidget
         $orderDirection = $this->sanitizeDirection($config['order_direction'] ?? 'desc');
         $categoryIds = $this->sanitizeIds($config['category_ids'] ?? []);
 
-        $query = Post::published()
+        $query = Post::query()
             ->where('locale', $instance->locale ?: app()->getLocale())
-            ->ofType('post')
-            ->orderBy($orderBy, $orderDirection);
+            ->ofType('post');
+
+        if (!is_admin_user()) {
+            $query->published();
+        }
+
+        $query->orderBy($orderBy, $orderDirection);
 
         if (!empty($categoryIds)) {
             $query->whereHas('categories', fn($q) => $q->whereIn('categories.id', $categoryIds));

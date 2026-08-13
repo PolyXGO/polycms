@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Frontend;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\Frontend\FrontendController;
 use App\Models\Language;
 use App\Models\Post;
 use App\Models\Product;
@@ -13,7 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
-class SearchSuggestionController extends Controller
+class SearchSuggestionController extends FrontendController
 {
     public function __invoke(Request $request): JsonResponse
     {
@@ -26,6 +26,7 @@ class SearchSuggestionController extends Controller
         $limit = max(1, min((int) $request->query('limit', 6), 10));
         $scope = (string) $request->query('scope', 'posts');
         $locale = $this->resolveLocale($request);
+        $isAdmin = $this->isAdmin($request);
         $safeQuery = str_replace(['%', '_'], ['\%', '\_'], $query);
         $like = "%{$safeQuery}%";
 
@@ -37,15 +38,20 @@ class SearchSuggestionController extends Controller
                 $types = ['post', 'page'];
             }
 
-            $posts = Post::query()
+            $postsQuery = Post::query()
                 ->inLocale($locale)
-                ->published()
                 ->whereIn('type', $types)
                 ->where(function ($builder) use ($like): void {
                     $builder->where('title', 'like', $like)
                         ->orWhere('excerpt', 'like', $like)
                         ->orWhere('content_html', 'like', $like);
-                })
+                });
+
+            if (!$isAdmin) {
+                $postsQuery->published();
+            }
+
+            $posts = $postsQuery
                 ->orderByDesc('published_at')
                 ->limit($limit)
                 ->get(['id', 'title', 'slug', 'type', 'excerpt']);
@@ -64,15 +70,20 @@ class SearchSuggestionController extends Controller
         if (in_array($scope, ['all', 'products'], true) && count($results) < $limit) {
             $remaining = $limit - count($results);
 
-            $products = Product::query()
+            $productsQuery = Product::query()
                 ->inLocale($locale)
-                ->published()
                 ->where(function ($builder) use ($like): void {
                     $builder->where('name', 'like', $like)
                         ->orWhere('sku', 'like', $like)
                         ->orWhere('short_description', 'like', $like)
                         ->orWhere('description_html', 'like', $like);
-                })
+                });
+
+            if (!$isAdmin) {
+                $productsQuery->published();
+            }
+
+            $products = $productsQuery
                 ->orderByDesc('published_at')
                 ->limit($remaining)
                 ->get(['id', 'name', 'slug', 'sku', 'short_description']);

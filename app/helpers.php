@@ -1499,3 +1499,55 @@ if (!function_exists('is_prefetch_request')) {
     }
 }
 
+if (!function_exists('is_admin_user')) {
+    /**
+     * Check if current user is an admin (session or Sanctum token via header/cookie/query)
+     */
+    function is_admin_user(?\Illuminate\Http\Request $request = null): bool
+    {
+        $request = $request ?? request();
+        if (!$request) {
+            return false;
+        }
+
+        // 1. Session check
+        $user = $request->user();
+        if ($user && method_exists($user, 'hasRole')) {
+            if ($user->hasRole('admin')) {
+                return true;
+            }
+        }
+
+        // 2. Sanctum Token check (header, query, cookie)
+        $token = null;
+        $authHeader = $request->header('Authorization');
+        if ($authHeader && str_starts_with($authHeader, 'Bearer ')) {
+            $token = substr($authHeader, 7);
+        }
+        if (!$token && $request->has('preview_token')) {
+            $token = $request->get('preview_token');
+        }
+        if (!$token) {
+            $token = $request->cookie('auth_token');
+        }
+
+        if ($token) {
+            try {
+                $token = trim($token);
+                $accessToken = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+                if ($accessToken) {
+                    $u = $accessToken->tokenable;
+                    if ($u instanceof \App\Models\User && method_exists($u, 'hasRole')) {
+                        return $u->hasRole('admin');
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Ignore invalid tokens
+            }
+        }
+
+        return false;
+    }
+}
+
+

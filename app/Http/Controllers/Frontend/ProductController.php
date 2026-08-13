@@ -26,11 +26,15 @@ class ProductController extends FrontendController
      */
     public function index(Request $request): View
     {
-        $query = Product::with(['categories', 'tags', 'media'])
-            ->where('status', 'published');
+        $isAdmin = $this->isAdmin($request);
+
+        $query = Product::with(['categories', 'tags', 'media']);
+
+        if (!$isAdmin) {
+            $query->where('status', 'published');
+        }
 
         // Hide test products for non-admin users
-        $isAdmin = $this->isAdmin($request);
         if (!$isAdmin && !app()->runningUnitTests()) {
             $query->where('slug', 'not like', 'test-%');
         }

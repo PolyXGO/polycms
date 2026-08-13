@@ -67,10 +67,14 @@ Hook::addAction('routes.frontend.register', function () {
                     }
 
                     // Fallback: find a post with this slug that has a flexidocs template
-                    $post = \App\Models\Post::with(['user', 'categories', 'tags', 'meta'])
-                        ->where('slug', $slug)
-                        ->where('status', 'published')
-                        ->first();
+                    $postQuery = \App\Models\Post::with(['user', 'categories', 'tags', 'meta'])
+                        ->where('slug', $slug);
+
+                    if (!is_admin_user($request)) {
+                        $postQuery->where('status', 'published');
+                    }
+
+                    $post = $postQuery->first();
 
                     if ($post && isFlexidocsTemplate($post->template_theme)) {
                         return app(\App\Http\Controllers\Frontend\PostController::class)
@@ -150,9 +154,11 @@ Hook::addFilter('seo.canonical_url', function ($url) {
     if ($routeName === 'theme.flexidocs.show') {
         $postSlug = $route->parameter('postSlug');
         if ($postSlug) {
-            $post = \App\Models\Post::where('slug', $postSlug)
-                ->where('status', 'published')
-                ->first();
+            $postQuery = \App\Models\Post::where('slug', $postSlug);
+            if (!is_admin_user()) {
+                $postQuery->where('status', 'published');
+            }
+            $post = $postQuery->first();
             if ($post) {
                 $customCanonical = $post->getMeta('canonical_url');
                 if (!empty($customCanonical)) {
@@ -169,10 +175,11 @@ Hook::addFilter('seo.canonical_url', function ($url) {
     if ($routeName === 'posts.show') {
         $postSlug = $route->parameter('slug');
         if ($postSlug) {
-            $post = \App\Models\Post::where('slug', $postSlug)
-                ->where('status', 'published')
-                ->with('categories')
-                ->first();
+            $postQuery = \App\Models\Post::where('slug', $postSlug)->with('categories');
+            if (!is_admin_user()) {
+                $postQuery->where('status', 'published');
+            }
+            $post = $postQuery->first();
             if ($post) {
                 // Check per-post canonical override first
                 $customCanonical = $post->getMeta('canonical_url');

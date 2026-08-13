@@ -5,23 +5,27 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Frontend;
 
 use App\Facades\Hook;
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\Frontend\FrontendController;
 use App\Models\Product;
 use App\Models\ProductBrand;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
-class BrandController extends Controller
+class BrandController extends FrontendController
 {
     public function show(string $slug, Request $request): View
     {
         $brand = ProductBrand::where('slug', $slug)->firstOrFail();
+        $isAdmin = $this->isAdmin($request);
 
         $query = Product::with(['categories', 'tags', 'brands'])
-            ->where('status', 'published')
             ->whereHas('brands', function ($q) use ($brand) {
                 $q->where('product_brands.id', $brand->id);
             });
+
+        if (!$isAdmin) {
+            $query->where('status', 'published');
+        }
 
         $sortBy = $request->get('sort_by', 'created_at');
         $sortOrder = $request->get('sort_order', 'desc');

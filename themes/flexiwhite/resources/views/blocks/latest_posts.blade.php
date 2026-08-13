@@ -15,9 +15,12 @@
     $showDate = $attrs['show_date'] ?? true;
 
     $query = \App\Models\Post::where('type', 'post')
-        ->where('status', 'published')
         ->where('locale', app()->getLocale())
         ->latest('published_at');
+
+    if (!is_admin_user()) {
+        $query->where('status', 'published');
+    }
 
     if (!empty($categoryId)) {
         // Resolve localized category if needed to match localized posts

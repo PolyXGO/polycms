@@ -15,9 +15,14 @@ class RecentPostsWidget
         $limit = $config['limit'] ?? 5;
         $title = $instance->title ?: _l('Recent Posts');
 
-        $posts = Post::published()
-            ->where('locale', $instance->locale ?: app()->getLocale())
-            ->orderBy('published_at', 'desc')
+        $query = Post::query()
+            ->where('locale', $instance->locale ?: app()->getLocale());
+
+        if (!is_admin_user()) {
+            $query->published();
+        }
+
+        $posts = $query->orderBy('published_at', 'desc')
             ->limit($limit)
             ->get();
 

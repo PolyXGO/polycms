@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Frontend;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\Frontend\FrontendController;
 use App\Models\Category;
 use App\Models\Post;
 use App\Models\Product;
@@ -13,7 +13,7 @@ use App\Services\TemplateResolver;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
-class CategoryController extends Controller
+class CategoryController extends FrontendController
 {
     public function __construct(
         protected TemplateResolver $templateResolver,
@@ -24,6 +24,7 @@ class CategoryController extends Controller
     public function show(string $slug, Request $request): View
     {
         $category = Category::where('slug', $slug)->firstOrFail();
+        $isAdmin = $this->isAdmin($request);
 
         $data = [
             'category' => $category,
@@ -41,10 +42,13 @@ class CategoryController extends Controller
                     $q->select(['media.id', 'media.name', 'media.file_name', 'media.disk', 'media.path', 'media.mime_type', 'media.size', 'media.type', 'media.alt_text', 'media.metadata']);
                 }
             ])
-                ->where('status', 'published')
                 ->whereHas('categories', function ($q) use ($category) {
                     $q->where('categories.id', $category->id);
                 });
+
+            if (!$isAdmin) {
+                $query->where('status', 'published');
+            }
 
             // Sort
             $sortBy = $request->get('sort_by', 'created_at');
@@ -64,11 +68,14 @@ class CategoryController extends Controller
                 'categories:categories.id,categories.name,categories.slug',
                 'tags:post_tags.id,post_tags.name,post_tags.slug'
             ])
-                ->where('status', 'published')
                 ->where('type', 'post')
                 ->whereHas('categories', function ($q) use ($category) {
                     $q->where('categories.id', $category->id);
                 });
+
+            if (!$isAdmin) {
+                $query->where('status', 'published');
+            }
 
             // Sort
             $sortBy = $request->get('sort_by', 'published_at');
@@ -110,34 +117,43 @@ class CategoryController extends Controller
 
             // Load posts for each child category
             foreach ($childCategories as $child) {
+                $childPostsQuery = Post::with(['meta'])
+                    ->where('type', 'post')
+                    ->whereHas('categories', fn($q) => $q->where('categories.id', $child->id));
+
+                if (!$isAdmin) {
+                    $childPostsQuery->where('status', 'published');
+                }
+
                 $child->setRelation('groupPosts',
-                    Post::with(['meta'])
-                        ->where('status', 'published')
-                        ->where('type', 'post')
-                        ->whereHas('categories', fn($q) => $q->where('categories.id', $child->id))
-                        ->orderBy('created_at', 'asc')
-                        ->get()
+                    $childPostsQuery->orderBy('created_at', 'asc')->get()
                 );
             }
 
             $data['childCategories'] = $childCategories;
 
             // Also load posts directly in this category (not in any child)
-            $directPosts = Post::with(['meta'])
-                ->where('status', 'published')
+            $directPostsQuery = Post::with(['meta'])
                 ->where('type', 'post')
-                ->whereHas('categories', fn($q) => $q->where('categories.id', $category->id))
-                ->orderBy('created_at', 'asc')
-                ->get();
-            $data['directPosts'] = $directPosts;
+                ->whereHas('categories', fn($q) => $q->where('categories.id', $category->id));
+
+            if (!$isAdmin) {
+                $directPostsQuery->where('status', 'published');
+            }
+
+            $data['directPosts'] = $directPostsQuery->orderBy('created_at', 'asc')->get();
             
             // Handle loading a specific article directly within the category context
             if (request()->has('article')) {
-                $activePost = Post::with(['meta', 'user'])
+                $activePostQuery = Post::with(['meta', 'user'])
                     ->where('slug', request('article'))
-                    ->where('status', 'published')
-                    ->where('type', 'post')
-                    ->first();
+                    ->where('type', 'post');
+
+                if (!$isAdmin) {
+                    $activePostQuery->where('status', 'published');
+                }
+
+                $activePost = $activePostQuery->first();
                 if ($activePost) {
                     $data['activePost'] = $activePost;
                 }
@@ -162,12 +178,16 @@ class CategoryController extends Controller
     public function showProductCategory(string $slug, Request $request): View
     {
         $category = ProductCategory::where('slug', $slug)->firstOrFail();
+        $isAdmin = $this->isAdmin($request);
 
         $query = Product::with(['categories', 'tags'])
-            ->where('status', 'published')
             ->whereHas('categories', function ($q) use ($category) {
                 $q->where('product_categories.id', $category->id);
             });
+
+        if (!$isAdmin) {
+            $query->where('status', 'published');
+        }
 
         $sortBy = $request->get('sort_by', 'created_at');
         $sortOrder = $request->get('sort_order', 'desc');

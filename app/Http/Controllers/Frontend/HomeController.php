@@ -79,23 +79,33 @@ class HomeController extends FrontendController
         }
 
         // Default: Get recent posts
-        $posts = Post::with(['user:id,name,email', 'categories:categories.id,categories.name,categories.slug'])
-            ->where('status', 'published')
-            ->where('type', 'post')
+        $postsQuery = Post::with(['user:id,name,email', 'categories:categories.id,categories.name,categories.slug'])
+            ->where('type', 'post');
+
+        if (!$isAdmin) {
+            $postsQuery->where('status', 'published');
+        }
+
+        $posts = $postsQuery
             ->orderBy('published_at', 'desc')
             ->orderBy('created_at', 'desc')
             ->limit(6)
             ->get();
 
         // Get featured products
-        $products = Product::with([
+        $productsQuery = Product::with([
             'categories:categories.id,categories.name,categories.slug',
             'media' => function ($q) {
                 $q->select(['media.id', 'media.name', 'media.file_name', 'media.disk', 'media.path', 'media.mime_type', 'media.size', 'media.type', 'media.alt_text', 'media.metadata']);
             }
         ])
-            ->where('status', 'published')
-            ->where('featured', true)
+            ->where('featured', true);
+
+        if (!$isAdmin) {
+            $productsQuery->where('status', 'published');
+        }
+
+        $products = $productsQuery
             ->orderBy('created_at', 'desc')
             ->limit(6)
             ->get();
