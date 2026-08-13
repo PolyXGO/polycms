@@ -235,11 +235,47 @@ class Product extends Model
     }
 
     /**
+     * Accessor for media relation with automatic translation fallback.
+     * If the local translation has 0 or only 1 image (no full gallery),
+     * fallback to the main translation group product's full gallery.
+     */
+    public function getMediaAttribute()
+    {
+        $media = $this->getRelationValue('media');
+        $localCount = $media ? $media->count() : 0;
+
+        // Fallback to main translation group product's media if local translation has no full gallery
+        if ($localCount <= 1 && !empty($this->translation_group_id)) {
+            $mainProduct = static::withoutGlobalScope('locale')
+                ->where('translation_group_id', $this->translation_group_id)
+                ->where('id', '!=', $this->id)
+                ->whereHas('media')
+                ->with('media')
+                ->first();
+
+            if ($mainProduct) {
+                // Use getRelationValue/media()->get() directly to prevent infinite accessor recursion
+                $mainMedia = $mainProduct->getRelationValue('media') ?? $mainProduct->media()->get();
+                if ($mainMedia && $mainMedia->count() > $localCount) {
+                    $this->setRelation('media', $mainMedia);
+                    return $mainMedia;
+                }
+            }
+        }
+
+        return $media ?? collect();
+    }
+
+    /**
      * Get the primary image
      */
     public function primaryImage(): ?Media
     {
-        return $this->media()->wherePivot('is_primary', true)->first();
+        $primary = $this->media()->wherePivot('is_primary', true)->first();
+        if (!$primary && $this->media->isNotEmpty()) {
+            $primary = $this->media->firstWhere('pivot.is_primary', true) ?? $this->media->first();
+        }
+        return $primary;
     }
 
     /**

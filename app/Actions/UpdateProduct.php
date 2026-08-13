@@ -98,11 +98,11 @@ class UpdateProduct
                     ->render($data['description_blocks']);
             }
 
-            // Preserve external sales & rating stats in settings if present on model
+            // Preserve external sales & rating stats in settings if present on model and not explicitly provided in payload
             if (isset($data['settings']) && is_array($data['settings'])) {
                 $existingSettings = $product->settings ?? [];
                 foreach (['external_sales', 'external_rating', 'external_rating_count'] as $statKey) {
-                    if (isset($existingSettings[$statKey]) && (!isset($data['settings'][$statKey]) || $data['settings'][$statKey] === 0 || $data['settings'][$statKey] === '0')) {
+                    if (isset($existingSettings[$statKey]) && !array_key_exists($statKey, $data['settings'])) {
                         $data['settings'][$statKey] = $existingSettings[$statKey];
                     }
                 }

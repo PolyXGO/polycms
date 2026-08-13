@@ -39,17 +39,23 @@
  <!-- Gallery Section -->
  <section class="space-y-3">
  <header class="flex items-center justify-between">
+ <div class="flex items-center gap-2">
  <h3 class="text-sm font-semibold text-admin-theme-text uppercase tracking-wider">{{ $t('Gallery') }}</h3>
+ <span v-if="galleryImagesValue.length" class="px-2 py-0.5 text-xs font-semibold bg-admin-theme-border/60 text-admin-theme-text-muted rounded-full">
+ {{ galleryImagesValue.length }}
+ </span>
+ </div>
  <button type="button" class="px-3 py-1.5 bg-admin-theme-primary hover:bg-admin-theme-primary-hover text-admin-theme-primary-content rounded-lg font-semibold transition-colors text-xs" @click="helpers.openMediaPicker?.('gallery')">
  {{ $t('Add to Gallery') }}
  </button>
  </header>
- 
- <div v-if="galleryImagesValue.length" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+
+ <div v-if="galleryImagesValue.length" class="max-h-[380px] overflow-y-auto pr-1 space-y-2 custom-scrollbar">
+ <div class="grid grid-cols-4 gap-2">
  <div
  v-for="(image, index) in galleryImagesValue"
  :key="`${image.id}-${index}`"
- class="group relative aspect-square rounded-xl overflow-hidden border border-admin-theme-border bg-admin-theme-base cursor-move"
+ class="group relative aspect-[4/3] rounded-lg overflow-hidden border border-admin-theme-border bg-admin-theme-base cursor-move transition-all hover:border-admin-theme-primary"
  :class="{'opacity-50': draggingIndex === index }"
  draggable="true"
  @dragstart="onDragStart($event, index as number)"
@@ -58,36 +64,40 @@
  @dragend="onDragEnd"
  >
  <img :src="image.url" :alt="image.name" class="w-full h-full object-cover pointer-events-none" />
- <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+ <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 p-0.5">
  <button 
  type="button" 
- class="w-8 h-8 flex items-center justify-center bg-white/20 hover:bg-white/40 text-white rounded-lg backdrop-blur-sm transition-colors disabled:opacity-20 hidden sm:flex"
- @click="helpers.moveGalleryImage?.(index as number,'up')" 
+ class="w-6 h-6 flex items-center justify-center bg-white/20 hover:bg-white/40 text-white rounded transition-colors disabled:opacity-20"
+ @click="helpers.moveGalleryImage?.(index as number, 'up')" 
  :disabled="index === 0"
+ :title="$t('Move up')"
  >
- <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
- <path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd" />
+ <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+ <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
  </svg>
  </button>
  <button
  type="button"
- class="w-8 h-8 flex items-center justify-center bg-white/20 hover:bg-white/40 text-white rounded-lg backdrop-blur-sm transition-colors disabled:opacity-20 hidden sm:flex"
- @click="helpers.moveGalleryImage?.(index as number,'down')"
+ class="w-6 h-6 flex items-center justify-center bg-white/20 hover:bg-white/40 text-white rounded transition-colors disabled:opacity-20"
+ @click="helpers.moveGalleryImage?.(index as number, 'down')"
  :disabled="index === galleryImagesValue.length - 1"
+ :title="$t('Move down')"
  >
- <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
- <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+ <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+ <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
  </svg>
  </button>
  <button 
  type="button" 
- class="w-8 h-8 flex items-center justify-center bg-red-500/80 hover:bg-red-600 text-white rounded-lg backdrop-blur-sm transition-colors"
+ class="w-6 h-6 flex items-center justify-center bg-red-500/80 hover:bg-red-600 text-white rounded transition-colors"
  @click="helpers.removeGalleryImage?.(index as number)"
+ :title="$t('Remove image')"
  >
- <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+ <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
  <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
  </svg>
  </button>
+ </div>
  </div>
  </div>
  </div>

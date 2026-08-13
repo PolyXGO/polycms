@@ -271,9 +271,14 @@
             <div class="single-product-grid">
                     <!-- Product Image Gallery -->
                     <div>
-                        @if($product->media && $product->media->count() > 0)
-                            <div class="single-product-image-wrap" style="position: relative;">
-                                <img id="main-product-image" src="{{ $product->featured_image_url ?? '' }}" alt="{{ $product->name }}" class="single-product-image" {!! media_lazy_attr() !!}>
+                        @php
+                            $displayImage = $product->featured_image_url;
+                            $hasGallery = $product->media && $product->media->count() > 0;
+                        @endphp
+
+                        @if(!empty($displayImage))
+                            <div class="single-product-image-wrap" style="position: relative; {{ $hasGallery ? 'cursor: pointer;' : '' }}" {!! $hasGallery ? 'data-open-screenshots' : '' !!} title="{{ $hasGallery ? _l('Click to view full gallery') : $product->name }}">
+                                <img id="main-product-image" src="{{ $displayImage }}" alt="{{ $product->name }}" class="single-product-image" {!! media_lazy_attr() !!}>
                                 @php
                                     $quickEditOptions = [
                                         [
@@ -288,12 +293,12 @@
 
                                 @if(!empty($quickEditOptions))
                                     @if(count($quickEditOptions) === 1)
-                                        <a href="{{ $quickEditOptions[0]['url'] }}" target="_blank" class="admin-quick-edit-btn" title="{{ $quickEditOptions[0]['label'] }}" style="top: 12px; right: 12px; width: 34px; height: 34px;">
+                                        <a href="{{ $quickEditOptions[0]['url'] }}" target="_blank" class="admin-quick-edit-btn" title="{{ $quickEditOptions[0]['label'] }}" style="top: 12px; right: 12px; width: 34px; height: 34px;" onclick="event.stopPropagation();">
                                             <i class="{{ $quickEditOptions[0]['icon'] ?? 'fas fa-pencil-alt' }}" style="font-size: 0.85rem;"></i>
                                         </a>
                                     @else
-                                        <div class="admin-quick-edit-dropdown" style="position: absolute; top: 12px; right: 12px; z-index: 100;">
-                                            <button type="button" class="admin-quick-edit-btn" title="{{ _l('Edit Options') }}" style="width: 34px; height: 34px; border: none; cursor: pointer;" onclick="const m = this.nextElementSibling; m.style.display = m.style.display === 'none' ? 'block' : 'none';">
+                                        <div class="admin-quick-edit-dropdown" style="position: absolute; top: 12px; right: 12px; z-index: 100;" onclick="event.stopPropagation();">
+                                            <button type="button" class="admin-quick-edit-btn" title="{{ _l('Edit Options') }}" style="width: 34px; height: 34px; border: none; cursor: pointer;" onclick="event.stopPropagation(); const m = this.nextElementSibling; m.style.display = m.style.display === 'none' ? 'block' : 'none';">
                                                 <i class="fas fa-pencil-alt" style="font-size: 0.85rem;"></i>
                                             </button>
                                             <div class="admin-quick-edit-menu" style="display: none; position: absolute; right: 0; top: 40px; background: #fff; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); min-width: 170px; padding: 6px 0; border: 1px solid #e2e8f0; z-index: 110;">
@@ -309,14 +314,72 @@
                                 @endif
                             </div>
                             
-                            @if($product->media->count() > 1)
-                                <div class="single-product-thumbnails">
-                                    @foreach($product->media as $index => $media)
-                                        <button onclick="document.getElementById('main-product-image').src='{{ $media->url ?? '' }}'" class="single-product-thumbnail-btn" aria-label="{{ _l('View image') }} {{ $index + 1 }}">
-                                            <img src="{{ $media->thumbnail_url ?? $media->url ?? '' }}" alt="{{ $product->name }} thumbnail" class="single-product-thumbnail-img" {!! media_lazy_attr() !!}>
-                                        </button>
-                                    @endforeach
+                            @if($product->media && $product->media->count() > 1)
+                                <div class="single-product-thumbnails-wrap">
+                                    <button type="button" class="single-product-thumb-nav prev" onclick="scrollProductThumbs(-1)" aria-label="{{ _l('Previous image') }}">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <div class="single-product-thumbnails" id="product-thumbnails-scroll">
+                                        @foreach($product->media as $index => $media)
+                                            <button type="button" 
+                                                    onclick="switchMainProductImage('{{ $media->url ?? '' }}', this, {{ $index }})" 
+                                                    class="single-product-thumbnail-btn {{ $index === 0 ? 'active' : '' }}" 
+                                                    data-media-index="{{ $index }}"
+                                                    aria-label="{{ _l('View image') }} {{ $index + 1 }}">
+                                                <img src="{{ $media->thumbnail_url ?? $media->url ?? '' }}" alt="{{ $product->name }} thumbnail" class="single-product-thumbnail-img" {!! media_lazy_attr() !!}>
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                    <button type="button" class="single-product-thumb-nav next" onclick="scrollProductThumbs(1)" aria-label="{{ _l('Next image') }}">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
                                 </div>
+                                <script>
+                                    window.currentProductMediaIndex = 0;
+                                    function switchMainProductImage(url, btn, index) {
+                                        const mainImg = document.getElementById('main-product-image');
+                                        if (mainImg && url) {
+                                            mainImg.style.opacity = '0.7';
+                                            mainImg.src = url;
+                                            setTimeout(() => { mainImg.style.opacity = '1'; }, 100);
+                                        }
+                                        const wrap = btn.closest('.single-product-thumbnails-wrap');
+                                        if (wrap) {
+                                            wrap.querySelectorAll('.single-product-thumbnail-btn').forEach(b => b.classList.remove('active'));
+                                            btn.classList.add('active');
+                                            
+                                            // Smoothly scroll clicked thumbnail into center view
+                                            if (typeof btn.scrollIntoView === 'function') {
+                                                btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                                            }
+                                        }
+                                        if (typeof index === 'number') {
+                                            window.currentProductMediaIndex = index;
+                                        }
+                                    }
+                                    function scrollProductThumbs(direction) {
+                                        const scrollContainer = document.getElementById('product-thumbnails-scroll');
+                                        if (!scrollContainer) return;
+
+                                        const activeBtn = scrollContainer.querySelector('.single-product-thumbnail-btn.active');
+                                        const allBtns = Array.from(scrollContainer.querySelectorAll('.single-product-thumbnail-btn'));
+
+                                        if (activeBtn && allBtns.length > 0) {
+                                            const currentIndex = allBtns.indexOf(activeBtn);
+                                            let nextIndex = currentIndex + (direction * 4); // Jump 4 items
+                                            if (nextIndex < 0) nextIndex = 0;
+                                            if (nextIndex >= allBtns.length) nextIndex = allBtns.length - 1;
+
+                                            if (allBtns[nextIndex]) {
+                                                allBtns[nextIndex].click();
+                                                return;
+                                            }
+                                        }
+
+                                        const scrollAmount = 320;
+                                        scrollContainer.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
+                                    }
+                                </script>
                             @endif
                         @else
                             <div class="single-product-no-image">
@@ -2355,8 +2418,30 @@
         const screenshotsModal = document.getElementById('screenshots-modal');
         if (!screenshotsModal) return;
 
-        const openModal = (modal) => {
+        // Screenshot modal viewer
+        const thumbs = Array.from(document.querySelectorAll('[data-modal-thumb-index]'));
+        const mainImage = document.getElementById('modal-screenshot-image');
+        const galleryUrls = @json($galleryItems->pluck('url')->values());
+        let active = 0;
+
+        const setScreenshot = (index) => {
+            if (!galleryUrls.length || !mainImage) return;
+            if (index < 0) index = galleryUrls.length - 1;
+            if (index >= galleryUrls.length) index = 0;
+            active = index;
+            mainImage.src = galleryUrls[active];
+            thumbs.forEach((thumb, i) => thumb.classList.toggle('active', i === active));
+
+            // Auto scroll modal active thumbnail into view
+            if (thumbs[active] && typeof thumbs[active].scrollIntoView === 'function') {
+                thumbs[active].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            }
+        };
+
+        const openModal = (modal, targetIndex) => {
             if (!modal) return;
+            const initialIdx = (typeof targetIndex === 'number') ? targetIndex : (window.currentProductMediaIndex || 0);
+            setScreenshot(initialIdx);
             modal.classList.add('is-open');
             modal.setAttribute('aria-hidden', 'false');
             document.body.style.overflow = 'hidden';
@@ -2370,8 +2455,11 @@
         };
 
         document.querySelectorAll('[data-open-screenshots]').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                openModal(screenshotsModal);
+            btn.addEventListener('click', (e) => {
+                if (e.target.closest('.admin-quick-edit-dropdown') || e.target.closest('.admin-quick-edit-btn')) {
+                    return;
+                }
+                openModal(screenshotsModal, window.currentProductMediaIndex || 0);
             });
         });
 
@@ -2386,21 +2474,6 @@
                 closeModal(screenshotsModal);
             }
         });
-
-        // Screenshot modal viewer
-        const thumbs = Array.from(document.querySelectorAll('[data-modal-thumb-index]'));
-        const mainImage = document.getElementById('modal-screenshot-image');
-        const galleryUrls = @json($galleryItems->pluck('url')->values());
-        let active = 0;
-
-        const setScreenshot = (index) => {
-            if (!galleryUrls.length || !mainImage) return;
-            if (index < 0) index = galleryUrls.length - 1;
-            if (index >= galleryUrls.length) index = 0;
-            active = index;
-            mainImage.src = galleryUrls[active];
-            thumbs.forEach((thumb, i) => thumb.classList.toggle('active', i === active));
-        };
 
         thumbs.forEach((thumb) => {
             thumb.addEventListener('click', () => {

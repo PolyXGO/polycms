@@ -168,13 +168,14 @@ class ProductController extends Controller
         $categoryIds = $data['categories'] ?? [];
         $tagIds = $data['tags'] ?? [];
         $brandIds = $this->supportsBrands() ? ($data['brands'] ?? []) : [];
-        $mediaIds = $data['media_ids'] ?? [];
+        $mediaService = app(\App\Services\MediaService::class);
+        $mediaIds = $mediaService->resolveMediaIds($request->all(), $request->user()?->id) ?? [];
 
         // Set user_id
         $data['user_id'] = $request->user()->id;
 
         // Remove from main data
-        unset($data['categories'], $data['tags'], $data['media_ids'], $data['brands']);
+        unset($data['categories'], $data['tags'], $data['media_ids'], $data['brands'], $data['featured_image'], $data['gallery']);
 
         $product = $createProduct->execute($data, $categoryIds, $tagIds, $mediaIds, $brandIds);
 
@@ -213,10 +214,11 @@ class ProductController extends Controller
         $categoryIds = $data['categories'] ?? null;
         $tagIds = $data['tags'] ?? null;
         $brandIds = $this->supportsBrands() ? ($data['brands'] ?? null) : null;
-        $mediaIds = $data['media_ids'] ?? null;
+        $mediaService = app(\App\Services\MediaService::class);
+        $mediaIds = $mediaService->resolveMediaIds($request->all(), $request->user()?->id);
 
         // Remove from main data
-        unset($data['categories'], $data['tags'], $data['media_ids'], $data['brands']);
+        unset($data['categories'], $data['tags'], $data['media_ids'], $data['brands'], $data['featured_image'], $data['gallery']);
 
         $product = $updateProduct->execute($product, $data, $categoryIds, $tagIds, $mediaIds, $brandIds);
 

@@ -478,5 +478,260 @@ class MediaService
 
         return 'other';
     }
+
+    /**
+     * Resolve media IDs from explicit media_ids array or automatically from
+     * featured_image (URL/path/filename) and gallery (array of URLs/paths/filenames).
+     *
+     * @param array $data
+     * @param int|null $userId
+     * @return array|null Null if neither media_ids nor featured_image/gallery provided
+     */
+    public function resolveMediaIds(array $data, ?int $userId = null): ?array
+    {
+        if (isset($data['media_ids']) && is_array($data['media_ids'])) {
+            return array_map('intval', array_filter($data['media_ids']));
+        }
+
+        $featured = $data['featured_image'] ?? null;
+        $gallery = $data['gallery'] ?? null;
+
+        if ($featured === null && $gallery === null) {
+            return null;
+        }
+
+        $mediaIds = [];
+
+        // Resolve Featured Image
+        if (!empty($featured) && is_string($featured)) {
+            $fMedia = $this->findOrCreateFromUrlOrPath($featured, $userId);
+            if ($fMedia) {
+                $mediaIds[] = (int) $fMedia->id;
+            }
+        }
+
+        // Resolve Gallery Images
+        if (!empty($gallery) && is_array($gallery)) {
+            foreach ($gallery as $item) {
+                if (empty($item)) continue;
+                if (is_numeric($item)) {
+                    $m = Media::find((int)$item);
+                    if ($m && !in_array((int)$m->id, $mediaIds, true)) {
+                        $mediaIds[] = (int)$m->id;
+                    }
+                } elseif (is_string($item)) {
+                    $gMedia = $this->findOrCreateFromUrlOrPath($item, $userId);
+                    if ($gMedia && !in_array((int)$gMedia->id, $mediaIds, true)) {
+                        $mediaIds[] = (int)$gMedia->id;
+                    }
+                }
+            }
+        }
+
+        return $mediaIds;
+    }
+
+    /**
+     * Find existing Media record by filename/name/path/url or download/register a new one.
+     */
+    public function findOrCreateFromUrlOrPath(string $urlOrPath, ?int $userId = null): ?Media
+    {
+        $urlOrPath = trim($urlOrPath);
+        if (empty($urlOrPath)) {
+            return null;
+        }
+
+        $filename = basename(parse_url($urlOrPath, PHP_URL_PATH) ?? $urlOrPath);
+        $name = pathinfo($filename, PATHINFO_FILENAME);
+
+        // Check existing by file_name, name, or path
+        $existing = Media::where('file_name', $filename)
+            ->orWhere('name', $name)
+            ->orWhere('path', 'like', "%{$filename}")
+            ->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        // HTTP/HTTPS URL
+        if (str_starts_with($urlOrPath, 'http://') || str_starts_with($urlOrPath, 'https://')) {
+            return $this->downloadAndRegisterFromUrl($urlOrPath, $userId);
+        }
+
+        // Local file
+        if (file_exists($urlOrPath)) {
+            return $this->registerLocalFile($urlOrPath, $userId);
+        }
+
+        return null;
+    }
+
+    /**
+     * Download an image from an HTTP/HTTPS URL and register it into Media Library.
+     */
+    public function downloadAndRegisterFromUrl(string $url, ?int $userId = null): ?Media
+    {
+        try {
+            $response = \Illuminate\Support\Facades\Http::withoutVerifying()
+                ->withHeaders([
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) PolyCMS/3.2',
+                    'Accept' => 'image/*,*/*'
+                ])
+                ->timeout(30)
+                ->get($url);
+
+            if (!$response->successful()) {
+                \Log::warning("Failed to download media image from URL '$url': HTTP {$response->status()}");
+                return null;
+            }
+
+            $content = $response->body();
+            if (empty($content)) {
+                return null;
+            }
+
+            $urlPath = parse_url($url, PHP_URL_PATH) ?? '';
+            $filename = basename($urlPath) ?: ('media_' . md5($url) . '.jpg');
+            if (!str_contains($filename, '.')) {
+                $filename .= '.jpg';
+            }
+
+            $diskName = config('filesystems.default', 'public');
+            $uploadPath = 'media/' . date('Y/m');
+            $disk = Storage::disk($diskName);
+
+            $sanitizedFileName = $this->prepareUploadFileName($filename, $uploadPath, $diskName);
+            $relativePath = $uploadPath . '/' . $sanitizedFileName;
+
+            $disk->put($relativePath, $content);
+
+            $mimeType = $response->header('Content-Type');
+            if (empty($mimeType) || !str_contains($mimeType, '/')) {
+                $ext = strtolower(pathinfo($sanitizedFileName, PATHINFO_EXTENSION));
+                $mimeType = match($ext) {
+                    'png' => 'image/png',
+                    'gif' => 'image/gif',
+                    'webp' => 'image/webp',
+                    'svg' => 'image/svg+xml',
+                    default => 'image/jpeg',
+                };
+            }
+
+            $type = $this->determineMediaType($mimeType);
+            $size = strlen($content);
+
+            $metadata = [];
+            $width = null;
+            $height = null;
+
+            if ($type === 'image') {
+                try {
+                    $imagePath = $disk->path($relativePath);
+                    if (file_exists($imagePath)) {
+                        $imageInfo = @getimagesize($imagePath);
+                        if ($imageInfo !== false) {
+                            $width = $imageInfo[0];
+                            $height = $imageInfo[1];
+                            $metadata = [
+                                'width' => $width,
+                                'height' => $height,
+                                'format' => $imageInfo['mime'] ?? $mimeType,
+                            ];
+                        }
+                    }
+                } catch (\Exception $e) {
+                    // Ignore metadata error
+                }
+            }
+
+            $userId = $userId ?? 1;
+
+            $media = Media::create([
+                'user_id' => $userId,
+                'name' => pathinfo($sanitizedFileName, PATHINFO_FILENAME),
+                'file_name' => $sanitizedFileName,
+                'mime_type' => $mimeType,
+                'disk' => $diskName,
+                'path' => $relativePath,
+                'size' => $size,
+                'type' => $type,
+                'metadata' => $metadata,
+                'width' => $width,
+                'height' => $height,
+            ]);
+
+            if ($media && $type === 'image') {
+                $this->generateThumbnails($media);
+            }
+
+            return $media;
+        } catch (\Exception $e) {
+            \Log::error("Error in downloadAndRegisterFromUrl ($url): " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Register a local file into Media Library.
+     */
+    public function registerLocalFile(string $localPath, ?int $userId = null): ?Media
+    {
+        try {
+            $filename = basename($localPath);
+            $diskName = config('filesystems.default', 'public');
+            $uploadPath = 'media/' . date('Y/m');
+            $disk = Storage::disk($diskName);
+
+            $sanitizedFileName = $this->prepareUploadFileName($filename, $uploadPath, $diskName);
+            $relativePath = $uploadPath . '/' . $sanitizedFileName;
+
+            $disk->put($relativePath, file_get_contents($localPath));
+
+            $mimeType = mime_content_type($localPath) ?: 'image/jpeg';
+            $type = $this->determineMediaType($mimeType);
+            $size = filesize($localPath) ?: 0;
+
+            $metadata = [];
+            $width = null;
+            $height = null;
+
+            if ($type === 'image') {
+                $imageInfo = @getimagesize($localPath);
+                if ($imageInfo !== false) {
+                    $width = $imageInfo[0];
+                    $height = $imageInfo[1];
+                    $metadata = [
+                        'width' => $width,
+                        'height' => $height,
+                        'format' => $imageInfo['mime'] ?? $mimeType,
+                    ];
+                }
+            }
+
+            $media = Media::create([
+                'user_id' => $userId ?? 1,
+                'name' => pathinfo($sanitizedFileName, PATHINFO_FILENAME),
+                'file_name' => $sanitizedFileName,
+                'mime_type' => $mimeType,
+                'disk' => $diskName,
+                'path' => $relativePath,
+                'size' => $size,
+                'type' => $type,
+                'metadata' => $metadata,
+                'width' => $width,
+                'height' => $height,
+            ]);
+
+            if ($media && $type === 'image') {
+                $this->generateThumbnails($media);
+            }
+
+            return $media;
+        } catch (\Exception $e) {
+            \Log::error("Error in registerLocalFile ($localPath): " . $e->getMessage());
+            return null;
+        }
+    }
 }
 
