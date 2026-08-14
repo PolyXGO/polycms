@@ -2,8 +2,74 @@
   <!-- Settings Mode (for sidebar) -->
   <div v-if="mode === 'settings'" class="latest-products-block-settings space-y-4">
     <div class="form-group">
-      <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Heading</label>
-      <input v-model="state.heading" type="text" class="w-full bg-admin-theme-base border-admin-theme-border rounded-lg p-2 text-sm focus:ring-2 focus:ring-admin-theme-primary" placeholder="Featured Products">
+      <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Heading (Optional - Leave blank to hide)</label>
+      <input v-model="state.heading" type="text" class="w-full bg-admin-theme-base border-admin-theme-border rounded-lg p-2 text-sm focus:ring-2 focus:ring-admin-theme-primary" placeholder="Featured Products (leave empty to hide)">
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <div class="form-group">
+        <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Filter Products By</label>
+        <select v-model="state.filter_by" class="w-full bg-admin-theme-base border-admin-theme-border rounded-lg p-2 text-sm focus:ring-2 focus:ring-admin-theme-primary font-medium">
+          <option value="featured">★ Featured (with Backfill)</option>
+          <option value="best_sellers">🔥 Best Sellers</option>
+          <option value="best_rated">★ Best Rated</option>
+          <option value="trending">⚡ Trending</option>
+          <option value="newest">✨ Newest</option>
+          <option value="price_asc">💵 Price: Low to High</option>
+          <option value="price_desc">💰 Price: High to Low</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Layout Mode</label>
+        <select v-model="state.layout" class="w-full bg-admin-theme-base border-admin-theme-border rounded-lg p-2 text-sm focus:ring-2 focus:ring-admin-theme-primary font-medium">
+          <option value="slider">Touch Slider (Carousel)</option>
+          <option value="grid">Standard Grid</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Slider Specific Controls (Autoplay, Continuous Motion, Direction, Speed, Pause on Hover) -->
+    <div v-if="state.layout === 'slider'" class="p-3 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-200/80 dark:border-gray-700/60 space-y-3">
+      <div class="text-[10px] font-bold uppercase tracking-wider text-admin-theme-primary dark:text-indigo-400">Slider Autoplay Settings</div>
+      <FormToggle
+        name="slider_autoplay"
+        v-model="state.slider_autoplay"
+        size="sm"
+        label="Enable Auto Slider (Autoplay)"
+      />
+      <div v-if="state.slider_autoplay" class="space-y-3 pt-1">
+        <div class="grid grid-cols-2 gap-3">
+          <div class="form-group">
+            <label class="block text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1">Motion Style</label>
+            <select v-model="state.slider_mode" class="w-full bg-white dark:bg-gray-900 border-admin-theme-border rounded-lg p-1.5 text-xs focus:ring-2 focus:ring-admin-theme-primary">
+              <option value="continuous">Continuous 1-Direction Flow (Seamless)</option>
+              <option value="stepped">Stepped Card Slide (1-Direction)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="block text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1">Scroll Direction</label>
+            <select v-model="state.slider_direction" class="w-full bg-white dark:bg-gray-900 border-admin-theme-border rounded-lg p-1.5 text-xs focus:ring-2 focus:ring-admin-theme-primary">
+              <option value="left">Leftward (Forward ➔)</option>
+              <option value="right">Rightward (Reverse ⬅)</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="form-group">
+            <label class="block text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1">Speed (Seconds)</label>
+            <input v-model.number="state.slider_speed" type="number" min="1" max="60" class="w-full bg-white dark:bg-gray-900 border-admin-theme-border rounded-lg p-1.5 text-xs focus:ring-2 focus:ring-admin-theme-primary" placeholder="4">
+          </div>
+          <div class="form-group flex items-end pb-1">
+            <FormToggle
+              name="pause_on_hover"
+              v-model="state.pause_on_hover"
+              size="sm"
+              label="Pause on Hover / Touch"
+            />
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="form-group">
@@ -19,19 +85,23 @@
     <div class="grid grid-cols-2 gap-3">
       <div class="form-group">
         <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Product Count</label>
-        <input v-model.number="state.count" type="number" min="1" max="12" class="w-full bg-admin-theme-base border-admin-theme-border rounded-lg p-2 text-sm focus:ring-2 focus:ring-admin-theme-primary">
+        <input v-model.number="state.count" type="number" min="1" max="24" class="w-full bg-admin-theme-base border-admin-theme-border rounded-lg p-2 text-sm focus:ring-2 focus:ring-admin-theme-primary">
       </div>
-      <div class="form-group">
-        <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Columns</label>
+      <div v-if="state.layout === 'grid'" class="form-group">
+        <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Grid Columns</label>
         <select v-model.number="state.columns" class="w-full bg-admin-theme-base border-admin-theme-border rounded-lg p-2 text-sm focus:ring-2 focus:ring-admin-theme-primary">
           <option :value="2">2 Columns</option>
           <option :value="3">3 Columns</option>
           <option :value="4">4 Columns</option>
         </select>
       </div>
+      <div v-else class="form-group">
+        <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Offset (Skip)</label>
+        <input v-model.number="state.offset" type="number" min="0" class="w-full bg-admin-theme-base border-admin-theme-border rounded-lg p-2 text-sm focus:ring-2 focus:ring-admin-theme-primary" placeholder="0">
+      </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-3">
+    <div v-if="state.layout === 'grid'" class="grid grid-cols-2 gap-3">
       <div class="form-group">
         <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Offset (Skip)</label>
         <input v-model.number="state.offset" type="number" min="0" class="w-full bg-admin-theme-base border-admin-theme-border rounded-lg p-2 text-sm focus:ring-2 focus:ring-admin-theme-primary" placeholder="0">
@@ -41,13 +111,28 @@
           name="show_view_all"
           v-model="state.show_view_all"
           size="sm"
-          label='Show "View All" Button'
+          label='Show "View All"'
         />
       </div>
     </div>
 
+    <div v-else class="form-group px-1">
+      <FormToggle
+        name="show_view_all"
+        v-model="state.show_view_all"
+        size="sm"
+        label='Show "View All" Button'
+      />
+    </div>
+
     <div class="form-group space-y-2 mt-4 px-1 border-t border-admin-theme-border pt-4">
-      <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Display Fields</label>
+      <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Display Fields & Badges</label>
+      <FormToggle
+        name="show_badge"
+        v-model="state.show_badge"
+        size="sm"
+        label="Show Status Badge (★ Featured, 🔥 Best Seller, etc.)"
+      />
       <FormToggle
         name="show_media"
         v-model="state.show_media"
@@ -64,7 +149,7 @@
         name="show_categories"
         v-model="state.show_categories"
         size="sm"
-        label="Show Categories"
+        label="Show Category"
       />
       <FormToggle
         name="show_price"
@@ -72,43 +157,79 @@
         size="sm"
         label="Show Price"
       />
-      <FormToggle
-        name="show_excerpt"
-        v-model="state.show_excerpt"
-        size="sm"
-        label="Show Excerpt"
-      />
     </div>
   </div>
 
-  <!-- Preview Mode (for main editor area) -->
+  <!-- Preview Mode (for main editor canvas area) -->
   <div v-else class="latest-products-block-preview text-admin-theme-text dark:text-gray-100" :style="{ padding: state.padding, margin: state.margin }">
-    <div class="latest-products-header flex justify-between items-center mb-6">
-      <h2 class="latest-products-heading text-2xl font-extrabold text-gray-900 dark:text-gray-50">{{ state.heading || 'Featured Products' }}</h2>
-      <div v-if="state.show_view_all" class="latest-products-view-all text-xs font-semibold px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-admin-theme-primary dark:text-indigo-400">
-        View All &rarr;
+    <!-- Section Header (Only rendered when heading, view all or nav buttons exist) -->
+    <div v-if="state.heading || state.show_view_all || state.layout === 'slider'"
+         class="latest-products-header flex items-center mb-4"
+         :class="state.heading ? 'justify-between' : 'justify-end'">
+      <div v-if="state.heading" class="flex items-center gap-2">
+        <span class="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold shadow-xs"
+              :class="getFilterBadgeMeta().iconBgClass">
+          {{ getFilterBadgeMeta().icon }}
+        </span>
+        <h2 class="latest-products-heading text-xl font-bold text-gray-900 dark:text-gray-50">{{ state.heading }}</h2>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <div v-if="state.show_view_all" class="text-xs font-semibold px-2.5 py-1 border border-gray-200 dark:border-gray-700 rounded-lg text-admin-theme-primary dark:text-indigo-400 cursor-pointer">
+          View All &rarr;
+        </div>
+        <div v-if="state.layout === 'slider'" class="flex items-center gap-1">
+          <button type="button" class="w-6 h-6 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xs">‹</button>
+          <button type="button" class="w-6 h-6 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xs">›</button>
+        </div>
       </div>
     </div>
 
-    <div class="latest-products-grid" :style="{ '--grid-cols': state.columns || 3 }">
-      <div v-for="i in Math.min(state.count || 3, 6)" :key="i" class="latest-product-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm flex flex-col">
+    <!-- Slider Preview Mode -->
+    <div v-if="state.layout === 'slider'" class="flex gap-4 overflow-x-auto pb-3 pt-1">
+      <div v-for="i in Math.min(state.count || 4, 6)" :key="i" class="flex-none w-[240px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm flex flex-col">
         <!-- Media (Image) -->
-        <div v-if="state.show_media" class="latest-product-image aspect-video bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-500">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <div v-if="state.show_media" class="relative w-full aspect-[16/10] bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
             <polyline points="21 15 16 10 5 21"/>
           </svg>
+          <span v-if="state.show_badge" class="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-bold shadow-xs" :class="getFilterBadgeMeta().badgeClass">
+            {{ getFilterBadgeMeta().label }}
+          </span>
         </div>
-        <div v-if="state.show_title || state.show_categories || state.show_price || state.show_excerpt" class="latest-product-content p-4 flex flex-col flex-1">
-          <div v-if="state.show_categories" class="latest-product-meta flex items-center gap-2 mb-2 text-xs">
-            <span class="latest-product-badge bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider text-[9px]">Category</span>
+
+        <div class="p-3 flex flex-col flex-1">
+          <div v-if="state.show_categories" class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">WORDPRESS / MODULE</div>
+          <h3 v-if="state.show_title" class="text-xs font-bold text-gray-900 dark:text-gray-100 mb-2 leading-snug">Sample Product Title #{{ i }}</h3>
+          <div v-if="state.show_price" class="flex items-center gap-1.5 text-xs font-bold text-gray-900 dark:text-white mt-auto">
+            <span class="text-emerald-600 dark:text-emerald-400">$49.00</span>
+            <span class="text-[10px] text-gray-400 line-through font-normal">$69.00</span>
           </div>
-          <h3 v-if="state.show_title" class="latest-product-title text-base font-bold text-gray-950 dark:text-gray-100 mb-2 leading-snug">Sample Product Title for Preview</h3>
-          <p v-if="state.show_excerpt" class="latest-product-excerpt text-xs text-gray-500 dark:text-gray-400 mb-2 line-clamp-2 leading-relaxed">This is a sample short description of the product for preview purposes.</p>
-          <div v-if="state.show_price" class="latest-product-price flex items-center gap-2 text-sm mt-auto">
-            <span class="price-current font-bold text-emerald-600 dark:text-emerald-400">$99.00</span>
-            <span class="price-original text-xs text-gray-400 line-through">$129.00</span>
-            <span class="price-badge bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400 text-[10px] font-bold px-1.5 py-0.5 rounded">SALE</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Grid Preview Mode -->
+    <div v-else class="grid gap-4" :style="{ gridTemplateColumns: `repeat(${state.columns || 3}, minmax(0, 1fr))` }">
+      <div v-for="i in Math.min(state.count || 3, 6)" :key="i" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm flex flex-col">
+        <!-- Media (Image) -->
+        <div v-if="state.show_media" class="relative w-full aspect-[16/10] bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+          <span v-if="state.show_badge" class="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-bold shadow-xs" :class="getFilterBadgeMeta().badgeClass">
+            {{ getFilterBadgeMeta().label }}
+          </span>
+        </div>
+
+        <div class="p-3.5 flex flex-col flex-1">
+          <div v-if="state.show_categories" class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">CATEGORIES</div>
+          <h3 v-if="state.show_title" class="text-sm font-bold text-gray-900 dark:text-gray-100 mb-2 leading-snug">Sample Product Grid #{{ i }}</h3>
+          <div v-if="state.show_price" class="flex items-center gap-2 text-xs font-bold text-gray-900 dark:text-white mt-auto">
+            <span class="text-emerald-600 dark:text-emerald-400 font-bold">$99.00</span>
+            <span class="text-[11px] text-gray-400 line-through font-normal">$129.00</span>
           </div>
         </div>
       </div>
@@ -131,7 +252,9 @@ const props = defineProps<{
 const emit = defineEmits(['update:modelValue']);
 
 const DEFAULT_HEADING = 'Featured Products';
-const DEFAULT_COUNT = 6;
+const DEFAULT_FILTER = 'featured';
+const DEFAULT_LAYOUT = 'slider';
+const DEFAULT_COUNT = 8;
 const DEFAULT_COLUMNS = 3;
 const DEFAULT_SHOW_VIEW_ALL = true;
 
@@ -184,6 +307,8 @@ function readSourceAttr<T>(source: Record<string, any> | null | undefined, key: 
 
 const state = reactive({
   heading: readAttr('heading', DEFAULT_HEADING),
+  filter_by: readAttr('filter_by', DEFAULT_FILTER),
+  layout: readAttr('layout', DEFAULT_LAYOUT),
   count: readAttr('count', DEFAULT_COUNT),
   columns: readAttr('columns', DEFAULT_COLUMNS),
   show_view_all: readAttr('show_view_all', DEFAULT_SHOW_VIEW_ALL),
@@ -195,15 +320,64 @@ const state = reactive({
   show_media: readAttr('show_media', true),
   show_title: readAttr('show_title', true),
   show_categories: readAttr('show_categories', true),
-  show_excerpt: readAttr('show_excerpt', true),
+  show_badge: readAttr('show_badge', true),
+  slider_autoplay: readAttr('slider_autoplay', true),
+  slider_mode: readAttr('slider_mode', 'continuous'),
+  slider_direction: readAttr('slider_direction', 'left'),
+  slider_speed: readAttr('slider_speed', 4),
+  pause_on_hover: readAttr('pause_on_hover', true),
 });
 
 const isSyncingFromProps = ref(false);
+
+function getFilterBadgeMeta() {
+  const f = state.filter_by;
+  if (f === 'best_sellers') {
+    return {
+      icon: '🔥',
+      label: '🔥 Best Seller',
+      iconBgClass: 'bg-orange-100 text-orange-600 dark:bg-orange-950 dark:text-orange-400',
+      badgeClass: 'bg-orange-600 text-white',
+    };
+  }
+  if (f === 'trending') {
+    return {
+      icon: '⚡',
+      label: '⚡ Trending',
+      iconBgClass: 'bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-400',
+      badgeClass: 'bg-purple-600 text-white',
+    };
+  }
+  if (f === 'best_rated') {
+    return {
+      icon: '★',
+      label: '★ Best Rated',
+      iconBgClass: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400',
+      badgeClass: 'bg-yellow-500 text-slate-900',
+    };
+  }
+  if (f === 'newest') {
+    return {
+      icon: '✨',
+      label: '✨ Newest',
+      iconBgClass: 'bg-sky-100 text-sky-600 dark:bg-sky-950 dark:text-sky-400',
+      badgeClass: 'bg-sky-600 text-white',
+    };
+  }
+  return {
+    icon: '★',
+    label: '★ Featured',
+    iconBgClass: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400',
+    badgeClass: 'bg-slate-900/90 text-yellow-300',
+  };
+}
 
 function buildPayload() {
   return {
     ...(props.modelValue || {}),
     heading: state.heading,
+    filter_by: state.filter_by,
+    layout: state.layout,
     count: state.count,
     columns: state.columns,
     show_view_all: state.show_view_all,
@@ -215,13 +389,20 @@ function buildPayload() {
     show_media: state.show_media,
     show_title: state.show_title,
     show_categories: state.show_categories,
-    show_excerpt: state.show_excerpt,
+    show_badge: state.show_badge,
+    slider_autoplay: state.slider_autoplay,
+    slider_mode: state.slider_mode,
+    slider_direction: state.slider_direction,
+    slider_speed: state.slider_speed,
+    pause_on_hover: state.pause_on_hover,
   };
 }
 
 function syncState(source?: Record<string, any> | null) {
   isSyncingFromProps.value = true;
   state.heading = readSourceAttr(source, 'heading', DEFAULT_HEADING);
+  state.filter_by = readSourceAttr(source, 'filter_by', DEFAULT_FILTER);
+  state.layout = readSourceAttr(source, 'layout', DEFAULT_LAYOUT);
   state.count = readSourceAttr(source, 'count', DEFAULT_COUNT);
   state.columns = readSourceAttr(source, 'columns', DEFAULT_COLUMNS);
   state.show_view_all = readSourceAttr(source, 'show_view_all', DEFAULT_SHOW_VIEW_ALL);
@@ -233,7 +414,12 @@ function syncState(source?: Record<string, any> | null) {
   state.show_media = readSourceAttr(source, 'show_media', true);
   state.show_title = readSourceAttr(source, 'show_title', true);
   state.show_categories = readSourceAttr(source, 'show_categories', true);
-  state.show_excerpt = readSourceAttr(source, 'show_excerpt', true);
+  state.show_badge = readSourceAttr(source, 'show_badge', true);
+  state.slider_autoplay = readSourceAttr(source, 'slider_autoplay', true);
+  state.slider_mode = readSourceAttr(source, 'slider_mode', 'continuous');
+  state.slider_direction = readSourceAttr(source, 'slider_direction', 'left');
+  state.slider_speed = readSourceAttr(source, 'slider_speed', 4);
+  state.pause_on_hover = readSourceAttr(source, 'pause_on_hover', true);
 
   nextTick(() => {
     isSyncingFromProps.value = false;
@@ -248,122 +434,17 @@ watch(state, () => {
   if (isSyncingFromProps.value) {
     return;
   }
-  if (props.mode === 'settings') {
-    emitPayload();
-  }
-}, { deep: true });
+  emitPayload();
+});
 
-watch(() => props.modelValue, (newValue) => {
-  syncState(newValue);
-}, { deep: true, immediate: true });
-
-watch(() => props.data, (newData) => {
-  if (newData) {
-    syncState(newData);
-  }
-}, { deep: true, immediate: true });
+watch(
+  () => [props.modelValue, props.data],
+  () => {
+    if (isSyncingFromProps.value) {
+      return;
+    }
+    syncState(props.modelValue || props.data || null);
+  },
+  { deep: true }
+);
 </script>
-
-<style scoped>
-.latest-products-block-preview {
-  background: transparent;
-  padding: 2rem 0;
-}
-
-.latest-products-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-}
-
-.latest-products-heading {
-  font-size: 1.875rem;
-  font-weight: 700;
-  color: #111827;
-  margin: 0;
-}
-
-.latest-products-view-all {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: rgb(var(--admin-theme-primary));
-  padding: 0.5rem 1rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.375rem;
-}
-
-.latest-products-grid {
-  display: grid;
-  grid-template-columns: repeat(var(--grid-cols, 3), minmax(0, 1fr));
-  gap: 1.5rem;
-}
-
-.latest-product-card {
-  border-radius: 0.5rem;
-  overflow: hidden;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  display: flex;
-  flex-direction: column;
-}
-
-.latest-product-image {
-  aspect-ratio: 16 / 9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.latest-product-content {
-  padding: 1.25rem;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-}
-
-.latest-product-meta {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.5rem;
-  font-size: 0.75rem;
-}
-
-.latest-product-badge {
-  padding: 0.125rem 0.5rem;
-  border-radius: 9999px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
-}
-
-.latest-product-title {
-  font-size: 1.125rem;
-  font-weight: 700;
-  margin: 0 0 0.5rem 0;
-  line-height: 1.4;
-}
-
-.latest-product-price {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  margin-top: auto;
-}
-
-.price-current {
-  font-weight: 700;
-}
-
-.price-original {
-  text-decoration: line-through;
-}
-
-.price-badge {
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 0.125rem 0.375rem;
-  border-radius: 4px;
-}
-</style>

@@ -63,7 +63,7 @@
                     @endif
                 @endif
 
-                <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; width: 100%;">
                     @include('partials.admin-sidebar-toggle', [
                         'settingKey' => 'flexiwhite_products_show_sidebar',
                         'showSidebar' => $showSidebar
@@ -72,9 +72,14 @@
                         'defaultView' => $defaultView,
                         'target' => 'products-listing',
                         'showViewToggle' => $showCategoryProductToggle,
+                        'showSortTabs' => true,
                     ])
                 </div>
             </div>
+
+            @include('partials.active-filters')
+
+            @include('partials.featured-slider')
 
             <div id="products-listing"
                  class="listing-container"

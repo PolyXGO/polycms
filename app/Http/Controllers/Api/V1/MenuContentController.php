@@ -43,6 +43,11 @@ class MenuContentController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
 
+        $posts->getCollection()->transform(function ($item) {
+            $item->url = $item->frontend_url;
+            return $item;
+        });
+
         return $this->successResponse($posts);
     }
 
@@ -72,6 +77,11 @@ class MenuContentController extends Controller
         $pages = $query->select('id', 'title', 'slug', 'status', 'created_at')
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
+
+        $pages->getCollection()->transform(function ($item) {
+            $item->url = $item->frontend_url;
+            return $item;
+        });
 
         return $this->successResponse($pages);
     }
@@ -107,6 +117,11 @@ class MenuContentController extends Controller
             ->orderBy('name')
             ->paginate($perPage);
 
+        $categories->getCollection()->transform(function ($item) {
+            $item->url = $item->frontend_url;
+            return $item;
+        });
+
         return $this->successResponse($categories);
     }
 
@@ -136,6 +151,11 @@ class MenuContentController extends Controller
         $products = $query->select('id', 'name', 'slug', 'sku', 'status', 'created_at')
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
+
+        $products->getCollection()->transform(function ($item) {
+            $item->url = $item->frontend_url;
+            return $item;
+        });
 
         return $this->successResponse($products);
     }
@@ -171,6 +191,45 @@ class MenuContentController extends Controller
             ->orderBy('name')
             ->paginate($perPage);
 
+        $tags->getCollection()->transform(function ($item) {
+            $item->url = $item->frontend_url;
+            return $item;
+        });
+
         return $this->successResponse($tags);
+    }
+
+    /**
+     * Get product categories for content browser
+     */
+    public function productCategories(Request $request): JsonResponse
+    {
+        if ($response = $this->ensureAdmin($request)) {
+            return $response;
+        }
+
+        $query = \App\Models\ProductCategory::query();
+
+        // Search
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        // Paginate
+        $perPage = min($request->get('per_page', 50), 100);
+        $productCategories = $query->select('id', 'name', 'slug', 'description')
+            ->orderBy('name')
+            ->paginate($perPage);
+
+        $productCategories->getCollection()->transform(function ($item) {
+            $item->url = $item->frontend_url;
+            return $item;
+        });
+
+        return $this->successResponse($productCategories);
     }
 }

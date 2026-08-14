@@ -47,7 +47,7 @@
  <!-- Left Panel: Content Browser -->
  <section class="menu-editor-left">
  <div class="bg-admin-theme-surface rounded-lg shadow flex flex-col min-h-[600px] h-full w-full">
- <ContentBrowser @add-items="handleAddItems" />
+ <ContentBrowser :existing-items="menuItems" @add-items="handleAddItems" />
  </div>
  </section>
 

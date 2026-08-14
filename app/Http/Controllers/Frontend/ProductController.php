@@ -39,43 +39,11 @@ class ProductController extends FrontendController
             $query->where('slug', 'not like', 'test-%');
         }
 
-        // Category filter
-        if ($request->has('category')) {
-            $query->whereHas('categories', function ($q) use ($request) {
-                $q->where('slug', $request->get('category'));
-            });
-        }
-
-        // Search
-        if ($request->has('search')) {
-            $search = $request->get('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('short_description', 'like', "%{$search}%")
-                    ->orWhere('description_html', 'like', "%{$search}%");
-            });
-        }
-
-        // Featured filter
-        if ($request->has('featured')) {
-            $query->where('featured', true);
-        }
-
-        // Price range filter
-        if ($request->has('min_price')) {
-            $query->where('price', '>=', $request->get('min_price'));
-        }
-        if ($request->has('max_price')) {
-            $query->where('price', '<=', $request->get('max_price'));
-        }
-
-        // Sort
-        $sortBy = $request->get('sort_by', 'created_at');
-        $sortOrder = $request->get('sort_order', 'desc');
-        $query->orderBy($sortBy, $sortOrder);
+        // Apply product filters and sorting (supports best_sellers, newest, best_rated, trending, price, featured, on_sale)
+        $query->filterAndSort($request);
 
         // Paginate
-        $perPage = min($request->get('per_page', 12), 50);
+        $perPage = min((int) $request->get('per_page', 12), 50);
         $products = $query->paginate($perPage)->withQueryString();
 
         $data = [

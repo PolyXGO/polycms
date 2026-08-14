@@ -358,6 +358,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/menus/content/posts', [MenuContentController::class, 'posts'])->name('api.v1.menus.content.posts');
             Route::get('/menus/content/pages', [MenuContentController::class, 'pages'])->name('api.v1.menus.content.pages');
             Route::get('/menus/content/categories', [MenuContentController::class, 'categories'])->name('api.v1.menus.content.categories');
+            Route::get('/menus/content/product_categories', [MenuContentController::class, 'productCategories'])->name('api.v1.menus.content.product_categories');
             Route::get('/menus/content/products', [MenuContentController::class, 'products'])->name('api.v1.menus.content.products');
             Route::get('/menus/content/tags', [MenuContentController::class, 'tags'])->name('api.v1.menus.content.tags');
 

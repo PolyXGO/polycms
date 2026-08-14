@@ -416,6 +416,62 @@ export function registerDefaultLandingBlocks() {
     });
 
     landingBlockRegistry.register({
+        key: 'products_slider',
+        label: 'Products Slider',
+        category: 'ecommerce',
+        isPattern: true,
+        icon: `<svg class="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>`,
+        component: LatestProductsBlock,
+        defaultAttrs: {
+            heading: "Featured Products",
+            filter_by: "featured",
+            layout: "slider",
+            count: 8,
+            columns: 3,
+            show_view_all: true,
+            show_badge: true,
+            show_media: true,
+            show_title: true,
+            show_categories: true,
+            show_price: true,
+            category_id: "",
+            slider_autoplay: false,
+            slider_mode: "continuous",
+            slider_direction: "left",
+            slider_speed: 4,
+            pause_on_hover: true,
+        }
+    });
+
+    landingBlockRegistry.register({
+        key: 'products_showcase',
+        label: 'Products Showcase',
+        category: 'patterns',
+        isPattern: true,
+        icon: `<svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>`,
+        component: LatestProductsBlock,
+        defaultAttrs: {
+            heading: "Featured Products",
+            filter_by: "featured",
+            layout: "slider",
+            count: 8,
+            columns: 3,
+            show_view_all: true,
+            show_badge: true,
+            show_media: true,
+            show_title: true,
+            show_categories: true,
+            show_price: true,
+            category_id: "",
+            slider_autoplay: false,
+            slider_mode: "continuous",
+            slider_direction: "left",
+            slider_speed: 4,
+            pause_on_hover: true,
+        }
+    });
+
+    landingBlockRegistry.register({
         key: 'fw_latest_products',
         label: 'Latest Products',
         category: 'patterns',
@@ -424,9 +480,22 @@ export function registerDefaultLandingBlocks() {
         component: LatestProductsBlock,
         defaultAttrs: {
             heading: "Featured Products",
+            filter_by: "featured",
+            layout: "grid",
             count: 6,
             columns: 3,
-            show_view_all: true
+            show_view_all: true,
+            show_badge: true,
+            show_media: true,
+            show_title: true,
+            show_categories: true,
+            show_price: true,
+            category_id: "",
+            slider_autoplay: false,
+            slider_mode: "continuous",
+            slider_direction: "left",
+            slider_speed: 4,
+            pause_on_hover: true,
         }
     });
 

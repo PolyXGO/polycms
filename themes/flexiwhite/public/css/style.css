@@ -865,6 +865,8 @@ html.dark .header-widget-area .widget-search-trigger--icon {
 .listing-toolbar {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
   gap: 1rem;
   flex-shrink: 0;
 }

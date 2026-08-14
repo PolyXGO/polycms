@@ -231,16 +231,17 @@ const showDropZone = computed(() => {
 });
 
 const formatType = (type: string): string => {
- if (!type) return'Custom';
- const typeMap: Record<string, string> = {
-'custom':'Custom Link',
-'post':'Post',
-'page':'Page',
-'category':'Category',
-'product':'Product',
-'tag':'Tag',
- };
- return typeMap[type] || type.charAt(0).toUpperCase() + type.slice(1);
+  if (!type) return 'Custom';
+  const typeMap: Record<string, string> = {
+    'custom': 'Custom Link',
+    'post': 'Post',
+    'page': 'Page',
+    'category': 'Category',
+    'product_category': 'Product Category',
+    'product': 'Product',
+    'tag': 'Tag',
+  };
+  return typeMap[type] || type.charAt(0).toUpperCase() + type.slice(1);
 };
 
 const handleDragStart = (e: DragEvent) => {

@@ -27,9 +27,8 @@ class BrandController extends FrontendController
             $query->where('status', 'published');
         }
 
-        $sortBy = $request->get('sort_by', 'created_at');
-        $sortOrder = $request->get('sort_order', 'desc');
-        $query->orderBy($sortBy, $sortOrder);
+        // Apply product filters and sorting
+        $query->filterAndSort($request);
 
         $perPage = min((int) $request->get('per_page', 12), 50);
         $products = $query->paginate($perPage)->withQueryString();

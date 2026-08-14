@@ -1998,6 +1998,7 @@ class AppServiceProvider extends ServiceProvider
             'html_block', 'divider', 'row', 'section',
             'hero_section', 'what_you_get', 'cta_section', 'showcase',
             'testimonial', 'icon_box', 'counter',
+            'products_slider', 'products_showcase', 'products',
         ];
 
         foreach ($blocks as $block) {

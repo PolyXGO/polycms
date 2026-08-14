@@ -69,7 +69,7 @@ class MenuItemController extends Controller
         }
 
         $validated = $request->validate([
-            'type' => ['required', 'string', 'in:custom,post,page,category,product,tag,language,search'],
+            'type' => ['required', 'string', 'in:custom,post,page,category,product_category,product,tag,language,search'],
             'title' => ['nullable', 'string', 'max:255'],
             'url' => ['nullable', 'string', 'max:500'],
             'linkable_id' => ['nullable', 'integer'],

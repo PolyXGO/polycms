@@ -160,41 +160,48 @@
  </div>
  </div>
 
- <!-- Content Items -->
- <div v-if="activeTab !=='custom' && items.length > 0" class="mb-4">
- <h3 class="text-sm font-semibold text-admin-theme-text-secondary mb-2">
- {{ $t('Content Items') }}
- </h3>
- </div>
+  <!-- Content Items -->
+  <div v-if="activeTab !== 'custom' && activeTab !== 'language' && activeTab !== 'search' && items.length > 0" class="flex items-center justify-between mb-2">
+    <h3 class="text-sm font-semibold text-admin-theme-text-secondary">
+      {{ $t('Content Items') }}
+    </h3>
+    <button
+      type="button"
+      @click="selectAll"
+      class="text-xs font-semibold text-admin-theme-primary hover:underline"
+    >
+      {{ selectedItems.length === items.length ? $t('Deselect All') : $t('Select All') }}
+    </button>
+  </div>
 
- <div v-if="loading" class="text-center py-8">
- <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-admin-theme-primary"></div>
- </div>
- <div v-else-if="items.length === 0" class="text-center py-8 text-sm text-admin-theme-text-muted">
- {{ $t('No items found') }}
- </div>
- <div v-else class="space-y-2">
- <label
- v-for="item in items"
- :key="item.id"
- class="flex items-start gap-3 p-3 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
- >
- <input
- type="checkbox"
- :value="item.id"
- v-model="selectedItems"
- class="mt-1 w-4 h-4 text-admin-theme-primary border-admin-theme-border rounded focus:ring-admin-theme-primary"
- />
- <div class="flex-1 min-w-0">
- <div class="text-sm font-medium text-admin-theme-text">
- {{ item.title || item.name }}
- </div>
- <div v-if="item.slug" class="text-xs text-admin-theme-text-muted mt-1">
- {{ item.slug }}
- </div>
- </div>
- </label>
- </div>
+  <div v-if="loading" class="text-center py-8">
+    <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-admin-theme-primary"></div>
+  </div>
+  <div v-else-if="items.length === 0" class="text-center py-8 text-sm text-admin-theme-text-muted">
+    {{ $t('No items found') }}
+  </div>
+  <div v-else class="space-y-2">
+    <label
+      v-for="item in items"
+      :key="item.id"
+      class="flex items-start gap-3 p-3 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer border border-transparent hover:border-admin-theme-border transition-colors"
+    >
+      <input
+        type="checkbox"
+        :value="item.id"
+        v-model="selectedItems"
+        class="mt-1 w-4 h-4 text-admin-theme-primary border-admin-theme-border rounded focus:ring-admin-theme-primary"
+      />
+      <div class="flex-1 min-w-0">
+        <div class="text-sm font-medium text-admin-theme-text">
+          {{ item.title || item.name }}
+        </div>
+        <div class="text-xs text-admin-theme-primary/80 dark:text-admin-theme-primary/90 mt-0.5 break-all font-mono">
+          {{ getItemUrl(item) }}
+        </div>
+      </div>
+    </label>
+  </div>
 
  <!-- Pagination -->
  <div v-if="pagination && pagination.last_page > 1" class="mt-4 flex items-center justify-between">
@@ -218,28 +225,52 @@
  </div>
  </div>
 
- <!-- Add to Menu Button -->
- <div class="px-6 py-4 border-t border-admin-theme-border flex-shrink-0">
- <div v-if="activeTab !== 'custom' && activeTab !== 'language' && activeTab !== 'search'" class="flex items-center justify-between mb-2">
- <span class="text-sm text-admin-theme-text-secondary">
- {{ selectedItems.length + selectedDefaultPages.length }} {{ $t('selected') }}
- </span>
- <button
- v-if="items.length > 0"
- @click="selectAll"
- class="text-sm text-admin-theme-primary dark:text-admin-theme-primary hover:underline"
- >
- {{ selectedItems.length === items.length ? $t('Deselect All') : $t('Select All') }}
- </button>
- </div>
- <button
- @click="addToMenu"
- :disabled="activeTab === 'custom' ? !canAddCustomLink : (activeTab === 'language' ? false : (activeTab === 'search' ? false : (selectedItems.length === 0 && selectedDefaultPages.length === 0)))"
- class="w-full px-4 py-2 bg-admin-theme-primary text-admin-theme-primary-content rounded-lg hover:bg-admin-theme-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
- >
- {{ $t('Add to Menu') }}
- </button>
- </div>
+  <!-- Add to Menu Button & Parent Target Selector -->
+  <div class="px-6 py-4 border-t border-admin-theme-border flex-shrink-0 space-y-3">
+    <div v-if="activeTab !== 'custom' && activeTab !== 'language' && activeTab !== 'search'" class="flex items-center justify-between">
+      <span class="text-sm font-medium text-admin-theme-text-secondary">
+        {{ selectedItems.length + selectedDefaultPages.length }} {{ $t('selected') }}
+      </span>
+      <button
+        v-if="items.length > 0"
+        @click="selectAll"
+        class="text-xs font-semibold text-admin-theme-primary hover:underline"
+      >
+        {{ selectedItems.length === items.length ? $t('Deselect All') : $t('Select All') }}
+      </button>
+    </div>
+
+    <!-- Parent Item Selector Dropdown -->
+    <div v-if="flattenedExistingItems.length > 0" class="space-y-1">
+      <label class="block text-xs font-medium text-admin-theme-text-secondary">
+        {{ $t('Add under parent item (Optional):') }}
+      </label>
+      <select
+        v-model="targetParentId"
+        class="w-full px-3 py-2 text-xs border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text focus:outline-none focus:ring-1 focus:ring-admin-theme-primary"
+      >
+        <option :value="null">{{ $t('-- Root / Top Level Item --') }}</option>
+        <option
+          v-for="parentItem in flattenedExistingItems"
+          :key="parentItem.id"
+          :value="parentItem.id"
+        >
+          {{ parentItem.title }}
+        </option>
+      </select>
+    </div>
+
+    <button
+      @click="addToMenu"
+      :disabled="activeTab === 'custom' ? !canAddCustomLink : (activeTab === 'language' ? false : (activeTab === 'search' ? false : (selectedItems.length === 0 && selectedDefaultPages.length === 0)))"
+      class="w-full px-4 py-2.5 bg-admin-theme-primary text-admin-theme-primary-content rounded-lg hover:bg-admin-theme-primary-hover transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2 shadow-sm"
+    >
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      <span>{{ $t('Add to Menu') }}</span>
+    </button>
+  </div>
  </div>
 </template>
 
@@ -255,14 +286,48 @@ const instance = getCurrentInstance();
 const $t = instance?.appContext.config.globalProperties.$t || t;
 const { structure, ensureStructureLoaded } = usePermalinkSettings();
 
+const props = withDefaults(
+  defineProps<{
+    existingItems?: any[];
+  }>(),
+  {
+    existingItems: () => [],
+  }
+);
+
 const emit = defineEmits<{
- (e:'add-items', items: any[]): void;
+  (e: 'add-items', items: any[]): void;
 }>();
+
+const targetParentId = ref<number | null>(null);
+
+const flattenedExistingItems = computed(() => {
+  const result: { id: number; title: string; depth: number }[] = [];
+
+  const traverse = (itemList: any[], depth = 0) => {
+    if (!Array.isArray(itemList)) return;
+    for (const item of itemList) {
+      const prefix = depth > 0 ? '— '.repeat(depth) : '';
+      result.push({
+        id: item.id,
+        title: `${prefix}${item.title || item.name || 'Untitled'}`,
+        depth,
+      });
+      if (item.children && Array.isArray(item.children) && item.children.length > 0) {
+        traverse(item.children, depth + 1);
+      }
+    }
+  };
+
+  traverse(props.existingItems || []);
+  return result;
+});
 
 const tabs = [
  { id:'posts', label: $t('Posts') },
  { id:'pages', label: $t('Pages') },
  { id:'categories', label: $t('Categories') },
+ { id:'product_categories', label: $t('Product Categories') },
  { id:'products', label: $t('Products') },
  { id:'tags', label: $t('Tags') },
  { id:'custom', label: $t('Custom Links') },
@@ -327,14 +392,39 @@ const defaultPages = computed(() => {
  url: buildDefaultPageUrl('products'),
  type:'custom',
  },
- {
- id:'blog',
- title: blogTitle,
- url: buildDefaultPageUrl('blog'),
- type:'custom',
- },
- ];
+  {
+    id: 'blog',
+    title: blogTitle,
+    url: buildDefaultPageUrl('blog'),
+    type: 'custom',
+  },
+  ];
 });
+
+const getItemUrl = (item: any): string => {
+  if (item.url) return item.url;
+  if (item.frontend_url) return item.frontend_url;
+
+  const baseUrl = window.location.origin;
+  const permalinks = structure.value;
+
+  switch (activeTab.value) {
+    case 'posts':
+      return `${baseUrl}/${permalinks.posts?.single || 'posts'}/${item.slug}`;
+    case 'pages':
+      return `${baseUrl}/${item.slug}`;
+    case 'categories':
+      return `${baseUrl}/${permalinks.categories?.base || 'category'}/${item.slug}`;
+    case 'product_categories':
+      return `${baseUrl}/${permalinks.product_categories?.base || 'product-category'}/${item.slug}`;
+    case 'products':
+      return `${baseUrl}/${permalinks.products?.single || 'products'}/${item.slug}`;
+    case 'tags':
+      return `${baseUrl}/${permalinks.tags?.base || 'tag'}/${item.slug}`;
+    default:
+      return item.slug ? `${baseUrl}/${item.slug}` : '';
+  }
+};
 
 const loadContent = async (page = 1) => {
  if (activeTab.value ==='custom' || activeTab.value === 'language' || activeTab.value === 'search') {
@@ -476,11 +566,12 @@ const addToMenu = () => {
 
  // Map tab to type
  const typeMap: Record<string, string> = {
-'posts':'post',
-'pages':'page',
-'categories':'category',
-'products':'product',
-'tags':'tag',
+    'posts': 'post',
+    'pages': 'page',
+    'categories': 'category',
+    'product_categories': 'product_category',
+    'products': 'product',
+    'tags': 'tag',
  };
 
  const contentItemsToAdd = selected.map(item => {
@@ -493,9 +584,16 @@ const addToMenu = () => {
 
  itemsToAdd.push(...contentItemsToAdd);
 
- emit('add-items', itemsToAdd);
- selectedItems.value = [];
- selectedDefaultPages.value = [];
+  const itemsWithParent = itemsToAdd.map(item => {
+    if (targetParentId.value) {
+      return { ...item, parent_id: targetParentId.value };
+    }
+    return item;
+  });
+
+  emit('add-items', itemsWithParent);
+  selectedItems.value = [];
+  selectedDefaultPages.value = [];
 };
 
 watch(activeTab, () => {

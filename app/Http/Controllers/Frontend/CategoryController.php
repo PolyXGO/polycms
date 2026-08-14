@@ -50,13 +50,11 @@ class CategoryController extends FrontendController
                 $query->where('status', 'published');
             }
 
-            // Sort
-            $sortBy = $request->get('sort_by', 'created_at');
-            $sortOrder = $request->get('sort_order', 'desc');
-            $query->orderBy($sortBy, $sortOrder);
+            // Apply filters & sorting
+            $query->filterAndSort($request);
 
             // Paginate
-            $perPage = min($request->get('per_page', 12), 50);
+            $perPage = min((int) $request->get('per_page', 12), 50);
             $products = $query->paginate($perPage)->withQueryString();
 
             $data['products'] = $products;
@@ -189,9 +187,8 @@ class CategoryController extends FrontendController
             $query->where('status', 'published');
         }
 
-        $sortBy = $request->get('sort_by', 'created_at');
-        $sortOrder = $request->get('sort_order', 'desc');
-        $query->orderBy($sortBy, $sortOrder);
+        // Apply filters & sorting (best_sellers, newest, best_rated, trending, price, featured, on_sale)
+        $query->filterAndSort($request);
 
         $perPage = min((int) $request->get('per_page', 12), 50);
         $products = $query->paginate($perPage)->withQueryString();

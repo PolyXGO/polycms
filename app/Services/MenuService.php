@@ -9,6 +9,7 @@ use App\Models\MenuItem;
 use App\Models\Post;
 use App\Models\Product;
 use App\Models\Category;
+use App\Models\ProductCategory;
 use App\Models\Tag;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -228,6 +229,7 @@ class MenuService
             'page' => Post::class, // Pages are also Post model with type='page'
             'product' => Product::class,
             'category' => Category::class,
+            'product_category' => ProductCategory::class,
             'tag' => Tag::class,
             default => null,
         };
@@ -247,6 +249,7 @@ class MenuService
             'page' => route('pages.show', ['slug' => $entity->slug]),
             'product' => route('products.show', ['slug' => $entity->slug]),
             'category' => route('categories.show', ['slug' => $entity->slug]),
+            'product_category' => $entity->frontend_url ?? (function_exists('get_product_category_url') ? get_product_category_url($entity) : null),
             'tag' => route('tags.show', ['slug' => $entity->slug]),
             default => null,
         };

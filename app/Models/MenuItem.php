@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Models\Post;
 use App\Models\Product;
 use App\Models\Category;
+use App\Models\ProductCategory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -158,6 +159,7 @@ class MenuItem extends Model
                             Post::class => $entity->frontend_url,
                             Product::class => $entity->frontend_url ?? null,
                             Category::class => $entity->frontend_url ?? null,
+                            ProductCategory::class => $entity->frontend_url ?? null,
                             default => null,
                         };
 

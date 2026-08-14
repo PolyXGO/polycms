@@ -605,4 +605,119 @@ class Product extends Model
             'max' => $prices->max(),
         ];
     }
+
+    /**
+     * Scope to apply sorting and filtering for product listing pages.
+     * Supports: featured/features, on_sale, best_sellers, newest, best_rated, trending, price (asc/desc)
+     */
+    public function scopeFilterAndSort($query, \Illuminate\Http\Request $request)
+    {
+        // 1. Featured filter
+        if ($request->boolean('featured') || $request->get('filter') === 'featured' || $request->get('sort') === 'featured' || $request->get('sort') === 'features') {
+            $query->where('featured', true);
+        }
+
+        // 2. On Sale filter
+        if ($request->boolean('on_sale') || $request->get('filter') === 'on_sale' || $request->get('onsale') == 1) {
+            $query->whereNotNull('sale_price')
+                ->where('sale_price', '>', 0)
+                ->whereColumn('sale_price', '<', 'price');
+        }
+
+        // 3. Category filter
+        if ($request->filled('category')) {
+            $query->whereHas('categories', function ($q) use ($request) {
+                $q->where('slug', $request->get('category'));
+            });
+        }
+
+        // 4. Brand filter
+        if ($request->filled('brand')) {
+            $query->whereHas('brands', function ($q) use ($request) {
+                $q->where('slug', $request->get('brand'));
+            });
+        }
+
+        // 5. Search query
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('short_description', 'like', "%{$search}%")
+                    ->orWhere('description_html', 'like', "%{$search}%");
+            });
+        }
+
+        // 6. Price range filter
+        if ($request->filled('min_price')) {
+            $query->where('price', '>=', (float) $request->get('min_price'));
+        }
+        if ($request->filled('max_price')) {
+            $query->where('price', '<=', (float) $request->get('max_price'));
+        }
+
+        // 7. Sorting logic
+        $sort = $request->get('sort', $request->get('sort_by', 'newest'));
+        $order = strtolower((string) $request->get('order', $request->get('sort_order', '')));
+
+        switch ($sort) {
+            case 'best_sellers':
+            case 'bestsellers':
+            case 'best-sellers':
+            case 'best_seller':
+                $driver = \Illuminate\Support\Facades\DB::connection()->getDriverName();
+                if ($driver === 'pgsql') {
+                    $rawSalesSql = "((SELECT COALESCE(SUM(quantity), 0) FROM order_items JOIN orders ON orders.id = order_items.order_id WHERE order_items.product_id = products.id AND orders.status NOT IN ('cancelled', 'failed')) + CAST(COALESCE(settings->>'external_sales', '0') AS INTEGER) + CAST(COALESCE(settings->>'sales_offset', '0') AS INTEGER)) DESC";
+                } else {
+                    $rawSalesSql = "((SELECT COALESCE(SUM(quantity), 0) FROM order_items JOIN orders ON orders.id = order_items.order_id WHERE order_items.product_id = products.id AND orders.status NOT IN ('cancelled', 'failed')) + CAST(COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(settings, '$.external_sales')), ''), '0') AS SIGNED) + CAST(COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(settings, '$.sales_offset')), ''), '0') AS SIGNED)) DESC";
+                }
+                $query->orderByRaw($rawSalesSql)->orderBy('id', 'desc');
+                break;
+
+            case 'best_rated':
+            case 'best-rated':
+            case 'rating':
+                if (\Illuminate\Support\Facades\Schema::hasColumn('products', 'avg_rating')) {
+                    $query->orderBy('avg_rating', 'desc');
+                } else {
+                    $query->orderBy('views', 'desc')->orderBy('created_at', 'desc');
+                }
+                break;
+
+            case 'trending':
+            case 'popular':
+            case 'views':
+                $query->orderBy('views', 'desc')->orderBy('created_at', 'desc');
+                break;
+
+            case 'price':
+                $direction = in_array($order, ['asc', 'desc'], true) ? $order : 'asc';
+                $query->orderByRaw("COALESCE(NULLIF(sale_price, 0), price) {$direction}");
+                break;
+
+            case 'price_asc':
+            case 'price-asc':
+                $query->orderByRaw("COALESCE(NULLIF(sale_price, 0), price) ASC");
+                break;
+
+            case 'price_desc':
+            case 'price-desc':
+                $query->orderByRaw("COALESCE(NULLIF(sale_price, 0), price) DESC");
+                break;
+
+            case 'featured':
+            case 'features':
+                $query->where('featured', true)->orderBy('created_at', 'desc');
+                break;
+
+            case 'newest':
+            case 'latest':
+            case 'created_at':
+            default:
+                $query->orderBy('created_at', 'desc');
+                break;
+        }
+
+        return $query;
+    }
 }
