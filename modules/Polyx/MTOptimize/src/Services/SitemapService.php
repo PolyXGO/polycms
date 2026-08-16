@@ -57,10 +57,10 @@ class SitemapService
             for ($page = 1; $page <= $totalPages; $page++) {
                 if ($totalPages === 1) {
                     // Single page: use clean URL without page suffix
-                    $loc = url('/sitemap-' . $type . '.xml');
+                    $loc = canonical_url('/sitemap-' . $type . '.xml');
                 } else {
                     // Multi-page: use paginated URL
-                    $loc = url('/sitemap-' . $type . '-page-' . $page . '.xml');
+                    $loc = canonical_url('/sitemap-' . $type . '-page-' . $page . '.xml');
                 }
 
                 $indexes[] = [
@@ -141,19 +141,28 @@ class SitemapService
             if ($loc === '') {
                 continue;
             }
+            $loc = canonical_url($loc);
 
             $alternates = is_array($item['alternates'] ?? null) ? $item['alternates'] : [];
             if (!empty($alternates)) {
                 $defaultUrl = null;
                 $defaultLocale = str_replace('_', '-', (string) config('app.locale', 'en'));
 
+                $normalizedAlternates = [];
                 foreach ($alternates as $alt) {
                     $hreflang = trim((string) ($alt['hreflang'] ?? ''));
+                    $altHref = canonical_url(trim((string) ($alt['href'] ?? '')));
+                    if ($altHref !== '') {
+                        $normalizedAlternates[] = [
+                            'hreflang' => $hreflang,
+                            'href' => $altHref,
+                        ];
+                    }
                     if (strcasecmp($hreflang, $defaultLocale) === 0) {
-                        $defaultUrl = trim((string) ($alt['href'] ?? ''));
-                        break;
+                        $defaultUrl = $altHref;
                     }
                 }
+                $alternates = $normalizedAlternates;
 
                 if ($defaultUrl === null || $defaultUrl === '') {
                     foreach ($alternates as $alt) {
@@ -173,6 +182,14 @@ class SitemapService
                     'hreflang' => 'x-default',
                     'href' => $defaultUrl,
                 ];
+            }
+
+            $images = [];
+            foreach (($item['images'] ?? []) as $img) {
+                $imgLoc = trim((string) ($img['loc'] ?? ''));
+                if ($imgLoc !== '') {
+                    $images[] = ['loc' => canonical_url($imgLoc)];
+                }
             }
 
             $normalizedItems[] = [

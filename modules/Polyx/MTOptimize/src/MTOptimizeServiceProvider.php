@@ -368,7 +368,7 @@ class MTOptimizeServiceProvider extends ServiceProvider
             return [
                 'items' => $items->map(function (Post $post) {
                     $item = [
-                        'loc' => url($post->frontend_url),
+                        'loc' => canonical_url($post->frontend_url),
                         'lastmod' => optional($post->updated_at)->toAtomString(),
                     ];
                     // Alternates
@@ -376,7 +376,7 @@ class MTOptimizeServiceProvider extends ServiceProvider
                         $alternates = [
                             [
                                 'hreflang' => str_replace('_', '-', $post->locale),
-                                'href' => url($post->frontend_url),
+                                'href' => canonical_url($post->frontend_url),
                             ]
                         ];
                         foreach ($post->translations as $trans) {
@@ -385,7 +385,7 @@ class MTOptimizeServiceProvider extends ServiceProvider
                             }
                             $alternates[] = [
                                 'hreflang' => str_replace('_', '-', $trans->locale),
-                                'href' => url($trans->frontend_url),
+                                'href' => canonical_url($trans->frontend_url),
                             ];
                         }
                         // Only add alternates if we have actual translations after filtering
@@ -396,7 +396,7 @@ class MTOptimizeServiceProvider extends ServiceProvider
                     // Image sitemap extension
                     $image = trim((string) ($post->featured_image ?? ''));
                     if ($image !== '') {
-                        $item['images'] = [['loc' => str_starts_with($image, 'http') ? $image : url($image)]];
+                        $item['images'] = [['loc' => canonical_url($image)]];
                     }
                     return $item;
                 })->all(),
@@ -439,9 +439,9 @@ class MTOptimizeServiceProvider extends ServiceProvider
                                 return true;
                             }
                         });
-                        $loc = $isDefaultLocale ? url('/') : url('/' . $item->locale);
+                        $loc = $isDefaultLocale ? canonical_url('/') : canonical_url('/' . $item->locale);
                     } else {
-                        $loc = url($item->frontend_url);
+                        $loc = canonical_url($item->frontend_url);
                     }
 
                     $entry = [
@@ -465,9 +465,9 @@ class MTOptimizeServiceProvider extends ServiceProvider
                                     return true;
                                 }
                             });
-                            $altUrl = $isAltDefaultLocale ? url('/') : url('/' . $altLocale);
+                            $altUrl = $isAltDefaultLocale ? canonical_url('/') : canonical_url('/' . $altLocale);
                         } else {
-                            $altUrl = url($item->frontend_url);
+                            $altUrl = canonical_url($item->frontend_url);
                         }
                         
                         $alternates[] = [
@@ -492,9 +492,9 @@ class MTOptimizeServiceProvider extends ServiceProvider
                                         return true;
                                     }
                                 });
-                                $altUrl = $isAltDefaultLocale ? url('/') : url('/' . $transLocale);
+                                $altUrl = $isAltDefaultLocale ? canonical_url('/') : canonical_url('/' . $transLocale);
                             } else {
-                                $altUrl = url($trans->frontend_url);
+                                $altUrl = canonical_url($trans->frontend_url);
                             }
 
                             $alternates[] = [
@@ -509,7 +509,7 @@ class MTOptimizeServiceProvider extends ServiceProvider
                     }
                     $image = trim((string) ($item->featured_image ?? ''));
                     if ($image !== '') {
-                        $entry['images'] = [['loc' => str_starts_with($image, 'http') ? $image : url($image)]];
+                        $entry['images'] = [['loc' => canonical_url($image)]];
                     }
                     return $entry;
                 })->all(),
@@ -528,14 +528,14 @@ class MTOptimizeServiceProvider extends ServiceProvider
             return [
                 'items' => $items->map(function (Product $item) {
                     $entry = [
-                        'loc' => url($item->frontend_url),
+                        'loc' => canonical_url($item->frontend_url),
                         'lastmod' => optional($item->updated_at)->toAtomString(),
                     ];
                     if ($item->translations->isNotEmpty()) {
                         $alternates = [
                             [
                                 'hreflang' => str_replace('_', '-', $item->locale),
-                                'href' => url($item->frontend_url),
+                                'href' => canonical_url($item->frontend_url),
                             ]
                         ];
                         foreach ($item->translations as $trans) {
@@ -544,7 +544,7 @@ class MTOptimizeServiceProvider extends ServiceProvider
                             }
                             $alternates[] = [
                                 'hreflang' => str_replace('_', '-', $trans->locale),
-                                'href' => url($trans->frontend_url),
+                                'href' => canonical_url($trans->frontend_url),
                             ];
                         }
                         if (count($alternates) > 1) {
@@ -568,14 +568,14 @@ class MTOptimizeServiceProvider extends ServiceProvider
             return [
                 'items' => $items->map(function (Category $item) {
                     $entry = [
-                        'loc' => url($item->frontend_url),
+                        'loc' => canonical_url($item->frontend_url),
                         'lastmod' => optional($item->updated_at)->toAtomString(),
                     ];
                     if ($item->translations->isNotEmpty()) {
                         $alternates = [
                             [
                                 'hreflang' => str_replace('_', '-', $item->locale),
-                                'href' => url($item->frontend_url),
+                                'href' => canonical_url($item->frontend_url),
                             ]
                         ];
                         foreach ($item->translations as $trans) {
@@ -584,7 +584,7 @@ class MTOptimizeServiceProvider extends ServiceProvider
                             }
                             $alternates[] = [
                                 'hreflang' => str_replace('_', '-', $trans->locale),
-                                'href' => url($trans->frontend_url),
+                                'href' => canonical_url($trans->frontend_url),
                             ];
                         }
                         if (count($alternates) > 1) {
@@ -605,14 +605,14 @@ class MTOptimizeServiceProvider extends ServiceProvider
             return [
                 'items' => $items->map(function (ProductCategory $item) {
                     $entry = [
-                        'loc' => url($item->frontend_url),
+                        'loc' => canonical_url($item->frontend_url),
                         'lastmod' => optional($item->updated_at)->toAtomString(),
                     ];
                     if ($item->translations->isNotEmpty()) {
                         $alternates = [
                             [
                                 'hreflang' => str_replace('_', '-', $item->locale),
-                                'href' => url($item->frontend_url),
+                                'href' => canonical_url($item->frontend_url),
                             ]
                         ];
                         foreach ($item->translations as $trans) {
@@ -621,7 +621,7 @@ class MTOptimizeServiceProvider extends ServiceProvider
                             }
                             $alternates[] = [
                                 'hreflang' => str_replace('_', '-', $trans->locale),
-                                'href' => url($trans->frontend_url),
+                                'href' => canonical_url($trans->frontend_url),
                             ];
                         }
                         if (count($alternates) > 1) {
@@ -641,7 +641,7 @@ class MTOptimizeServiceProvider extends ServiceProvider
 
             return [
                 'items' => $items->map(function (PostTag $item) {
-                    $loc = url('/' . trim(app(\App\Services\SettingsService::class)->getPermalinkStructure()['tags']['post'] ?? 'tags', '/') . '/' . $item->slug);
+                    $loc = canonical_url('/' . trim(app(\App\Services\SettingsService::class)->getPermalinkStructure()['tags']['post'] ?? 'tags', '/') . '/' . $item->slug);
                     $entry = [
                         'loc' => $loc,
                         'lastmod' => optional($item->updated_at)->toAtomString(),
@@ -657,7 +657,7 @@ class MTOptimizeServiceProvider extends ServiceProvider
                             if ($trans->id === $item->id) {
                                 continue;
                             }
-                            $transLoc = url('/' . trim(app(\App\Services\SettingsService::class)->getPermalinkStructure()['tags']['post'] ?? 'tags', '/') . '/' . $trans->slug);
+                            $transLoc = canonical_url('/' . trim(app(\App\Services\SettingsService::class)->getPermalinkStructure()['tags']['post'] ?? 'tags', '/') . '/' . $trans->slug);
                             $alternates[] = [
                                 'hreflang' => str_replace('_', '-', $trans->locale),
                                 'href' => $transLoc,
@@ -681,14 +681,14 @@ class MTOptimizeServiceProvider extends ServiceProvider
             return [
                 'items' => $items->map(function (ProductTag $item) {
                     $entry = [
-                        'loc' => url($item->frontend_url),
+                        'loc' => canonical_url($item->frontend_url),
                         'lastmod' => optional($item->updated_at)->toAtomString(),
                     ];
                     if ($item->translations->isNotEmpty()) {
                         $alternates = [
                             [
                                 'hreflang' => str_replace('_', '-', $item->locale),
-                                'href' => url($item->frontend_url),
+                                'href' => canonical_url($item->frontend_url),
                             ]
                         ];
                         foreach ($item->translations as $trans) {
@@ -697,7 +697,7 @@ class MTOptimizeServiceProvider extends ServiceProvider
                             }
                             $alternates[] = [
                                 'hreflang' => str_replace('_', '-', $trans->locale),
-                                'href' => url($trans->frontend_url),
+                                'href' => canonical_url($trans->frontend_url),
                             ];
                         }
                         if (count($alternates) > 1) {

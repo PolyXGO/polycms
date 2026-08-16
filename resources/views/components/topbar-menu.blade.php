@@ -1317,11 +1317,8 @@ $isLoginPage = request()->is('admin/login', 'account/login', 'login', 'register'
                             const leftMenu = document.querySelector('#polycms-topbar .polycms-topbar-left');
                             const rightMenu = document.querySelector('#polycms-topbar .polycms-topbar-right');
 
-                            // Check if menu is empty (no items rendered server-side)
-                            const hasItems = leftMenu && leftMenu.children.length > 0;
-
-                            if (!hasItems && menuData.data.length > 0) {
-                                // Render menu items dynamically
+                            if (menuData.data && menuData.data.length > 0) {
+                                // Always render dynamic menu items for authenticated admin on cached pages
                                 renderMenuItems(menuData.data, leftMenu, rightMenu);
                             }
 

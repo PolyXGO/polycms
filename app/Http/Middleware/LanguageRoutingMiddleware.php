@@ -24,6 +24,20 @@ class LanguageRoutingMiddleware
             return $next($request);
         }
 
+        // Canonical Host Enforcement: Redirect www to non-www (matching APP_URL)
+        $host = $request->getHost();
+        $appUrl = (string) config('app.url', '');
+        $parsedAppUrl = parse_url($appUrl);
+        $canonicalHost = $parsedAppUrl['host'] ?? null;
+
+        if ($canonicalHost && !str_starts_with(strtolower($canonicalHost), 'www.') && str_starts_with(strtolower($host), 'www.')) {
+            $nonWwwHost = substr($host, 4);
+            if (strtolower($nonWwwHost) === strtolower($canonicalHost)) {
+                $targetUrl = $request->getScheme() . '://' . $canonicalHost . $request->getRequestUri();
+                return redirect()->to($targetUrl, 301);
+            }
+        }
+
         $firstSegment = $request->segment(1);
 
         $activeLocales = cache()->remember('active_languages_non_default', 3600, function () {

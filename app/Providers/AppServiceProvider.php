@@ -540,10 +540,16 @@ class AppServiceProvider extends ServiceProvider
                                 'and' => [
                                     ['href_matches' => '/*'],
                                     ['not' => ['href_matches' => '/admin/*']],
+                                    ['not' => ['href_matches' => '/*admin*']],
                                     ['not' => ['href_matches' => '/api/*']],
+                                    ['not' => ['href_matches' => '/*login*']],
+                                    ['not' => ['href_matches' => '/*register*']],
+                                    ['not' => ['href_matches' => '/*account*']],
+                                    ['not' => ['href_matches' => '/*auth*']],
                                     ['not' => ['href_matches' => '/*logout*']],
                                     ['not' => ['href_matches' => '/*cart*']],
                                     ['not' => ['href_matches' => '/*checkout*']],
+                                    ['not' => ['href_matches' => '/*password*']],
                                 ]
                             ],
                             'eagerness' => 'conservative'
@@ -863,10 +869,10 @@ class AppServiceProvider extends ServiceProvider
             echo '<meta name="robots" content="noindex, nofollow">' . PHP_EOL;
         }
 
-        // Canonical URL — default = current URL (without query string)
+        // Canonical URL — default = current URL (without query string, normalized non-www)
         // Themes/modules can override via Hook::addFilter('seo.canonical_url', ..., priority)
         // Priority chain: Core(default) → Theme(10) → Module/MTOptimize(20+)
-        $canonicalUrl = Hook::applyFilters('seo.canonical_url', request()->url());
+        $canonicalUrl = Hook::applyFilters('seo.canonical_url', canonical_url(request()->path()));
 
         if ($canonicalUrl) {
             echo '<link rel="canonical" href="' . e($canonicalUrl) . '">' . PHP_EOL;
@@ -901,7 +907,7 @@ class AppServiceProvider extends ServiceProvider
                 if (Schema::hasTable('languages')) {
                     $activeLanguages = \App\Models\Language::where('is_active', true)->get();
                     foreach ($activeLanguages as $lang) {
-                        $url = $lang->is_default ? url('/') : url($lang->code);
+                        $url = $lang->is_default ? canonical_url('/') : canonical_url($lang->code);
                         echo '<link rel="alternate" hreflang="' . e($lang->code) . '" href="' . e($url) . '" />' . PHP_EOL;
                     }
                 }
@@ -937,7 +943,7 @@ class AppServiceProvider extends ServiceProvider
 
                     foreach ($translations as $trans) {
                         $url = $trans->frontend_url;
-                        $fullUrl = str_starts_with($url, 'http') ? $url : url($url);
+                        $fullUrl = canonical_url($url);
                         echo '<link rel="alternate" hreflang="' . e($trans->locale) . '" href="' . e($fullUrl) . '" />' . PHP_EOL;
                     }
                 } catch (\Exception $e) {}

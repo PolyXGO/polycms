@@ -1550,4 +1550,49 @@ if (!function_exists('is_admin_user')) {
     }
 }
 
+if (!function_exists('canonical_url')) {
+    /**
+     * Generate a canonical URL (enforcing non-www based on APP_URL or current host with www. stripped).
+     */
+    function canonical_url(?string $path = null): string
+    {
+        $appUrl = (string) config('app.url', '');
+        if (!empty($appUrl) && !str_contains($appUrl, 'localhost') && !str_contains($appUrl, '127.0.0.1')) {
+            $base = rtrim($appUrl, '/');
+        } else {
+            $base = rtrim(url('/'), '/');
+        }
+
+        $parsed = parse_url($base);
+        if (!empty($parsed['host']) && str_starts_with(strtolower($parsed['host']), 'www.')) {
+            $cleanHost = substr($parsed['host'], 4);
+            $scheme = $parsed['scheme'] ?? (request()->isSecure() ? 'https' : 'http');
+            $port = isset($parsed['port']) ? ':' . $parsed['port'] : '';
+            $base = "{$scheme}://{$cleanHost}{$port}";
+        }
+
+        if ($path === null || trim($path) === '' || $path === '/') {
+            return $base;
+        }
+
+        // If path is already an absolute URL
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            $parsedPath = parse_url($path);
+            if (!empty($parsedPath['host']) && str_starts_with(strtolower($parsedPath['host']), 'www.')) {
+                $cleanHost = substr($parsedPath['host'], 4);
+                $scheme = $parsedPath['scheme'] ?? 'https';
+                $port = isset($parsedPath['port']) ? ':' . $parsedPath['port'] : '';
+                $newBase = "{$scheme}://{$cleanHost}{$port}";
+                $targetPath = $parsedPath['path'] ?? '/';
+                $query = !empty($parsedPath['query']) ? '?' . $parsedPath['query'] : '';
+                return $newBase . $targetPath . $query;
+            }
+            return $path;
+        }
+
+        $formattedPath = '/' . ltrim($path, '/');
+        return $base . $formattedPath;
+    }
+}
+
 

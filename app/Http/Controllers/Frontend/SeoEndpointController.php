@@ -30,7 +30,7 @@ class SeoEndpointController extends Controller
             $content = implode(PHP_EOL, [
                 'User-agent: *',
                 'Allow: /',
-                'Sitemap: ' . url('/sitemap-index.xml'),
+                'Sitemap: ' . canonical_url('/sitemap-index.xml'),
                 '',
             ]);
         }
@@ -48,7 +48,7 @@ class SeoEndpointController extends Controller
 
         $xml = '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL
             . '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . PHP_EOL
-            . '  <url><loc>' . e(url('/')) . '</loc></url>' . PHP_EOL
+            . '  <url><loc>' . e(canonical_url('/')) . '</loc></url>' . PHP_EOL
             . '</urlset>';
 
         return response($xml, 200, ['Content-Type' => 'application/xml; charset=UTF-8']);

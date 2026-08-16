@@ -772,7 +772,7 @@
                                                 $isLifetime = in_array($service->access_type, ['lifetime', 'permanent']);
                                                 $isSubscription = $service->access_type === 'subscription';
                                             @endphp
-                                            <label class="package-option-label" style="display: flex; align-items: flex-start; gap: 12px; padding: 14px; border: 2px solid {{ $index === 0 ? 'var(--primary-color, #3b82f6)' : '#e2e8f0' }}; border-radius: 12px; cursor: pointer; transition: all 0.2s; background: {{ $index === 0 ? 'rgba(59, 130, 246, 0.03)' : '#fff' }}; position: relative;">
+                                            <label class="package-option-label" style="display: flex; align-items: flex-start; gap: 12px; padding: 14px; border: 2px solid {{ $index === 0 ? 'var(--primary-color, #3b82f6)' : '#e2e8f0' }}; border-radius: 12px; cursor: pointer; transition: all 0.2s; background: {{ $index === 0 ? 'rgba(59, 130, 246, 0.03)' : '#fff' }}; position: relative; width: 100%; box-sizing: border-box;">
                                                 <input type="radio" name="selected_service_id" value="{{ $service->id }}" 
                                                        data-price="{{ $serviceOfferPrice }}" 
                                                        data-price-text="{{ format_currency($serviceOfferPrice) }}"
@@ -1101,7 +1101,7 @@
                             $finalLabel = $buttonProps['label'] ?? $btnText;
                         @endphp
 
-                        <div class="single-product-actions product-purchase-grid" style="width: 100%; max-width: 340px; justify-content: flex-start; align-items: stretch;">
+                        <div class="single-product-actions product-purchase-grid" style="width: 100%; max-width: 360px; justify-content: flex-start; align-items: stretch; box-sizing: border-box;">
                             @if($activeButtons->isNotEmpty())
                                 @if($directBtn)
                                     <button class="{{ $dHasPreset ? 'btn single-product-add-to-cart btn-preset-'.$dBtnId : 'btn btn-primary single-product-add-to-cart' }}" 
@@ -1130,7 +1130,7 @@
                                         @endif
                                         <span>{{ data_get($extBtn, 'label') }}</span>
                                         @if(data_get($extBtn, 'price'))
-                                            <span class="ext-btn-price" style="margin-left: auto; opacity: 0.85; font-size: 0.85rem;">({{ format_currency(data_get($extBtn, 'price')) }})</span>
+                                            <span class="ext-btn-price" style="margin-left: auto; opacity: 0.85; font-size: 0.85rem;">{{ format_currency(data_get($extBtn, 'price')) }}</span>
                                         @endif
                                     </a>
                                 @endforeach
@@ -1222,7 +1222,7 @@
 
                         @if($projectHubFreeRelease && !$isFreeDownloadDisabled)
                              <!-- 1. Download Button (Visible when logged in OR when auth is not required) -->
-                             <div id="free-download-button-wrapper" style="width: 100%; max-width: 340px; margin-top: 12px; margin-bottom: 8px; display: {{ (!$freeDownloadRequiresAuth || auth()->check()) ? 'block' : 'none' }};">
+                             <div id="free-download-button-wrapper" style="width: 100%; max-width: 360px; margin-top: 12px; margin-bottom: 8px; box-sizing: border-box; display: {{ (!$freeDownloadRequiresAuth || auth()->check()) ? 'block' : 'none' }};">
                                  <a id="free-download-link"
                                     href="{{ $freeDownloadRequiresAuth ? route('projects.download-free', $projectHubFreeRelease->id) : $freeDownloadUrl }}" 
                                     class="btn" 
@@ -1239,7 +1239,7 @@
 
                              <!-- 2. Register/Login Button (Visible only when auth is required AND user is guest) -->
                              @if($freeDownloadRequiresAuth && !auth()->check())
-                                 <div id="free-login-button-wrapper" style="width: 100%; max-width: 340px; margin-top: 12px; margin-bottom: 8px; display: block;">
+                                 <div id="free-login-button-wrapper" style="width: 100%; max-width: 360px; margin-top: 12px; margin-bottom: 8px; box-sizing: border-box; display: block;">
                                      <a href="{{ route('register') }}?redirect={{ urlencode(request()->fullUrl()) }}" 
                                         class="btn btn-secondary" 
                                         style="display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 12px; font-weight: 600; font-size: 0.875rem; border-radius: 6px; text-decoration: none; border-style: solid; border-width: 1px;">

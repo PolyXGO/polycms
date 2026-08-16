@@ -192,6 +192,20 @@ html.dark .single-product-thumb-nav:hover,
     margin-bottom: 2rem;
 }
 
+.product-packages-selector,
+.single-product-actions,
+#free-download-button-wrapper,
+#free-login-button-wrapper {
+    width: 100%;
+    max-width: 360px;
+    box-sizing: border-box;
+}
+
+.package-option-label {
+    width: 100%;
+    box-sizing: border-box;
+}
+
 .single-product-actions {
     margin-top: auto;
 }
@@ -199,6 +213,7 @@ html.dark .single-product-thumb-nav:hover,
 .single-product-add-to-cart {
     width: 100%;
     padding: 1rem;
+    box-sizing: border-box;
 }
 
 .single-product-meta {

@@ -37,7 +37,13 @@ class UrlNormalizer
             $path = '/';
         }
 
-        $normalized = ($parts['scheme'] ?? request()->getScheme()) . '://' . ($parts['host'] ?? request()->getHost());
+        $host = $parts['host'] ?? request()->getHost();
+        if (str_starts_with(strtolower($host), 'www.')) {
+            $host = substr($host, 4);
+        }
+
+        $scheme = $parts['scheme'] ?? (request()->isSecure() ? 'https' : 'http');
+        $normalized = $scheme . '://' . $host;
 
         if (isset($parts['port']) && !in_array((int) $parts['port'], [80, 443], true)) {
             $normalized .= ':' . $parts['port'];
@@ -127,17 +133,13 @@ class UrlNormalizer
         $trimmed = trim($url);
 
         if ($trimmed === '') {
-            return url('/');
+            return canonical_url('/');
         }
 
         if (str_starts_with($trimmed, 'http://') || str_starts_with($trimmed, 'https://')) {
-            return $trimmed;
+            return canonical_url($trimmed);
         }
 
-        if (str_starts_with($trimmed, '/')) {
-            return url($trimmed);
-        }
-
-        return url('/' . ltrim($trimmed, '/'));
+        return canonical_url('/' . ltrim($trimmed, '/'));
     }
 }

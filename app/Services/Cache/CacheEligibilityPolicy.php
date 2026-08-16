@@ -56,6 +56,7 @@ class CacheEligibilityPolicy
         'cart',
         'checkout',
         'account',
+        'auth',
         'logout',
         'login',
         'register',
@@ -107,13 +108,29 @@ class CacheEligibilityPolicy
             return false;
         }
 
-        // 7. Check path exclusions
+        // 7. Check path exclusions (including localized paths e.g. /vi/login, /vi/account/login, /vi/register)
         $blacklistedPaths = $this->getBlacklistedPaths();
         $path = ltrim($request->path(), '/');
+        $normalizedPath = (string) preg_replace('#^[a-z]{2,3}(?:-[a-zA-Z0-9]+)?/#i', '', $path);
+
         foreach ($blacklistedPaths as $blacklisted) {
-            if ($path === $blacklisted || str_starts_with($path, $blacklisted . '/')) {
+            if ($path === $blacklisted || str_starts_with($path, $blacklisted . '/')
+                || $normalizedPath === $blacklisted || str_starts_with($normalizedPath, $blacklisted . '/')) {
                 return false;
             }
+        }
+
+        // Additional safeguard for wildcard patterns (admin, account, login, register, auth)
+        if ($request->is(
+            'admin*', '*/admin*',
+            'account*', '*/account*',
+            'login*', '*/login*',
+            'register*', '*/register*',
+            'auth*', '*/auth*',
+            'logout*', '*/logout*',
+            'password*', '*/password*'
+        )) {
+            return false;
         }
 
         // 8. Check for user-specific session/cart cookies
