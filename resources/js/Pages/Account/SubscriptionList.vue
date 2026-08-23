@@ -27,40 +27,40 @@
             </button>
         </div>
 
-        <div class="bg-white dark:bg-[#111] shadow-sm overflow-hidden sm:rounded-xl border border-gray-200 dark:border-zinc-800 transition-colors duration-300">
+        <div class="bg-white dark:bg-[#111] shadow-sm overflow-x-auto sm:rounded-xl border border-gray-200 dark:border-zinc-800 transition-colors duration-300">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
                 <thead class="bg-gray-50 dark:bg-gray-800/50">
                     <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider min-w-[220px] max-w-sm">
                             {{ t('Product') }}
                         </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                             {{ t('Price') }}
                         </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                             {{ t('Status') }}
                         </th>
-                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                             {{ t('Starts At') }}
                         </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                             {{ t('Expires At') }}
                         </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                             {{ t('Auto Renew') }}
                         </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                             {{ t('Actions') }}
                         </th>
                     </tr>
                 </thead>
                 <tbody class="bg-white dark:bg-[#111] divide-y divide-gray-200 dark:divide-zinc-800">
                     <tr v-for="sub in filteredSubscriptions" :key="sub.id" class="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                            <a v-if="sub.product?.slug" :href="getProductUrl(sub.product.slug)" target="_blank" class="block font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100 min-w-[220px] max-w-xs sm:max-w-sm md:max-w-md break-words">
+                            <a v-if="sub.product?.slug" :href="getProductUrl(sub.product.slug)" target="_blank" class="block font-semibold text-indigo-600 dark:text-indigo-400 hover:underline leading-snug break-words">
                                 {{ sub.product?.name || sub.service?.name || '-' }}
                             </a>
-                            <span v-else class="block font-semibold text-indigo-600 dark:text-indigo-400">
+                            <span v-else class="block font-semibold text-indigo-600 dark:text-indigo-400 leading-snug break-words">
                                 {{ sub.product?.name || sub.service?.name || '-' }}
                             </span>
                             <Link v-if="sub.order" :href="route('account.orders.show', sub.order.code)" class="inline-flex items-center gap-1 mt-1 text-xs text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors font-normal">
@@ -69,8 +69,8 @@
                             </Link>
                             <!-- Package / Plan Snapshot Info -->
                             <div v-if="getSubscriptionPackageInfo(sub)" class="mt-1">
-                                <span class="inline-flex items-center gap-1 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded text-[11px] font-medium">
-                                    <i class="fas fa-cube text-[9px] text-indigo-500"></i>
+                                <span class="inline-flex items-center gap-1 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded text-[11px] font-medium break-all">
+                                    <i class="fas fa-cube text-[9px] text-indigo-500 flex-shrink-0"></i>
                                     {{ getSubscriptionPackageInfo(sub) }}
                                 </span>
                             </div>

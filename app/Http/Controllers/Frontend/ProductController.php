@@ -143,6 +143,7 @@ class ProductController extends FrontendController
 
         [$productFaqItems, $hasProductFaqTab] = $this->resolveProductFaqItems($product);
         [$productCustomTabs, $hasProductCustomTabs, $defaultProductCustomTabId] = $this->resolveProductCustomTabs($product);
+        [$productDocumentationPosts, $hasProductDocumentationTab, $productDocumentationCategory, $productDocumentationConfig] = $this->resolveProductDocumentation($product);
 
         $projectReleases = collect();
         $projectFeatures = collect();
@@ -275,6 +276,10 @@ class ProductController extends FrontendController
             'projectFeatures' => $projectFeatures,
             'projectUrl' => $projectUrl,
             'project' => $project,
+            'productDocumentationPosts' => $productDocumentationPosts,
+            'hasProductDocumentationTab' => $hasProductDocumentationTab,
+            'productDocumentationCategory' => $productDocumentationCategory,
+            'productDocumentationConfig' => $productDocumentationConfig,
         ];
 
         // Apply theme filter
@@ -486,5 +491,131 @@ class ProductController extends FrontendController
             'content' => (string) data_get($item, 'content', ''),
             'active_default' => (bool) data_get($item, 'active_default', false),
         ];
+    }
+
+    /**
+     * Resolve documentation posts and category for single product view
+     *
+     * @param Product $product
+     * @return array{0: \Illuminate\Support\Collection, 1: bool, 2: \App\Models\Category|null, 3: array}
+     */
+    protected function resolveProductDocumentation(Product $product): array
+    {
+        $docConfig = data_get($product->settings, 'documentation', []);
+        $enabled = (bool) data_get($docConfig, 'enabled', false);
+
+        if (!$enabled) {
+            return [collect(), false, null, []];
+        }
+
+        $categoryId = data_get($docConfig, 'category_id');
+        $postIds = array_filter((array) data_get($docConfig, 'post_ids', []));
+        $source = (string) data_get($docConfig, 'source', 'category');
+        $limit = (int) data_get($docConfig, 'posts_limit', 12);
+        $limit = max(1, min(100, $limit));
+        $orderBy = (string) data_get($docConfig, 'order_by', 'date_desc');
+
+        $currentLocale = \Illuminate\Support\Facades\App::getLocale() ?: 'en';
+
+        $category = null;
+        $resolvedCategoryId = null;
+
+        if ($categoryId && class_exists(\App\Models\Category::class)) {
+            $baseCategory = \App\Models\Category::withoutGlobalScope('locale')->find($categoryId);
+            if ($baseCategory) {
+                $category = $baseCategory;
+                // If multilingual and base category has translation in current locale
+                if ($baseCategory->locale !== $currentLocale && !empty($baseCategory->translation_group_id)) {
+                    $translatedCat = \App\Models\Category::withoutGlobalScope('locale')
+                        ->where('translation_group_id', $baseCategory->translation_group_id)
+                        ->where('locale', $currentLocale)
+                        ->first();
+                    if ($translatedCat) {
+                        $category = $translatedCat;
+                    }
+                }
+                $resolvedCategoryId = $category->id;
+            }
+        }
+
+        if (!class_exists(\App\Models\Post::class)) {
+            return [collect(), false, $category, $docConfig];
+        }
+
+        $query = \App\Models\Post::query()
+            ->withoutGlobalScope('locale')
+            ->where('status', 'published')
+            ->with(['user', 'categories', 'tags']);
+
+        // Locale filtering
+        $query->where(function ($q) use ($currentLocale) {
+            $q->where('locale', $currentLocale)
+              ->orWhereNull('locale')
+              ->orWhere('locale', '');
+        });
+
+        $hasCondition = false;
+
+        if (in_array($source, ['category', 'both'], true) && $resolvedCategoryId) {
+            $targetIds = array_unique(array_filter([$resolvedCategoryId, (int)$categoryId]));
+            $query->whereHas('categories', function ($cq) use ($targetIds) {
+                $cq->withoutGlobalScope('locale')->whereIn('categories.id', $targetIds);
+            });
+            $hasCondition = true;
+        }
+
+        if (in_array($source, ['posts', 'both'], true) && !empty($postIds)) {
+            if ($source === 'posts') {
+                $query->whereIn('posts.id', $postIds);
+                $hasCondition = true;
+            } else {
+                $query->orWhereIn('posts.id', $postIds);
+            }
+        }
+
+        if (!$hasCondition) {
+            return [collect(), false, $category, $docConfig];
+        }
+
+        // Apply order
+        switch ($orderBy) {
+            case 'date_asc':
+                $query->orderBy('published_at', 'asc')->orderBy('created_at', 'asc')->orderBy('id', 'asc');
+                break;
+            case 'title_asc':
+                $query->orderBy('title', 'asc');
+                break;
+            case 'order_desc':
+                $query->orderByDesc('order')->orderByDesc('published_at')->orderByDesc('id');
+                break;
+            case 'date_desc':
+                $query->orderByDesc('published_at')->orderByDesc('created_at')->orderByDesc('id');
+                break;
+            case 'order_asc':
+            default:
+                $query->orderBy('order', 'asc')->orderByDesc('published_at')->orderByDesc('id');
+                break;
+        }
+
+        $posts = $query->take($limit)->get();
+
+        // If no posts in current locale and current locale is not default locale, fallback query
+        if ($posts->isEmpty() && $currentLocale !== config('app.locale', 'en')) {
+            $fallbackLocale = config('app.locale', 'en');
+            $fallbackQuery = \App\Models\Post::query()
+                ->withoutGlobalScope('locale')
+                ->where('status', 'published')
+                ->where('locale', $fallbackLocale)
+                ->with(['user', 'categories', 'tags']);
+
+            if ($categoryId) {
+                $fallbackQuery->whereHas('categories', function ($cq) use ($categoryId) {
+                    $cq->withoutGlobalScope('locale')->where('categories.id', $categoryId);
+                });
+            }
+            $posts = $fallbackQuery->take($limit)->get();
+        }
+
+        return [$posts, $posts->isNotEmpty(), $category, $docConfig];
     }
 }

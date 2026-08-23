@@ -559,5 +559,17 @@
     "Copy the Client ID and Client Secret, then enter them in the config on the right.": "Copy the Client ID and Client Secret, then enter them in the config on the right.",
     "Enable the Sandbox Mode toggle in PayPal settings.": "Enable the Sandbox Mode toggle in PayPal settings.",
     "Leave the Webhook ID blank (this bypasses complex signature validation for local localhost testing).": "Leave the Webhook ID blank (this bypasses complex signature validation for local localhost testing).",
-    "Test the payment using a Sandbox Personal Buyer account (credentials can be found under Testing > Sandbox Accounts on PayPal Dashboard).": "Test the payment using a Sandbox Personal Buyer account (credentials can be found under Testing > Sandbox Accounts on PayPal Dashboard)."
+    "Test the payment using a Sandbox Personal Buyer account (credentials can be found under Testing > Sandbox Accounts on PayPal Dashboard).": "Test the payment using a Sandbox Personal Buyer account (credentials can be found under Testing > Sandbox Accounts on PayPal Dashboard).",
+    "Action Required": "Action Required",
+    "Please click Add Release first to create a version": "Please click Add Release first to create a version",
+    "File attachment features only work after the release has been added to the list. Please click \"Add Release\" below to create this version before uploading release attachments.": "File attachment features only work after the release has been added to the list. Please click \"Add Release\" below to create this version before uploading release attachments.",
+    "Please enter the Version first before uploading files.": "Please enter the Version first before uploading files.",
+    "Please save the project first before uploading release files.": "Please save the project first before uploading release files.",
+    "Please save the release first before downloading.": "Please save the release first before downloading.",
+    "Upload Paid .zip": "Upload Paid .zip",
+    "Upload Free .zip": "Upload Free .zip",
+    "Upload Doc": "Upload Doc",
+    "Documentation File (Optional - .zip, .html, .txt, .pdf)": "Documentation File (Optional - .zip, .html, .txt, .pdf)",
+    "Free Version (Free & Publicly Accessible)": "Free Version (Free & Publicly Accessible)",
+    "Paid Version (License Required to Download)": "Paid Version (License Required to Download)"
 }

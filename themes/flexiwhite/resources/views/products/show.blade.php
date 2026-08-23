@@ -390,6 +390,8 @@
                         <!-- Product Media Actions (Live Preview, Gallery, Video) -->
                         @php
                             $demoUrl = trim((string) data_get($product->settings, 'demo_url', ''));
+                            $demoLabel = trim((string) (data_get($product->settings, 'demo_label', '') ?: data_get($product->settings, 'preview_label', '')));
+                            $demoButtonText = !empty($demoLabel) ? _l($demoLabel) : _l('Preview');
                             $galleryItems = collect($product->media ?? [])->map(function ($media) use ($product) {
                                 return [
                                     'url' => $media->url ?? '',
@@ -409,19 +411,19 @@
 
                         <div class="product-media-grid cols-{{ $buttonCount }}" style="margin-top: 15px; width: 100%;">
                             @if(!empty($demoUrl))
-                                <a href="{{ route('products.preview', ['slug' => $product->slug]) }}" target="_blank" class="media-action-btn media-action-btn--primary" style="text-align: center; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; padding: 10px; border-radius: 8px; font-size: 0.9rem; background: var(--geist-success, #0070f3); color: #fff; border: 1px solid transparent; transition: all 0.2s; cursor: pointer; width: 100%; box-sizing: border-box;">
+                                <a href="{{ route('products.preview', ['slug' => $product->slug]) }}" target="_blank" class="media-action-btn media-action-btn--primary">
                                     <i class="fas fa-external-link-alt"></i>
-                                    <span>{{ _l('Preview') }}</span>
+                                    <span>{{ $demoButtonText }}</span>
                                 </a>
                             @endif
                             @if($galleryItems->isNotEmpty())
-                                <button type="button" data-open-screenshots class="media-action-btn" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; padding: 10px; border-radius: 8px; font-size: 0.9rem; background: #fff; color: #334155; border: 1px solid var(--geist-accents-2, #eaeaea); cursor: pointer; transition: all 0.2s; width: 100%; box-sizing: border-box;">
+                                <button type="button" data-open-screenshots class="media-action-btn">
                                     <i class="far fa-images"></i>
                                     <span>{{ _l('Gallery') }}</span>
                                 </button>
                             @endif
                             @if($previewVideos->isNotEmpty())
-                                <button type="button" data-open-videos class="media-action-btn" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; padding: 10px; border-radius: 8px; font-size: 0.9rem; background: #fff; color: #334155; border: 1px solid var(--geist-accents-2, #eaeaea); cursor: pointer; transition: all 0.2s; width: 100%; box-sizing: border-box;">
+                                <button type="button" data-open-videos class="media-action-btn">
                                     <i class="fas fa-play-circle"></i>
                                     <span>{{ _l('Video') }}</span>
                                 </button>
@@ -772,7 +774,7 @@
                                                 $isLifetime = in_array($service->access_type, ['lifetime', 'permanent']);
                                                 $isSubscription = $service->access_type === 'subscription';
                                             @endphp
-                                            <label class="package-option-label" style="display: flex; align-items: flex-start; gap: 12px; padding: 14px; border: 2px solid {{ $index === 0 ? 'var(--primary-color, #3b82f6)' : '#e2e8f0' }}; border-radius: 12px; cursor: pointer; transition: all 0.2s; background: {{ $index === 0 ? 'rgba(59, 130, 246, 0.03)' : '#fff' }}; position: relative; width: 100%; box-sizing: border-box;">
+                                            <label class="package-option-label {{ $index === 0 ? 'is-selected' : '' }}">
                                                 <input type="radio" name="selected_service_id" value="{{ $service->id }}" 
                                                        data-price="{{ $serviceOfferPrice }}" 
                                                        data-price-text="{{ format_currency($serviceOfferPrice) }}"
@@ -783,22 +785,22 @@
                                                        data-name="{{ $service->name }}"
                                                        data-billing="{{ $isSubscription ? ($service->duration_value . ' ' . $service->duration_unit . ($service->duration_value > 1 ? 's' : '')) : 'Lifetime' }}"
                                                        {{ $index === 0 ? 'checked' : '' }} 
-                                                       style="margin-top: 4px; accent-color: var(--primary-color, #3b82f6);"
+                                                       style="margin-top: 4px; accent-color: var(--primary, #3b82f6);"
                                                        onchange="updateSelectedPackage(this)">
                                                 <div style="flex: 1;">
                                                     <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 4px;">
-                                                        <span style="font-weight: 700; color: #0f172a;" class="package-name-text">{{ _l($service->name) }}</span>
+                                                        <span class="package-name-text">{{ _l($service->name) }}</span>
                                                         <div style="display: flex; align-items: center; gap: 8px;">
-                                                            <span style="font-weight: 800; color: var(--primary-color, #3b82f6); font-size: 1.1rem;">{{ format_currency($serviceOfferPrice) }}</span>
+                                                            <span class="package-price-text">{{ format_currency($serviceOfferPrice) }}</span>
                                                             @if($hasServiceSale)
                                                                 <span style="text-decoration: line-through; color: #94a3b8; font-size: 0.85rem; font-weight: 500;">{{ format_currency($rawServicePrice) }}</span>
                                                             @endif
                                                         </div>
                                                     </div>
 
-                                                    <div style="font-size: 0.82rem; color: #64748b; margin-bottom: 2px;" class="package-meta-text">
-                                                        <div style="display: flex; align-items: center; gap: 6px; font-weight: 600; color: #334155; margin-bottom: 2px;" class="package-key-info">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px; color: #3b82f6; flex-shrink: 0;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <div class="package-meta-text">
+                                                        <div class="package-key-info">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 0121 9z" />
                                                             </svg>
                                                             <span>
@@ -810,7 +812,7 @@
                                                             </span>
                                                         </div>
 
-                                                        <div>
+                                                        <div class="package-duration-info">
                                                             @if($isSubscription)
                                                                 {{ $service->duration_value }} {{ _l(ucfirst($service->duration_unit) . ($service->duration_value > 1 ? 's' : '')) }}
                                                                 @if($service->is_recurring)
@@ -887,22 +889,14 @@
                             <!-- Script to update styles and price on radio change -->
                             <script>
                                 function updateSelectedPackage(radio) {
-                                    // Update all label borders and backgrounds
+                                    // Update all label classes
                                     document.querySelectorAll('.package-option-label').forEach(label => {
-                                        label.style.borderColor = '#e2e8f0';
-                                        label.style.background = '#fff';
-                                        const isDark = document.body.classList.contains('dark') || document.documentElement.classList.contains('dark');
-                                        if (isDark) {
-                                            label.style.borderColor = 'rgba(148, 163, 184, 0.2)';
-                                            label.style.background = 'rgba(30, 41, 59, 0.2)';
-                                        }
+                                        label.classList.remove('is-selected');
                                     });
                                     
                                     const activeLabel = radio.closest('.package-option-label');
                                     if (activeLabel) {
-                                        activeLabel.style.borderColor = 'var(--primary-color, #3b82f6)';
-                                        const isDark = document.body.classList.contains('dark') || document.documentElement.classList.contains('dark');
-                                        activeLabel.style.background = isDark ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.03)';
+                                        activeLabel.classList.add('is-selected');
                                     }
                                     
                                     // Update price display
@@ -945,26 +939,12 @@
                                     }
                                 }
                                 
-                                // Initial dark/light mode adjustment & package price sync
+                                // Initial package selection sync
                                 document.addEventListener('DOMContentLoaded', () => {
                                     const checkedRadio = document.querySelector('input[name="selected_service_id"]:checked');
                                     if (checkedRadio) {
                                         updateSelectedPackage(checkedRadio);
                                     }
-                                    const isDark = document.body.classList.contains('dark') || document.documentElement.classList.contains('dark');
-                                    document.querySelectorAll('.package-option-label').forEach(label => {
-                                        const radio = label.querySelector('input[type="radio"]');
-                                        if (isDark) {
-                                            if (!radio.checked) {
-                                                label.style.borderColor = 'rgba(148, 163, 184, 0.2)';
-                                                label.style.background = 'rgba(30, 41, 59, 0.2)';
-                                            } else {
-                                                label.style.borderColor = 'var(--primary-color, #3b82f6)';
-                                                label.style.background = 'rgba(59, 130, 246, 0.1)';
-                                            }
-                                            label.querySelector('.package-name-text').style.color = '#e2e8f0';
-                                        }
-                                    });
                                 });
                             </script>
                         @endif
@@ -1184,6 +1164,20 @@
                                         }
                                     }
 
+                                    $projectHubLatestRelease = $projectHubProject->releases()
+                                        ->where('status', 'published')
+                                        ->orderByDesc('released_at')
+                                        ->orderByDesc('id')
+                                        ->first();
+
+                                    if (!$projectHubLatestRelease && $mainProjectHubProject->id !== $projectHubProject->id) {
+                                        $projectHubLatestRelease = $mainProjectHubProject->releases()
+                                            ->where('status', 'published')
+                                            ->orderByDesc('released_at')
+                                            ->orderByDesc('id')
+                                            ->first();
+                                    }
+
                                     $projectHubFreeRelease = $projectHubProject->releases()
                                         ->where('status', 'published')
                                         ->whereNotNull('free_download_url')
@@ -1220,16 +1214,50 @@
                             }
                         @endphp
 
-                        @if($projectHubFreeRelease && !$isFreeDownloadDisabled)
+                        @php
+                            $hasWindowsInstaller = !empty($projectHubLatestRelease?->installer_windows_url);
+                            $hasMacosInstaller = !empty($projectHubLatestRelease?->installer_macos_url);
+                        @endphp
+
+                        @if(($hasWindowsInstaller || $hasMacosInstaller) && !$isSalePaused)
+                            <div class="desktop-installers-wrapper" style="width: 100%; max-width: 360px; margin-top: 12px; margin-bottom: 8px; display: grid; grid-template-columns: {{ ($hasWindowsInstaller && $hasMacosInstaller) ? 'repeat(2, minmax(0, 1fr))' : '1fr' }}; gap: 8px;">
+                                @if($hasWindowsInstaller)
+                                    <a href="{{ route('projects.download-installer', ['release' => $projectHubLatestRelease->id, 'platform' => 'windows']) }}" 
+                                       class="btn btn-download-windows" 
+                                       style="display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 12px 8px; font-weight: 600; font-size: 0.8125rem; border-radius: 6px; background-color: #0284c7; color: #fff; transition: all 0.2s ease; border: 1px solid #0284c7; text-decoration: none; white-space: nowrap;"
+                                       onmouseover="this.style.backgroundColor='#0369a1'; this.style.borderColor='#0369a1'"
+                                       onmouseout="this.style.backgroundColor='#0284c7'; this.style.borderColor='#0284c7'">
+                                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="margin-right: 6px; display: inline-block; vertical-align: middle; flex-shrink: 0;">
+                                            <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.901-1.802"/>
+                                        </svg>
+                                        {{ _l('Download for Windows') }}
+                                    </a>
+                                @endif
+
+                                @if($hasMacosInstaller)
+                                    <a href="{{ route('projects.download-installer', ['release' => $projectHubLatestRelease->id, 'platform' => 'macos']) }}" 
+                                       class="btn btn-download-macos" 
+                                       style="display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 12px 8px; font-weight: 600; font-size: 0.8125rem; border-radius: 6px; background-color: #334155; color: #fff; transition: all 0.2s ease; border: 1px solid #334155; text-decoration: none; white-space: nowrap;"
+                                       onmouseover="this.style.backgroundColor='#1e293b'; this.style.borderColor='#1e293b'"
+                                       onmouseout="this.style.backgroundColor='#334155'; this.style.borderColor='#334155'">
+                                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="margin-right: 6px; display: inline-block; vertical-align: middle; flex-shrink: 0;">
+                                            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 0.92-2.85-.9.04-1.99.6-2.61 1.34-.55.63-.99 1.68-.87 2.7.99.08 2.01-.5 2.56-1.19z"/>
+                                        </svg>
+                                        {{ _l('Download for macOS') }}
+                                    </a>
+                                @endif
+                            </div>
+                        @endif
+
+                        @if($projectHubFreeRelease && !$isFreeDownloadDisabled && !($hasWindowsInstaller || $hasMacosInstaller))
                              <!-- 1. Download Button (Visible when logged in OR when auth is not required) -->
                              <div id="free-download-button-wrapper" style="width: 100%; max-width: 360px; margin-top: 12px; margin-bottom: 8px; box-sizing: border-box; display: {{ (!$freeDownloadRequiresAuth || auth()->check()) ? 'block' : 'none' }};">
                                  <a id="free-download-link"
-                                    href="{{ $freeDownloadRequiresAuth ? route('projects.download-free', $projectHubFreeRelease->id) : $freeDownloadUrl }}" 
+                                    href="{{ route('projects.download-free', $projectHubFreeRelease->id) }}" 
                                     class="btn" 
                                     style="display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 12px; font-weight: 600; font-size: 0.875rem; border-radius: 6px; background-color: #10b981; color: #fff; transition: all 0.2s ease; border: 1px solid #10b981; text-decoration: none;"
                                     onmouseover="this.style.backgroundColor='#059669'; this.style.borderColor='#059669'"
-                                    onmouseout="this.style.backgroundColor='#10b981'; this.style.borderColor='#10b981'"
-                                    {{ !$freeDownloadRequiresAuth ? 'download' : '' }}>
+                                    onmouseout="this.style.backgroundColor='#10b981'; this.style.borderColor='#10b981'">
                                      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right: 8px; display: inline-block; vertical-align: middle;">
                                          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                      </svg>
@@ -1255,7 +1283,7 @@
                              <script>
                                  (function() {
                                      function checkClientAuth() {
-                                         const isFreeDisabled = {{ $isFreeDownloadDisabled ? 'true' : 'false' }};
+                                         const isFreeDisabled = {{ ($isFreeDownloadDisabled || $hasWindowsInstaller || $hasMacosInstaller) ? 'true' : 'false' }};
                                          const downloadBtn = document.getElementById('free-download-button-wrapper');
                                          const loginBtn = document.getElementById('free-login-button-wrapper');
                                          
@@ -1265,17 +1293,18 @@
                                              return;
                                          }
 
-                                         const hasAuthToken = !!localStorage.getItem('auth_token');
+                                         const authToken = localStorage.getItem('auth_token');
+                                         const hasAuthToken = !!authToken;
                                          
                                          if (hasAuthToken) {
                                              if (loginBtn) loginBtn.style.display = 'none';
                                              if (downloadBtn) {
                                                  downloadBtn.style.display = 'block';
-                                                 // Update link for admin to bypass web middleware if not web-session authenticated
                                                  const downloadLink = document.getElementById('free-download-link');
                                                  if (downloadLink) {
-                                                     downloadLink.setAttribute('href', '{{ $freeDownloadUrl }}');
-                                                     downloadLink.setAttribute('download', '');
+                                                     let url = '{{ route('projects.download-free', $projectHubFreeRelease->id) }}';
+                                                     url += (url.includes('?') ? '&' : '?') + 'auth_token=' + encodeURIComponent(authToken);
+                                                     downloadLink.setAttribute('href', url);
                                                  }
                                              }
                                          }
@@ -1357,6 +1386,13 @@
                 if (!empty($projectReleases) && ($projectReleases->isNotEmpty() || $projectFeatures->isNotEmpty())) {
                     $tabs->push(['id' => 'updates-roadmap', 'title' => _l('Updates & Roadmap'), 'type' => 'updates-roadmap']);
                 }
+                if (!empty($hasProductDocumentationTab) && !empty($productDocumentationPosts) && $productDocumentationPosts->isNotEmpty()) {
+                    $docTitle = data_get($product->settings, 'documentation.title');
+                    if (empty(trim((string)$docTitle))) {
+                        $docTitle = _l('Documentation');
+                    }
+                    $tabs->push(['id' => 'documentation', 'title' => $docTitle, 'type' => 'documentation']);
+                }
                 foreach ($customTabPanels as $tab) {
                     $tabs->push([
                         'id' => $tab['id'],
@@ -1394,12 +1430,15 @@
                         $defaultTabId = 'description';
                     } elseif ($configuredDefaultTabId === 'faqs' && $tabs->contains(fn ($tab) => $tab['id'] === 'faqs')) {
                         $defaultTabId = 'faqs';
+                    } elseif ($configuredDefaultTabId === 'documentation' && $tabs->contains(fn ($tab) => $tab['id'] === 'documentation')) {
+                        $defaultTabId = 'documentation';
                     } elseif (!empty($matchedCustom['id']) && $tabs->contains(fn ($tab) => $tab['id'] === $matchedCustom['id'])) {
                         $defaultTabId = $matchedCustom['id'];
                     }
                 }
             @endphp
             @if($tabs->isNotEmpty())
+                {!! \App\Facades\Hook::doAction('theme.product.single.before_details', $product) !!}
                 <div class="single-product-details">
                     <div class="single-product-tab-nav" data-product-tabs data-default-tab="{{ $defaultTabId }}">
                         @foreach($tabs as $tab)
@@ -1690,6 +1729,139 @@
                             </div>
                         @endif
 
+                        @if(!empty($hasProductDocumentationTab) && !empty($productDocumentationPosts) && $productDocumentationPosts->isNotEmpty())
+                            @php
+                                $docLayout = data_get($product->settings, 'documentation.display_layout', 'grid');
+                                $docCatName = $productDocumentationCategory->name ?? null;
+                                $docCatUrl = $productDocumentationCategory->frontend_url ?? null;
+                                $getDocPlainText = function ($p) {
+                                    if (!empty($p->content_html) && is_string($p->content_html)) {
+                                        return strip_tags($p->content_html);
+                                    }
+                                    if (!empty($p->content_raw) && is_string($p->content_raw)) {
+                                        return strip_tags($p->content_raw);
+                                    }
+                                    if (!empty($p->excerpt) && is_string($p->excerpt)) {
+                                        return strip_tags($p->excerpt);
+                                    }
+                                    return '';
+                                };
+                            @endphp
+                            <div id="documentation" class="single-product-tab-panel">
+                                <div class="product-doc-container">
+                                    <div class="product-doc-header">
+                                        <div class="product-doc-header__info">
+                                            <div class="product-doc-header__badge">
+                                                <i class="fas fa-book-open"></i>
+                                                <span>{{ $docCatName ?? _l('Guides & Documentation') }}</span>
+                                            </div>
+                                            <h3 class="product-doc-header__title">{{ data_get($product->settings, 'documentation.title') ?: _l('Documentation & Resources') }}</h3>
+                                            <p class="product-doc-header__subtitle">
+                                                {{ _l('Explore detailed tutorials, setup guides, and reference articles for :product.', ['product' => $product->name]) }}
+                                            </p>
+                                        </div>
+                                        @if($docCatUrl)
+                                            <a href="{{ $docCatUrl }}" class="product-doc-header__viewall" target="_blank">
+                                                <span>{{ _l('View All Docs') }}</span>
+                                                <i class="fas fa-arrow-right"></i>
+                                            </a>
+                                        @endif
+                                    </div>
+
+                                    @if($docLayout === 'list')
+                                        <div class="product-doc-list">
+                                            @foreach($productDocumentationPosts as $post)
+                                                @php
+                                                    $plainText = $getDocPlainText($post);
+                                                    $words = str_word_count($plainText);
+                                                    $readingTime = max(1, (int) ceil($words / 200));
+                                                    $postExcerpt = (!empty($post->excerpt) && is_string($post->excerpt)) ? $post->excerpt : \Illuminate\Support\Str::limit($plainText, 140);
+                                                @endphp
+                                                <a href="{{ $post->frontend_url }}" class="product-doc-list-item">
+                                                    <div class="product-doc-list-item__icon">
+                                                        <i class="far fa-file-alt"></i>
+                                                    </div>
+                                                    <div class="product-doc-list-item__content">
+                                                        <h4 class="product-doc-list-item__title">{{ $post->title }}</h4>
+                                                        @if($postExcerpt)
+                                                            <p class="product-doc-list-item__excerpt">{{ $postExcerpt }}</p>
+                                                        @endif
+                                                        <div class="product-doc-list-item__meta">
+                                                            @if($post->published_at)
+                                                                <span><i class="far fa-calendar-alt"></i> {{ $post->published_at->format('M d, Y') }}</span>
+                                                            @endif
+                                                            <span><i class="far fa-clock"></i> {{ $readingTime }} {{ _l('min read') }}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="product-doc-list-item__arrow">
+                                                        <i class="fas fa-chevron-right"></i>
+                                                    </div>
+                                                </a>
+                                            @endforeach
+                                        </div>
+                                    @elseif($docLayout === 'accordion')
+                                        @php
+                                            $docAccordionItems = $productDocumentationPosts->map(function ($post) use ($getDocPlainText) {
+                                                $plainText = $getDocPlainText($post);
+                                                $excerpt = (!empty($post->excerpt) && is_string($post->excerpt)) ? $post->excerpt : \Illuminate\Support\Str::limit($plainText, 200);
+                                                $link = '<div style="margin-top: 12px;"><a href="' . e($post->frontend_url) . '" class="btn btn-sm btn-primary" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; text-decoration: none;">' . e(_l('Read Full Guide')) . ' &rarr;</a></div>';
+                                                return [
+                                                    'title' => (string) $post->title,
+                                                    'description' => '<div class="prose" style="font-size: 0.95rem; line-height: 1.6;">' . e($excerpt) . $link . '</div>',
+                                                    'open' => false,
+                                                    'is_html' => true,
+                                                ];
+                                            })->values()->all();
+                                        @endphp
+                                        <div class="product-doc-accordion">
+                                            <x-accordion :items="$docAccordionItems" style="standard" />
+                                        </div>
+                                    @else
+                                        {{-- Default: Grid Cards --}}
+                                        <div class="product-doc-grid">
+                                            @foreach($productDocumentationPosts as $post)
+                                                @php
+                                                    $plainText = $getDocPlainText($post);
+                                                    $words = str_word_count($plainText);
+                                                    $readingTime = max(1, (int) ceil($words / 200));
+                                                    $postExcerpt = (!empty($post->excerpt) && is_string($post->excerpt)) ? $post->excerpt : \Illuminate\Support\Str::limit($plainText, 120);
+                                                    $thumbnail = $post->featured_image_url;
+                                                @endphp
+                                                <a href="{{ $post->frontend_url }}" class="product-doc-card">
+                                                    @if($thumbnail)
+                                                        <div class="product-doc-card__thumb">
+                                                            <img src="{{ $thumbnail }}" alt="{{ $post->title }}" {!! media_lazy_attr() !!}>
+                                                        </div>
+                                                    @endif
+                                                    <div class="product-doc-card__body">
+                                                        <div class="product-doc-card__top">
+                                                            @if($post->categories->isNotEmpty())
+                                                                <span class="product-doc-card__tag">{{ $post->categories->first()->name }}</span>
+                                                            @endif
+                                                            <span class="product-doc-card__reading"><i class="far fa-clock"></i> {{ $readingTime }} {{ _l('min read') }}</span>
+                                                        </div>
+                                                        <h4 class="product-doc-card__title">{{ $post->title }}</h4>
+                                                        @if($postExcerpt)
+                                                            <p class="product-doc-card__excerpt">{{ $postExcerpt }}</p>
+                                                        @endif
+                                                        <div class="product-doc-card__footer">
+                                                            <span class="product-doc-card__date">
+                                                                @if($post->published_at)
+                                                                    {{ $post->published_at->format('M d, Y') }}
+                                                                @endif
+                                                            </span>
+                                                            <span class="product-doc-card__cta">
+                                                                {{ _l('Read Guide') }} <i class="fas fa-arrow-right"></i>
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </a>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
 
                         @foreach($customTabPanels as $tab)
                             @php
@@ -2211,12 +2383,18 @@
 </script>
 
 <style>
+    .media-action-btn--primary {
+        background: #0070f3 !important;
+        color: #ffffff !important;
+        border-color: transparent !important;
+    }
     .media-action-btn:hover {
         opacity: 0.9;
         transform: translateY(-1px);
     }
     .media-action-btn--primary:hover {
         background: #0051cb !important;
+        color: #ffffff !important;
     }
     
     /* Modal structure based on fleximyta */

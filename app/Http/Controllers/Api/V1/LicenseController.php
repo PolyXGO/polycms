@@ -810,9 +810,16 @@ class LicenseController extends Controller
         // Handle local:// storage paths
         if (str_starts_with($rawUrl, 'local://')) {
             $relativePath = ltrim(substr($rawUrl, 8), '/');
-            $fullPath = storage_path('app/' . $relativePath);
-            if (file_exists($fullPath)) {
-                return response()->download($fullPath, basename($fullPath));
+            $candidates = [
+                storage_path('app/' . $relativePath),
+                storage_path('app/private/' . $relativePath),
+                storage_path('app/public/' . $relativePath),
+                storage_path('app/' . str_replace('private/', '', $relativePath)),
+            ];
+            foreach ($candidates as $cand) {
+                if (file_exists($cand)) {
+                    return response()->download($cand, basename($cand));
+                }
             }
             if (\Illuminate\Support\Facades\Storage::disk('local')->exists($relativePath)) {
                 return \Illuminate\Support\Facades\Storage::disk('local')->download($relativePath);
@@ -823,9 +830,15 @@ class LicenseController extends Controller
             return response()->download($rawUrl, basename($rawUrl));
         }
 
-        $storagePath = storage_path('app/' . ltrim($rawUrl, '/'));
-        if (file_exists($storagePath)) {
-            return response()->download($storagePath, basename($storagePath));
+        $candidates = [
+            storage_path('app/' . ltrim($rawUrl, '/')),
+            storage_path('app/private/' . ltrim($rawUrl, '/')),
+            storage_path('app/public/' . ltrim($rawUrl, '/')),
+        ];
+        foreach ($candidates as $cand) {
+            if (file_exists($cand)) {
+                return response()->download($cand, basename($cand));
+            }
         }
 
         return redirect($rawUrl);

@@ -106,4 +106,12 @@ return array (
   'Blog Listing Subtitle' => 'Phụ đề Danh sách Blog',
   'Show Post Date' => 'Hiển thị Ngày đăng Bài viết',
   'Latest Updates' => 'Cập nhật mới nhất',
+  'Documentation' => 'Tài liệu',
+  'Read Guide' => 'Đọc tài liệu',
+  'Read Full Guide' => 'Đọc toàn bộ hướng dẫn',
+  'Guides & Documentation' => 'Hướng dẫn & Tài liệu',
+  'Documentation & Resources' => 'Tài liệu & Tài nguyên',
+  'View All Docs' => 'Xem tất cả tài liệu',
+  'Explore detailed tutorials, setup guides, and reference articles for :product.' => 'Khám phá các bài hướng dẫn chi tiết, hướng dẫn cài đặt và tài liệu tham khảo cho :product.',
+  'min read' => 'phút đọc',
 );

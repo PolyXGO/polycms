@@ -82,6 +82,7 @@ import { usePermalinkSettings } from'../../composables/usePermalinkSettings';
 import { useAuthStore } from'../../stores/auth';
 import { isDemoRestrictionError } from '@/admin/utils/demoRestriction';
 import EditorPanelLayout from'../../components/editor/EditorPanelLayout.vue';
+import ProductProjectHubPanel from '../../components/editor/panels/product/ProductProjectHubPanel.vue';
 import ProductPrimaryPanel from'../../components/editor/panels/product/ProductPrimaryPanel.vue';
 import ProductPricingPanel from'../../components/editor/panels/product/ProductPricingPanel.vue';
 import ProductMediaPanel from'../../components/editor/panels/product/ProductMediaPanel.vue';
@@ -173,6 +174,7 @@ const defaultFormState = (type?: string) => ({
  settings: {
  show_gallery: true,
  demo_url:'',
+ demo_label:'',
  preview_url:'',
  purchase_options: {
  buttons: [
@@ -218,6 +220,16 @@ const defaultFormState = (type?: string) => ({
  default_tab_id: null as string | null,
  custom_items: [] as Array<{ id: string; title: string; content: string; active_default?: boolean }>,
  },
+ documentation: {
+ enabled: false,
+ title:'',
+ source:'category',
+ category_id: null as number | null,
+ post_ids: [] as number[],
+ display_layout:'grid',
+ posts_limit: 12,
+ order_by: 'date_desc',
+ },
  } as Record<string, any>,
  service_config: null as Record<string, any>[] | null,
  services: [] as any[],
@@ -235,6 +247,8 @@ const form = ref(defaultFormState());
 
 const panelComponents = {
  primary: ProductPrimaryPanel,
+ project_hub: ProductProjectHubPanel,
+ ProductProjectHubPanel: ProductProjectHubPanel,
  pricing: ProductPricingPanel,
  variants: ProductVariantsPanel,
  media: ProductMediaPanel,
@@ -425,6 +439,8 @@ const loadProduct = async () => {
   }
 
   Object.assign(form.value, defaultFormState(product.type), {
+ id: product.id,
+ project: product.project || null,
  name: product.name ||'',
  slug: product.slug ||'',
  sku: product.sku ||'',
@@ -452,6 +468,7 @@ const loadProduct = async () => {
  settings: {
  show_gallery: true,
  demo_url:'',
+ demo_label:'',
  preview_url:'',
  ...((product.settings && !Array.isArray(product.settings)) ? product.settings : {}),
  },
@@ -527,19 +544,33 @@ const loadProduct = async () => {
  custom_items: [],
  ...(form.value.settings.faq || {}),
  };
- if (!form.value.settings.tabs || typeof form.value.settings.tabs !=='object' || Array.isArray(form.value.settings.tabs)) {
- form.value.settings.tabs = {};
- }
- form.value.settings.tabs = {
- enabled: false,
- source:'none',
- global_mode:'all',
- global_ids: [],
- default_tab_id: null,
- custom_items: [],
- ...(form.value.settings.tabs || {}),
- };
- descriptionHtml.value = product.description_html ||'';
+  if (!form.value.settings.tabs || typeof form.value.settings.tabs !=='object' || Array.isArray(form.value.settings.tabs)) {
+  form.value.settings.tabs = {};
+  }
+  form.value.settings.tabs = {
+  enabled: false,
+  source:'none',
+  global_mode:'all',
+  global_ids: [],
+  default_tab_id: null,
+  custom_items: [],
+  ...(form.value.settings.tabs || {}),
+  };
+  if (!form.value.settings.documentation || typeof form.value.settings.documentation !=='object' || Array.isArray(form.value.settings.documentation)) {
+  form.value.settings.documentation = {};
+  }
+  form.value.settings.documentation = {
+    enabled: false,
+    title: '',
+    source: 'category',
+    category_id: null,
+    post_ids: [],
+    display_layout: 'grid',
+    posts_limit: 12,
+    order_by: 'date_desc',
+    ...form.value.settings.documentation,
+  };
+  descriptionHtml.value = product.description_html ||'';
  descriptionBlocks.value = product.description_blocks || null;
  form.value.type = product.type ||'product';
 

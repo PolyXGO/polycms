@@ -197,6 +197,21 @@ class EditorPanelController extends Controller
             }
         }
 
+        if ($type === 'product') {
+            // Remove project_hub from sidebar if present
+            $result['sidebar'] = array_values(array_filter($result['sidebar'], fn($p) => ($p['key'] ?? '') !== 'project_hub'));
+            
+            $projectHubPanel = $allPanels['project_hub'] ?? null;
+            if ($projectHubPanel) {
+                $result['main'] = array_values(array_filter($result['main'], fn($p) => ($p['key'] ?? '') !== 'project_hub'));
+                $projectHubPanel['area'] = 'main';
+                $projectHubPanel['collapsed'] = false;
+                $projectHubPanel['order'] = 10;
+                // Insert at index 1 (directly after primary at index 0)
+                array_splice($result['main'], 1, 0, [$projectHubPanel]);
+            }
+        }
+
         return $result;
     }
 

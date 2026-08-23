@@ -259,6 +259,8 @@ class AccountController extends Controller
             $product = $license->subscription?->product;
             if ($product) {
                 try {
+                    $currentLocale = \App\Helpers\LanguageHelper::getCurrentLanguage() ?? \Illuminate\Support\Facades\App::getLocale() ?: 'en';
+
                     $productIds = [$product->id];
                     if (!empty($product->translation_group_id)) {
                         $groupProductIds = \App\Models\Product::withoutGlobalScope('locale')
@@ -269,30 +271,59 @@ class AccountController extends Controller
                     }
                     $productIds = array_unique(array_filter($productIds));
 
-                    $projectIds = \Illuminate\Support\Facades\DB::table('project_products')
+                    $directProjectIds = \Illuminate\Support\Facades\DB::table('project_products')
                         ->whereIn('product_id', $productIds)
                         ->pluck('project_id')
                         ->toArray();
 
-                    if (!empty($projectIds)) {
-                        $projectGroupIds = \Modules\Polyx\ProjectHub\Models\Project::withoutGlobalScope('locale')
-                            ->whereIn('id', $projectIds)
-                            ->whereNotNull('translation_group_id')
-                            ->pluck('translation_group_id')
-                            ->toArray();
+                    $allProjects = collect();
+                    if (!empty($directProjectIds)) {
+                        $baseProjects = \Modules\Polyx\ProjectHub\Models\Project::withoutGlobalScope('locale')
+                            ->whereIn('id', $directProjectIds)
+                            ->get();
+
+                        $allProjects = $allProjects->merge($baseProjects);
+
+                        $projectGroupIds = $baseProjects->whereNotNull('translation_group_id')->pluck('translation_group_id')->unique()->toArray();
                         if (!empty($projectGroupIds)) {
-                            $allProjectIds = \Modules\Polyx\ProjectHub\Models\Project::withoutGlobalScope('locale')
+                            $siblingProjects = \Modules\Polyx\ProjectHub\Models\Project::withoutGlobalScope('locale')
                                 ->whereIn('translation_group_id', $projectGroupIds)
-                                ->pluck('id')
-                                ->toArray();
-                            $projectIds = array_unique(array_merge($projectIds, $allProjectIds));
+                                ->get();
+                            $allProjects = $allProjects->merge($siblingProjects)->unique('id');
                         }
                     }
-                    
-                    $releases = \Modules\Polyx\ProjectHub\Models\ProjectRelease::whereIn('project_id', $projectIds)
-                        ->where('status', 'published')
-                        ->orderBy('released_at', 'desc')
-                        ->get();
+
+                    // 1. Prioritize project matching current locale
+                    $targetProject = $allProjects->firstWhere('locale', $currentLocale);
+
+                    // 2. Fallback to base/primary project if no direct locale match
+                    if (!$targetProject) {
+                        $targetProject = $allProjects->first();
+                    }
+
+                    $releases = collect();
+                    if ($targetProject) {
+                        $releases = \Modules\Polyx\ProjectHub\Models\ProjectRelease::where('project_id', $targetProject->id)
+                            ->where('status', 'published')
+                            ->orderBy('released_at', 'desc')
+                            ->get();
+
+                        // If localized project has no releases, fallback to sibling project's releases
+                        if ($releases->isEmpty() && $allProjects->count() > 1) {
+                            foreach ($allProjects as $fallbackProj) {
+                                if ($fallbackProj->id !== $targetProject->id) {
+                                    $fallbackReleases = \Modules\Polyx\ProjectHub\Models\ProjectRelease::where('project_id', $fallbackProj->id)
+                                        ->where('status', 'published')
+                                        ->orderBy('released_at', 'desc')
+                                        ->get();
+                                    if ($fallbackReleases->isNotEmpty()) {
+                                        $releases = $fallbackReleases;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
                     
                     // Convert local:// paths to secure download route
                     foreach ($releases as $release) {

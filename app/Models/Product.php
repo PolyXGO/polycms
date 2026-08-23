@@ -720,4 +720,6 @@ class Product extends Model
 
         return $query;
     }
+
+    
 }

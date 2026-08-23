@@ -115,6 +115,33 @@
         .footer-bottom-widgets .widget-social-links {
             margin-left: auto;
         }
+        .footer-disclaimer a,
+        .widget-html-editor a,
+        .widget-html-block a,
+        .footer-bottom-widgets .widget-html-editor a {
+            color: var(--theme-link-color, var(--geist-link, #2563eb)) !important;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+        .footer-disclaimer a:hover,
+        .widget-html-editor a:hover,
+        .widget-html-block a:hover,
+        .footer-bottom-widgets .widget-html-editor a:hover {
+            color: var(--theme-link-hover-color, #1e40af) !important;
+            text-decoration: underline;
+        }
+        html.dark .footer-disclaimer a,
+        html.dark .widget-html-editor a,
+        html.dark .widget-html-block a,
+        html.dark .footer-bottom-widgets .widget-html-editor a {
+            color: var(--theme-link-color, #4299e1) !important;
+        }
+        html.dark .footer-disclaimer a:hover,
+        html.dark .widget-html-editor a:hover,
+        html.dark .widget-html-block a:hover,
+        html.dark .footer-bottom-widgets .widget-html-editor a:hover {
+            color: var(--theme-link-hover-color, #63b3ed) !important;
+        }
     </style>
 
     <div class="container">

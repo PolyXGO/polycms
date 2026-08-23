@@ -277,14 +277,14 @@ const finishPayment = () => {
 
 <template>
     <Head :title="t('Checkout')" />
-    <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 transition-colors duration-200">
+    <div class="py-4 sm:py-6 transition-colors duration-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <!-- Checkout Header & Steps -->
-            <div class="mb-8">
-                <CheckoutSteps currentStep="checkout" />
+            <div class="mb-4 sm:mb-6">
+                <CheckoutSteps :step="2" currentStep="checkout" />
             </div>
 
-            <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white mb-8">Checkout</h1>
+            <h1 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white mb-6 mt-2">Checkout</h1>
 
             <form @submit.prevent="placeOrder">
                 <div class="lg:grid lg:grid-cols-12 lg:gap-x-12 lg:items-start">

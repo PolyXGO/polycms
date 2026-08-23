@@ -71,7 +71,7 @@
  />
  </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <div>
       <label class="block text-sm font-medium text-admin-theme-text-secondary mb-1" for="product-demo-url">
         {{ $t('Live Preview URL') }}
@@ -82,6 +82,19 @@
         type="url"
         class="w-full px-3 py-2 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text placeholder-admin-theme-text-muted focus:ring-admin-theme-primary focus:border-admin-theme-primary"
         placeholder="https://demo.example.com"
+      />
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-admin-theme-text-secondary mb-1" for="product-demo-label">
+        {{ $t('Live Preview Button Label') }}
+      </label>
+      <input
+        id="product-demo-label"
+        v-model="form.settings.demo_label"
+        type="text"
+        class="w-full px-3 py-2 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text placeholder-admin-theme-text-muted focus:ring-admin-theme-primary focus:border-admin-theme-primary"
+        placeholder="e.g. Live Demo, Xem trước, Try Sandbox"
       />
     </div>
 
@@ -545,6 +558,176 @@
  </div>
  </div>
 
+  <!-- Documentation Tab Settings -->
+  <div class="pt-4 mt-2 border-t border-admin-theme-border space-y-4">
+    <div class="flex items-center justify-between gap-3">
+      <div>
+        <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-200">{{ $t('Documentation') }}</h4>
+        <p class="text-xs text-admin-theme-text-muted mt-1">
+          {{ $t('Display articles and guides from a post category in a dedicated Documentation tab.') }}
+        </p>
+      </div>
+      <router-link
+        to="/admin/categories"
+        class="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-semibold bg-sky-600 text-white hover:bg-sky-700"
+      >
+        {{ $t('Categories') }}
+      </router-link>
+    </div>
+
+    <label class="inline-flex items-center gap-2 text-sm text-admin-theme-text-secondary">
+      <input
+        v-model="docConfig.enabled"
+        type="checkbox"
+        class="h-4 w-4 rounded border-gray-300 text-admin-theme-primary focus:ring-admin-theme-primary"
+      />
+      {{ $t('Enable Documentation tab') }}
+    </label>
+
+    <div v-if="docConfig.enabled" class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wide text-admin-theme-text-muted mb-1">
+            {{ $t('Tab Title') }}
+          </label>
+          <input
+            v-model="docConfig.title"
+            type="text"
+            class="w-full px-3 py-2 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text focus:ring-admin-theme-primary focus:border-admin-theme-primary"
+            :placeholder="$t('e.g. Documentation (Default: Documentation)')"
+          />
+        </div>
+
+        <!-- Hierarchical & Searchable Category Selector -->
+        <div class="relative" ref="categoryDropdownRef">
+          <label class="block text-xs font-semibold uppercase tracking-wide text-admin-theme-text-muted mb-1">
+            {{ $t('Post Category (Documentation Source)') }}
+          </label>
+          <button
+            type="button"
+            @click="isCategoryDropdownOpen = !isCategoryDropdownOpen"
+            class="w-full flex items-center justify-between px-3 py-2 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text text-sm focus:ring-1 focus:ring-admin-theme-primary focus:border-admin-theme-primary transition text-left"
+          >
+            <span class="truncate" :class="docConfig.category_id ? 'text-admin-theme-text font-medium' : 'text-admin-theme-text-muted'">
+              {{ selectedCategoryName || ('-- ' + $t('Select Post Category') + ' --') }}
+            </span>
+            <svg class="w-4 h-4 text-admin-theme-text-muted transition-transform duration-150 shrink-0 ml-2" :class="{ 'rotate-180': isCategoryDropdownOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          <!-- Dropdown Popover -->
+          <div
+            v-if="isCategoryDropdownOpen"
+            class="absolute z-50 mt-1 w-full rounded-lg border border-admin-theme-border bg-admin-theme-surface shadow-2xl overflow-hidden"
+          >
+            <!-- Search Box -->
+            <div class="p-2 border-b border-admin-theme-border bg-admin-theme-base/60">
+              <div class="relative flex items-center">
+                <svg class="w-3.5 h-3.5 absolute left-2.5 text-admin-theme-text-muted pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  v-model="categorySearchQuery"
+                  type="text"
+                  :placeholder="$t('Search categories...')"
+                  class="w-full pl-8 pr-7 py-1.5 text-xs rounded-md border border-admin-theme-border bg-admin-theme-input-bg text-admin-theme-text placeholder-admin-theme-text-muted focus:ring-1 focus:ring-admin-theme-primary focus:border-admin-theme-primary transition"
+                  @click.stop
+                />
+                <button
+                  v-if="categorySearchQuery"
+                  type="button"
+                  @click.stop="categorySearchQuery = ''"
+                  class="absolute right-2 text-admin-theme-text-muted hover:text-admin-theme-text text-xs"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <!-- Category Tree List -->
+            <div class="max-h-60 overflow-y-auto p-1 text-sm">
+              <button
+                type="button"
+                class="w-full flex items-center px-3 py-1.5 rounded text-left text-xs font-medium text-admin-theme-text-muted hover:bg-admin-theme-base hover:text-admin-theme-text transition"
+                :class="{ 'bg-admin-theme-primary/10 text-admin-theme-primary font-semibold': !docConfig.category_id }"
+                @click="selectCategory(null)"
+              >
+                -- {{ $t('Select Post Category') }} --
+              </button>
+
+              <button
+                v-for="cat in filteredCategoryOptions"
+                :key="cat.id"
+                type="button"
+                class="w-full flex items-center gap-1.5 px-3 py-1.5 rounded text-left text-xs hover:bg-admin-theme-base transition"
+                :class="{
+                  'bg-admin-theme-primary/10 text-admin-theme-primary font-semibold': docConfig.category_id === cat.id,
+                  'text-admin-theme-text': docConfig.category_id !== cat.id
+                }"
+                :style="{ paddingLeft: (12 + cat.depth * 14) + 'px' }"
+                @click="selectCategory(cat.id)"
+              >
+                <span v-if="cat.depth > 0" class="text-admin-theme-text-muted/60 select-none text-[11px]">└─</span>
+                <span class="truncate flex-1" :class="{ 'font-semibold': cat.hasChildren && cat.depth === 0 }">{{ cat.name }}</span>
+                <span class="text-[10px] text-admin-theme-text-muted/70 shrink-0">(ID: {{ cat.id }})</span>
+              </button>
+
+              <div v-if="filteredCategoryOptions.length === 0" class="p-3 text-center text-xs text-admin-theme-text-muted">
+                {{ $t('No categories found') }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wide text-admin-theme-text-muted mb-1">
+            {{ $t('Display Layout') }}
+          </label>
+          <select
+            v-model="docConfig.display_layout"
+            class="w-full px-3 py-2 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text focus:ring-admin-theme-primary focus:border-admin-theme-primary"
+          >
+            <option value="grid">{{ $t('Grid Cards') }}</option>
+            <option value="list">{{ $t('Vertical List') }}</option>
+            <option value="accordion">{{ $t('Accordion') }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wide text-admin-theme-text-muted mb-1">
+            {{ $t('Sort Order') }}
+          </label>
+          <select
+            v-model="docConfig.order_by"
+            class="w-full px-3 py-2 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text focus:ring-admin-theme-primary focus:border-admin-theme-primary"
+          >
+            <option value="date_desc">{{ $t('Newest First') }}</option>
+            <option value="date_asc">{{ $t('Oldest First') }}</option>
+            <option value="order_asc">{{ $t('Order Index') }}</option>
+            <option value="title_asc">{{ $t('Title A-Z') }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wide text-admin-theme-text-muted mb-1">
+            {{ $t('Max Articles Limit') }}
+          </label>
+          <input
+            v-model.number="docConfig.posts_limit"
+            type="number"
+            min="1"
+            max="100"
+            class="w-full px-3 py-2 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text focus:ring-admin-theme-primary focus:border-admin-theme-primary"
+            placeholder="12"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div v-if="resolvedTabOptions.length > 0" class="pt-4 mt-2 border-t border-admin-theme-border space-y-3">
   <label class="block text-sm font-medium text-admin-theme-text-secondary">
   {{ $t('Default active tab on frontend') }}
@@ -753,7 +936,7 @@
  </template>
 
 <script setup lang="ts">
-import { computed, inject, isRef, ref, nextTick, getCurrentInstance, onMounted, watch } from'vue';
+import { computed, inject, isRef, ref, nextTick, getCurrentInstance, onMounted, onUnmounted, watch } from 'vue';
 import axios from'axios';
 import { showSuccess, showError } from '@/admin/utils/dialog';
 
@@ -856,6 +1039,9 @@ if (!form.value.settings || typeof form.value.settings !=='object' || Array.isAr
 }
 if (typeof form.value.settings.demo_url !=='string') {
   form.value.settings.demo_url ='';
+}
+if (typeof form.value.settings.demo_label !=='string') {
+  form.value.settings.demo_label ='';
 }
 if (typeof form.value.settings.envato_item_id !=='string') {
   form.value.settings.envato_item_id ='';
@@ -1016,6 +1202,123 @@ const ensureTabConfig = () => {
 };
 
 ensureTabConfig();
+
+const ensureDocConfig = () => {
+  if (!form.value.settings || typeof form.value.settings !== 'object' || Array.isArray(form.value.settings)) {
+    form.value.settings = {};
+  }
+  if (!form.value.settings.documentation || typeof form.value.settings.documentation !== 'object' || Array.isArray(form.value.settings.documentation)) {
+    form.value.settings.documentation = {};
+  }
+
+  const current = form.value.settings.documentation;
+  form.value.settings.documentation = {
+    enabled: Boolean(current.enabled ?? false),
+    title: String(current.title || ''),
+    source: String(current.source || 'category'),
+    category_id: current.category_id ? Number(current.category_id) : null,
+    post_ids: Array.isArray(current.post_ids) ? current.post_ids.map((id: any) => Number(id)) : [],
+    display_layout: String(current.display_layout || 'grid'),
+    posts_limit: Number(current.posts_limit || 12),
+    order_by: String(current.order_by || 'date_desc'),
+  };
+};
+
+ensureDocConfig();
+
+const docConfig = computed({
+  get: () => form.value.settings.documentation,
+  set: (value) => {
+    form.value.settings.documentation = value;
+  },
+});
+
+interface FlatCategoryOption {
+  id: number;
+  name: string;
+  depth: number;
+  hasChildren: boolean;
+}
+
+const isCategoryDropdownOpen = ref(false);
+const categorySearchQuery = ref('');
+const categoryDropdownRef = ref<HTMLElement | null>(null);
+const postCategoriesTree = ref<any[]>([]);
+
+const flattenCategoryTree = (nodes: any[], depth = 0): FlatCategoryOption[] => {
+  const result: FlatCategoryOption[] = [];
+  if (!Array.isArray(nodes)) return result;
+  nodes.forEach((node) => {
+    const hasChildren = Array.isArray(node.children) && node.children.length > 0;
+    result.push({
+      id: Number(node.id),
+      name: String(node.name || ''),
+      depth,
+      hasChildren,
+    });
+    if (hasChildren) {
+      result.push(...flattenCategoryTree(node.children, depth + 1));
+    }
+  });
+  return result;
+};
+
+const flattenedPostCategories = computed<FlatCategoryOption[]>(() => {
+  return flattenCategoryTree(postCategoriesTree.value);
+});
+
+const filteredCategoryOptions = computed<FlatCategoryOption[]>(() => {
+  const q = categorySearchQuery.value.trim().toLowerCase();
+  if (!q) {
+    return flattenedPostCategories.value;
+  }
+  return flattenedPostCategories.value.filter((cat) =>
+    cat.name.toLowerCase().includes(q) || String(cat.id).includes(q)
+  );
+});
+
+const selectedCategoryName = computed(() => {
+  if (!docConfig.value.category_id) return '';
+  const found = flattenedPostCategories.value.find((c) => c.id === Number(docConfig.value.category_id));
+  return found ? `${found.name} (ID: ${found.id})` : `Category #${docConfig.value.category_id}`;
+});
+
+const selectCategory = (id: number | null) => {
+  docConfig.value.category_id = id;
+  isCategoryDropdownOpen.value = false;
+  categorySearchQuery.value = '';
+};
+
+const handleClickOutsideCategory = (e: MouseEvent) => {
+  if (categoryDropdownRef.value && !categoryDropdownRef.value.contains(e.target as Node)) {
+    isCategoryDropdownOpen.value = false;
+  }
+};
+
+const loadPostCategories = async () => {
+  try {
+    const res = await axios.get('/api/v1/categories', {
+      params: {
+        type: 'post',
+        tree: true,
+        per_page: 100,
+      },
+    });
+    postCategoriesTree.value = res?.data?.data ?? res?.data ?? [];
+  } catch (e) {
+    console.warn('Failed to load post categories for documentation tab', e);
+  }
+};
+
+loadPostCategories();
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutsideCategory);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutsideCategory);
+});
 
 const faqConfig = computed({
  get: () => form.value.settings.faq,
@@ -1249,6 +1552,13 @@ const resolvedTabOptions = computed<ResolvedTabOption[]>(() => {
  title: String(item.title || ($t?.('Untitled tab') ||'Untitled tab')),
  type:'custom',
  });
+ });
+ }
+ if (docConfig.value && docConfig.value.enabled) {
+ options.push({
+ id:'documentation',
+ title: String(docConfig.value.title || ($t?.('Documentation') ||'Documentation')),
+ type:'core',
  });
  }
 	// Apply saved tab order

@@ -130,27 +130,8 @@
         $products = $query->take($count)->get();
     }
 
-    // Header Icon & Colors
-    $headerIcon = '★';
-    $headerBg = '#fef08a';
-    $headerColor = '#a16207';
-    if (in_array($filterBy, ['best_sellers', 'bestsellers'], true)) {
-        $headerIcon = '🔥';
-        $headerBg = '#ffedd5';
-        $headerColor = '#ea580c';
-    } elseif (in_array($filterBy, ['trending', 'popular'], true)) {
-        $headerIcon = '⚡';
-        $headerBg = '#f3e8ff';
-        $headerColor = '#9333ea';
-    } elseif (in_array($filterBy, ['best_rated'], true)) {
-        $headerIcon = '★';
-        $headerBg = '#fef08a';
-        $headerColor = '#ca8a04';
-    } elseif (in_array($filterBy, ['newest', 'latest'], true)) {
-        $headerIcon = '✨';
-        $headerBg = '#e0f2fe';
-        $headerColor = '#0284c7';
-    }
+    // Header Icon (Only if explicitly provided via attrs)
+    $headerIcon = $attrs['heading_icon'] ?? $attrs['icon'] ?? null;
 
     $hasHeading = !empty(trim((string)$heading));
     $hasSubtitle = !empty(trim((string)$subtitle));
@@ -248,30 +229,64 @@
     position: absolute !important;
     top: 8px !important;
     left: 8px !important;
-    padding: 2px 7px !important;
-    font-size: 0.65rem !important;
+    padding: 3px 8px !important;
+    font-size: 0.6875rem !important; /* 11px */
     font-weight: 700 !important;
-    background: rgba(15, 23, 42, 0.85) !important;
+    background: rgba(15, 23, 42, 0.88) !important;
     color: #fef08a !important;
-    border-radius: 4px !important;
-    backdrop-filter: blur(4px) !important;
+    border-radius: 6px !important;
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
     z-index: 2 !important;
     pointer-events: none !important;
-    line-height: 1.3 !important;
+    line-height: 1 !important;
     margin: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18) !important;
+    font-family: inherit !important;
+}
+.polycms-products-badge .badge-text {
+    line-height: 1 !important;
+    white-space: nowrap !important;
 }
 .polycms-products-badge-bestseller,
 .fw-bestseller-badge {
-    background: rgba(234, 88, 12, 0.9) !important;
+    background: rgba(234, 88, 12, 0.92) !important;
     color: #fff !important;
 }
 .polycms-products-badge-trending {
-    background: rgba(147, 51, 234, 0.9) !important;
+    background: rgba(147, 51, 234, 0.92) !important;
     color: #fff !important;
 }
 .polycms-products-badge-rated {
-    background: rgba(202, 138, 4, 0.9) !important;
+    background: rgba(202, 138, 4, 0.92) !important;
     color: #fff !important;
+}
+
+/* Header Icon Container */
+.polycms-slider-header-icon {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 50% !important;
+    background: var(--header-icon-bg, #fef08a) !important;
+    color: var(--header-icon-color, #a16207) !important;
+    font-size: 0.85rem !important;
+    line-height: 1 !important;
+    flex-shrink: 0 !important;
+    font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+.polycms-slider-header-icon svg {
+    display: block !important;
+}
+html.dark .polycms-slider-header-icon,
+.dark .polycms-slider-header-icon {
+    background: var(--header-icon-bg-dark, rgba(234, 179, 8, 0.18)) !important;
+    color: var(--header-icon-color-dark, #facc15) !important;
 }
 
 /* Card Body */
@@ -444,11 +459,11 @@ html.dark .fw-slider-next-btn,
         @if($hasHeader)
         <div class="polycms-products-slider-header fw-featured-slider-header" style="display: flex; align-items: center; justify-content: {{ $hasHeading || $hasSubtitle ? 'space-between' : 'flex-end' }}; margin-bottom: 1.125rem;">
             @if($hasHeading || $hasSubtitle)
-            <div style="display: flex; align-items: center; gap: 8px;">
-                @if($hasHeading)
-                <span style="display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: {{ $headerBg }}; color: {{ $headerColor }}; font-size: 0.8rem; font-weight: 700;">
-                    {{ $headerIcon }}
-                </span>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                @if($hasHeading && !empty($headerIcon))
+                <div class="polycms-slider-header-icon" style="--header-icon-bg: {{ $headerBg }}; --header-icon-color: {{ $headerColor }}; --header-icon-bg-dark: {{ $headerBgDark }}; --header-icon-color-dark: {{ $headerColorDark }};">
+                    {!! $headerIcon !!}
+                </div>
                 @endif
                 <div>
                     @if($hasHeading)
@@ -501,13 +516,21 @@ html.dark .fw-slider-next-btn,
 
                             @if($showBadge)
                                 @if($product->featured)
-                                    <span class="polycms-products-badge fw-featured-badge">★ {{ __('Featured') }}</span>
-                                @elseif(in_array($filterBy, ['best_sellers', 'bestsellers'], true) || (!empty($minRequiredItems) && !$product->featured))
-                                    <span class="polycms-products-badge polycms-products-badge-bestseller fw-featured-badge fw-bestseller-badge">🔥 {{ __('Best Seller') }}</span>
-                                @elseif(in_array($filterBy, ['trending', 'popular'], true))
-                                    <span class="polycms-products-badge polycms-products-badge-trending fw-featured-badge">⚡ {{ __('Trending') }}</span>
-                                @elseif(in_array($filterBy, ['best_rated'], true))
-                                    <span class="polycms-products-badge polycms-products-badge-rated fw-featured-badge">★ {{ __('Best Rated') }}</span>
+                                    <span class="polycms-products-badge polycms-products-badge-featured fw-featured-badge">
+                                        <span class="badge-text">{{ __('Featured') }}</span>
+                                    </span>
+                                @elseif(in_array($filterBy, ['best_sellers', 'bestsellers', 'best_seller'], true) || (!empty($minRequiredItems) && !$product->featured))
+                                    <span class="polycms-products-badge polycms-products-badge-bestseller fw-featured-badge fw-bestseller-badge">
+                                        <span class="badge-text">{{ __('Best Seller') }}</span>
+                                    </span>
+                                @elseif(in_array($filterBy, ['trending', 'popular', 'views'], true))
+                                    <span class="polycms-products-badge polycms-products-badge-trending fw-featured-badge">
+                                        <span class="badge-text">{{ __('Trending') }}</span>
+                                    </span>
+                                @elseif(in_array($filterBy, ['best_rated', 'rating'], true))
+                                    <span class="polycms-products-badge polycms-products-badge-rated fw-featured-badge">
+                                        <span class="badge-text">{{ __('Best Rated') }}</span>
+                                    </span>
                                 @endif
                             @endif
                         </a>
@@ -559,13 +582,21 @@ html.dark .fw-slider-next-btn,
 
                             @if($showBadge)
                                 @if($product->featured)
-                                    <span class="polycms-products-badge fw-featured-badge">★ {{ __('Featured') }}</span>
-                                @elseif(in_array($filterBy, ['best_sellers', 'bestsellers'], true) || (!empty($minRequiredItems) && !$product->featured))
-                                    <span class="polycms-products-badge polycms-products-badge-bestseller fw-featured-badge fw-bestseller-badge">🔥 {{ __('Best Seller') }}</span>
-                                @elseif(in_array($filterBy, ['trending', 'popular'], true))
-                                    <span class="polycms-products-badge polycms-products-badge-trending fw-featured-badge">⚡ {{ __('Trending') }}</span>
-                                @elseif(in_array($filterBy, ['best_rated'], true))
-                                    <span class="polycms-products-badge polycms-products-badge-rated fw-featured-badge">★ {{ __('Best Rated') }}</span>
+                                    <span class="polycms-products-badge polycms-products-badge-featured fw-featured-badge">
+                                        <span class="badge-text">{{ __('Featured') }}</span>
+                                    </span>
+                                @elseif(in_array($filterBy, ['best_sellers', 'bestsellers', 'best_seller'], true) || (!empty($minRequiredItems) && !$product->featured))
+                                    <span class="polycms-products-badge polycms-products-badge-bestseller fw-featured-badge fw-bestseller-badge">
+                                        <span class="badge-text">{{ __('Best Seller') }}</span>
+                                    </span>
+                                @elseif(in_array($filterBy, ['trending', 'popular', 'views'], true))
+                                    <span class="polycms-products-badge polycms-products-badge-trending fw-featured-badge">
+                                        <span class="badge-text">{{ __('Trending') }}</span>
+                                    </span>
+                                @elseif(in_array($filterBy, ['best_rated', 'rating'], true))
+                                    <span class="polycms-products-badge polycms-products-badge-rated fw-featured-badge">
+                                        <span class="badge-text">{{ __('Best Rated') }}</span>
+                                    </span>
                                 @endif
                             @endif
                         </a>

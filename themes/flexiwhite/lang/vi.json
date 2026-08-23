@@ -21,6 +21,10 @@
     "Read More": "Đọc thêm",
     "View All Posts": "Xem tất cả bài viết",
     "Featured Products": "Sản phẩm nổi bật",
+    "Best Seller": "Bán chạy",
+    "Featured": "Nổi bật",
+    "Trending": "Xu hướng",
+    "Best Rated": "Đánh giá cao",
     "Discover our premium selection of products": "Khám phá bộ sưu tập sản phẩm cao cấp của chúng tôi",
     "View Product": "Xem sản phẩm",
     "View All Products": "Xem tất cả sản phẩm",
@@ -103,5 +107,13 @@
     "Blog Listing Title": "Tiêu đề Danh sách Blog",
     "Blog Listing Subtitle": "Phụ đề Danh sách Blog",
     "Show Post Date": "Hiển thị Ngày đăng Bài viết",
-    "Latest Updates": "Cập nhật mới nhất"
+    "Latest Updates": "Cập nhật mới nhất",
+    "Documentation": "Tài liệu",
+    "Read Guide": "Đọc tài liệu",
+    "Read Full Guide": "Đọc toàn bộ hướng dẫn",
+    "Guides & Documentation": "Hướng dẫn & Tài liệu",
+    "Documentation & Resources": "Tài liệu & Tài nguyên",
+    "View All Docs": "Xem tất cả tài liệu",
+    "Explore detailed tutorials, setup guides, and reference articles for :product.": "Khám phá các bài hướng dẫn chi tiết, hướng dẫn cài đặt và tài liệu tham khảo cho :product.",
+    "min read": "phút đọc"
 }

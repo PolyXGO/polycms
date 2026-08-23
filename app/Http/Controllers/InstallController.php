@@ -150,7 +150,8 @@ class InstallController extends Controller
     {
         try {
             Artisan::call('key:generate', ['--force' => true]);
-            Artisan::call('migrate:fresh', ['--force' => true, '--seed' => true]);
+            Artisan::call('migrate', ['--force' => true]);
+            Artisan::call('db:seed', ['--force' => true]);
             
             // Reconnect DB so eloquent models use new config if we had to do it.
             // Normally Artisan command runs it, but in web context it might be cached.

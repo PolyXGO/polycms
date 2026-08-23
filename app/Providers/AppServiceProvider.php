@@ -519,6 +519,28 @@ class AppServiceProvider extends ServiceProvider
         // Configure Filesystem default driver
         $this->configureFilesystem();
 
+        // Register Active Main Theme CSS Variables & Link Styling (Core Multi-Theme support)
+        Hook::addAction('cms_head', function () {
+            try {
+                $themeOptionValues = \App\Facades\Hook::applyFilters('theme.options.values', theme_get_options());
+                $primaryColor = $themeOptionValues['theme_color_primary'] ?? '#2563eb';
+                $linkColor = $themeOptionValues['theme_anchor_color'] ?? $primaryColor;
+                $linkHoverColor = $themeOptionValues['theme_anchor_hover_color'] ?? '#1e40af';
+
+                echo '<style id="polycms-core-theme-vars">' . PHP_EOL;
+                echo ':root {' . PHP_EOL;
+                echo '  --theme-link-color: ' . htmlspecialchars($linkColor, ENT_QUOTES, 'UTF-8') . ';' . PHP_EOL;
+                echo '  --theme-link-hover-color: ' . htmlspecialchars($linkHoverColor, ENT_QUOTES, 'UTF-8') . ';' . PHP_EOL;
+                echo '  --color-primary: ' . htmlspecialchars($primaryColor, ENT_QUOTES, 'UTF-8') . ';' . PHP_EOL;
+                echo '}' . PHP_EOL;
+                echo 'html.dark, html.dark body, :root.dark {' . PHP_EOL;
+                echo '  --theme-link-color: #4299e1 !important;' . PHP_EOL;
+                echo '  --theme-link-hover-color: #63b3ed !important;' . PHP_EOL;
+                echo '}' . PHP_EOL;
+                echo '</style>' . PHP_EOL;
+            } catch (\Throwable $e) {}
+        }, 1);
+
         // Register SEO meta tags in head
         Hook::addAction('cms_head', [$this, 'renderSeoMeta']);
 

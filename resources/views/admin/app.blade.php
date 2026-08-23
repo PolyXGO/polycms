@@ -60,6 +60,7 @@
             ],
         };
     </script>
+    <link rel="stylesheet" href="{{ cdn_asset('assets/vendor/font-awesome-6.4.0/css/all.min.css', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css') }}">
     @vite(['resources/js/admin/main.ts', 'resources/css/app.css', 'resources/css/landing-blocks.css', 'resources/css/poly-animations.css'])
 </head>
 <body class="antialiased bg-admin-theme-base text-admin-theme-text transition-colors duration-200">

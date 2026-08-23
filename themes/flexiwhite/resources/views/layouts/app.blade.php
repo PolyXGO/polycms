@@ -154,6 +154,10 @@
             {{ $var }}: {{ $value }};
 @endforeach
         }
+        html.dark, html.dark body, :root.dark {
+            --theme-link-color: #4299e1 !important;
+            --theme-link-hover-color: #63b3ed !important;
+        }
     </style>
 
     @includeIf('system.partials.theme-styles')

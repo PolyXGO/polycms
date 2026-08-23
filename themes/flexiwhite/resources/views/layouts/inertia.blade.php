@@ -115,6 +115,10 @@
             {{ $var }}: {{ $value }};
 @endforeach
         }
+        html.dark, html.dark body, :root.dark {
+            --theme-link-color: #4299e1 !important;
+            --theme-link-hover-color: #63b3ed !important;
+        }
     </style>
 
     @includeIf('system.partials.theme-styles')
@@ -147,7 +151,7 @@
         @include('partials.header')
 
         {{-- Main Content (Inertia) --}}
-        <main style="flex: 1; padding-top: 2rem; padding-bottom: 2rem;">
+        <main class="flex-1 w-full" style="flex: 1;">
             @inertia
         </main>
 

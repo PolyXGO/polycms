@@ -92,6 +92,11 @@ class ProductResource extends JsonResource
             'brands' => CategoryResource::collection($this->whenLoaded('brands')),
             'project' => $this->when(true, function () {
                 $p = $this->relationLoaded('projects') ? $this->projects->first() : null;
+                if (!$p && \Illuminate\Support\Facades\Schema::hasTable('project_products') && class_exists(\Modules\Polyx\ProjectHub\Models\Project::class)) {
+                    $p = \Modules\Polyx\ProjectHub\Models\Project::withoutGlobalScope('locale')
+                        ->whereHas('products', fn ($q) => $q->withoutGlobalScope('locale')->where('products.id', $this->id))
+                        ->first();
+                }
                 if (!$p && !empty($this->translation_group_id) && class_exists(\Modules\Polyx\ProjectHub\Models\Project::class)) {
                     $productIds = \App\Models\Product::withoutGlobalScope('locale')
                         ->where('translation_group_id', $this->translation_group_id)
@@ -100,13 +105,16 @@ class ProductResource extends JsonResource
                     if (!empty($productIds)) {
                         $p = \Modules\Polyx\ProjectHub\Models\Project::withoutGlobalScope('locale')
                             ->whereHas('products', fn ($q) => $q->withoutGlobalScope('locale')->whereIn('products.id', $productIds))
-                            ->where('status', 'published')
                             ->first();
                     }
                 }
                 return $p ? [
                     'id' => $p->id,
                     'name' => $p->name,
+                    'project_code' => $p->project_code,
+                    'platform' => $p->platform,
+                    'current_version' => $p->current_version,
+                    'status' => $p->status,
                     'slug' => $p->slug,
                     'frontend_url' => $p->frontend_url,
                 ] : null;

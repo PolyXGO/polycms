@@ -70,26 +70,26 @@
             </button>
         </div>
 
-        <div class="bg-white dark:bg-[#111] shadow-sm overflow-hidden sm:rounded-xl border border-gray-200 dark:border-zinc-800 transition-colors duration-300">
+        <div class="bg-white dark:bg-[#111] shadow-sm overflow-x-auto sm:rounded-xl border border-gray-200 dark:border-zinc-800 transition-colors duration-300">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
                 <thead class="bg-gray-50 dark:bg-gray-800/50">
                     <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider min-w-[220px] max-w-sm">
                             {{ t('Product') }}
                         </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                             {{ t('License Key') }}
                         </th>
-                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                             {{ t('Activations') }}
                         </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                             {{ t('Status') }}
                         </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                             {{ t('Expires At') }}
                         </th>
-                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                             {{ t('Actions') }}
                         </th>
                     </tr>
@@ -97,11 +97,11 @@
                 <tbody class="bg-white dark:bg-[#111] divide-y divide-gray-200 dark:divide-zinc-800">
                     <template v-for="license in filteredLicenses" :key="license.id">
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                                <a v-if="license.subscription?.product?.slug" :href="getProductUrl(license.subscription.product.slug)" target="_blank" class="block font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
+                            <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100 min-w-[220px] max-w-xs sm:max-w-sm md:max-w-md break-words">
+                                <a v-if="license.subscription?.product?.slug" :href="getProductUrl(license.subscription.product.slug)" target="_blank" class="block font-semibold text-indigo-600 dark:text-indigo-400 hover:underline leading-snug break-words">
                                     {{ license.subscription?.product?.name || '-' }}
                                 </a>
-                                <span v-else class="block font-semibold text-indigo-600 dark:text-indigo-400">
+                                <span v-else class="block font-semibold text-indigo-600 dark:text-indigo-400 leading-snug break-words">
                                     {{ license.subscription?.product?.name || '-' }}
                                 </span>
                                 <Link v-if="license.order" :href="route('account.orders.show', license.order.code)" class="inline-flex items-center gap-1 mt-1 text-xs text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors font-normal">
@@ -110,8 +110,8 @@
                                 </Link>
                                 <!-- Package / Plan Snapshot Info -->
                                 <div v-if="getLicensePackageInfo(license)" class="mt-1">
-                                    <span class="inline-flex items-center gap-1 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded text-[11px] font-medium">
-                                        <i class="fas fa-cube text-[9px] text-indigo-500"></i>
+                                    <span class="inline-flex items-center gap-1 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded text-[11px] font-medium break-all">
+                                        <i class="fas fa-cube text-[9px] text-indigo-500 flex-shrink-0"></i>
                                         {{ getLicensePackageInfo(license) }}
                                     </span>
                                 </div>
@@ -229,14 +229,14 @@
                         <div
                             v-for="act in activeLicense.activations"
                             :key="act.id"
-                            class="p-4 border border-gray-200 dark:border-zinc-800 rounded-xl bg-gray-50/40 dark:bg-zinc-900/20 flex items-center justify-between gap-4"
+                            class="p-4 border border-gray-200 dark:border-zinc-800 rounded-xl bg-gray-50/40 dark:bg-zinc-900/20 flex items-center justify-between gap-3 min-w-0"
                         >
-                            <div>
-                                <div class="text-sm font-semibold font-mono text-gray-900 dark:text-gray-100">
+                            <div class="min-w-0 flex-1 overflow-hidden">
+                                <div class="text-sm font-semibold font-mono text-gray-900 dark:text-gray-100 truncate block" :title="act.domain || act.hwid || 'Unknown Domain'">
                                     {{ act.domain || act.hwid || 'Unknown Domain' }}
                                 </div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-3 mt-1">
-                                    <span v-if="act.ip">IP: {{ act.ip }}</span>
+                                <div class="text-xs text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                                    <span v-if="act.ip" class="font-mono">IP: {{ act.ip }}</span>
                                     <span>Activated: {{ formatDate(act.created_at) }}</span>
                                 </div>
                             </div>
@@ -245,7 +245,7 @@
                                 type="button"
                                 @click="deactivateDomain(act)"
                                 :disabled="deactivatingId === act.id"
-                                class="px-3 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors disabled:opacity-50"
+                                class="shrink-0 whitespace-nowrap px-3 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors disabled:opacity-50"
                             >
                                 {{ deactivatingId === act.id ? t('Deactivating...') : t('Deactivate') }}
                             </button>
@@ -277,7 +277,7 @@
                         {{ t('Deactivate License Domain') }}
                     </h3>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
-                        {{ t('Are you sure you want to deactivate domain') }} <span class="font-mono font-bold text-gray-800 dark:text-gray-200">"{{ confirmTarget.domain || confirmTarget.hwid }}"</span>? {{ t('This will free up an activation slot for your license key.') }}
+                        {{ t('Are you sure you want to deactivate domain') }} <span class="font-mono font-bold text-gray-800 dark:text-gray-200 break-all">"{{ confirmTarget.domain || confirmTarget.hwid }}"</span>? {{ t('This will free up an activation slot for your license key.') }}
                     </p>
                 </div>
                 <div class="flex items-center justify-center gap-3 pt-2">
@@ -352,24 +352,46 @@
                                     </p>
                                 </div>
                                 <div class="flex sm:flex-col gap-2 shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
-                                    <a 
-                                        v-if="release.download_url"
-                                        :href="release.download_url" 
-                                        target="_blank"
-                                        class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition-colors cursor-pointer whitespace-nowrap"
-                                    >
-                                        <i class="fas fa-file-archive text-[10px]"></i>
-                                        {{ t('Download Paid') }}
-                                    </a>
-                                    <a 
-                                        v-if="release.free_download_url"
-                                        :href="release.free_download_url" 
-                                        target="_blank"
-                                        class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm transition-colors cursor-pointer whitespace-nowrap"
-                                    >
-                                        <i class="fas fa-file-archive text-[10px]"></i>
-                                        {{ t('Download Free') }}
-                                    </a>
+                                    <template v-if="release.installer_windows_url || release.installer_macos_url">
+                                        <a 
+                                            v-if="release.installer_windows_url"
+                                            :href="release.installer_windows_url" 
+                                            target="_blank"
+                                            class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-sky-600 hover:bg-sky-700 text-white rounded-lg shadow-sm transition-colors cursor-pointer whitespace-nowrap"
+                                        >
+                                            <i class="fab fa-windows text-[10px]"></i>
+                                            {{ t('Download Windows') }}
+                                        </a>
+                                        <a 
+                                            v-if="release.installer_macos_url"
+                                            :href="release.installer_macos_url" 
+                                            target="_blank"
+                                            class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-zinc-700 hover:bg-zinc-800 text-white rounded-lg shadow-sm transition-colors cursor-pointer whitespace-nowrap"
+                                        >
+                                            <i class="fab fa-apple text-[10px]"></i>
+                                            {{ t('Download macOS') }}
+                                        </a>
+                                    </template>
+                                    <template v-else>
+                                        <a 
+                                            v-if="release.download_url"
+                                            :href="release.download_url" 
+                                            target="_blank"
+                                            class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition-colors cursor-pointer whitespace-nowrap"
+                                        >
+                                            <i class="fas fa-file-archive text-[10px]"></i>
+                                            {{ t('Download Paid') }}
+                                        </a>
+                                        <a 
+                                            v-if="release.free_download_url"
+                                            :href="release.free_download_url" 
+                                            target="_blank"
+                                            class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm transition-colors cursor-pointer whitespace-nowrap"
+                                        >
+                                            <i class="fas fa-file-archive text-[10px]"></i>
+                                            {{ t('Download Free') }}
+                                        </a>
+                                    </template>
                                     <span 
                                         v-if="release.download_expired" 
                                         class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400 border border-red-100 dark:border-red-900/30 rounded-lg whitespace-nowrap"

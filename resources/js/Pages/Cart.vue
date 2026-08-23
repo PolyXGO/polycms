@@ -1,9 +1,9 @@
 <template>
     <Head :title="t('Shopping Cart')" />
-    <div class="min-h-screen bg-gray-100 dark:bg-gray-900 py-12">
+    <div class="py-4 sm:py-6 transition-colors duration-200">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <CheckoutSteps :step="1" />
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8 mt-8">Shopping Cart</h1>
+            <CheckoutSteps :step="1" currentStep="cart" />
+            <h1 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white mb-6 mt-4">Shopping Cart</h1>
 
             <!-- Empty Cart State -->
             <div v-if="cart.isEmpty" class="bg-white dark:bg-gray-800 shadow rounded-lg p-12 text-center">

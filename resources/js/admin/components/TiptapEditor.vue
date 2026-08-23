@@ -820,7 +820,7 @@ const editor = useEditor({
       link: {
         openOnClick: false,
         HTMLAttributes: {
-          class: 'text-admin-theme-primary dark:text-admin-theme-primary hover:underline',
+          class: 'hover:underline',
         },
       },
     }),
