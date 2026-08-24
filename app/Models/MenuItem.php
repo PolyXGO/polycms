@@ -121,7 +121,8 @@ class MenuItem extends Model
     {
         $title = $value;
 
-        if ($this->linkable_type && $this->linkable_id) {
+        // If no custom navigation label is set in database, fallback to the linked entity's title
+        if (($title === null || trim((string)$title) === '') && $this->linkable_type && $this->linkable_id) {
             $entity = $this->getResolvedLinkable();
             if ($entity) {
                 $entityTitle = $entity->title ?? $entity->name ?? null;

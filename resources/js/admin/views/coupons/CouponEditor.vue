@@ -229,40 +229,64 @@ const fillLimitFromRestrictedEmails = () => {
  }
 };
 
+const formatForDatetimeLocal = (val: string | null) => {
+  if (!val) return '';
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+const parseToIsoOrNull = (val: string | null) => {
+  if (!val || typeof val !== 'string' || !val.trim()) return null;
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString();
+};
+
 const loadCoupon = async () => {
- if (!isEditing.value) return;
- try {
- const { data } = await axios.get(`/api/v1/coupons/${route.params.id}`);
- form.value = data;
- } catch (e) {
- console.error(e);
- }
+  if (!isEditing.value) return;
+  try {
+    const { data } = await axios.get(`/api/v1/coupons/${route.params.id}`);
+    form.value = {
+      ...data,
+      starts_at: formatForDatetimeLocal(data.starts_at),
+      expires_at: formatForDatetimeLocal(data.expires_at),
+    };
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 const save = async () => {
- saving.value = true;
- try {
- let response;
- if (isEditing.value) {
- response = await axios.put(`/api/v1/coupons/${route.params.id}`, form.value);
- dialog.success('Coupon updated successfully.');
- // Just reload the data to be sure
- await loadCoupon();
- } else {
- response = await axios.post('/api/v1/coupons', form.value);
- dialog.success('Coupon created successfully.');
- 
- // Redirect to the edit page of the newly created coupon
- const newId = response.data.id || response.data.data?.id;
- if (newId) {
- router.push({ name:'admin.coupons.edit', params: { id: newId } });
- }
- }
- } catch (e: any) {
- dialog.error(e.response?.data?.message ||'Error saving coupon');
- } finally {
- saving.value = false;
- }
+  saving.value = true;
+  try {
+    const payload = {
+      ...form.value,
+      starts_at: parseToIsoOrNull(form.value.starts_at),
+      expires_at: parseToIsoOrNull(form.value.expires_at),
+    };
+    let response;
+    if (isEditing.value) {
+      response = await axios.put(`/api/v1/coupons/${route.params.id}`, payload);
+      dialog.success('Coupon updated successfully.');
+      // Just reload the data to be sure
+      await loadCoupon();
+    } else {
+      response = await axios.post('/api/v1/coupons', payload);
+      dialog.success('Coupon created successfully.');
+      
+      // Redirect to the edit page of the newly created coupon
+      const newId = response.data.id || response.data.data?.id;
+      if (newId) {
+        router.push({ name: 'admin.coupons.edit', params: { id: newId } });
+      }
+    }
+  } catch (e: any) {
+    dialog.error(e.response?.data?.message || 'Error saving coupon');
+  } finally {
+    saving.value = false;
+  }
 };
 
 onMounted(loadCoupon);

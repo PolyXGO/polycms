@@ -9,44 +9,26 @@ use Carbon\Carbon;
 class CouponManager
 {
     /**
-     * Get all allowed product IDs including all translation variants (same translation_group_id).
+     * Get allowed product IDs for a coupon.
      */
-    protected function getAllowedProductIds(ProductCoupon $coupon): array
+    public function getAllowedProductIds(ProductCoupon $coupon): array
     {
-        $allowedIds = $coupon->scope_config['product_ids'] ?? [];
-        if (empty($allowedIds)) {
+        $scopeConfig = $coupon->scope_config ?? [];
+        $raw = $scopeConfig['product_ids'] ?? [];
+        if (empty($raw) || !is_array($raw)) {
             return [];
         }
-
-        // Include translation products (same translation_group_id) automatically
-        $translationGroupIds = \App\Models\Product::withoutGlobalScope('locale')
-            ->whereIn('id', $allowedIds)
-            ->whereNotNull('translation_group_id')
-            ->pluck('translation_group_id')
-            ->toArray();
-
-        if (!empty($translationGroupIds)) {
-            $translatedIds = \App\Models\Product::withoutGlobalScope('locale')
-                ->whereIn('translation_group_id', $translationGroupIds)
-                ->pluck('id')
-                ->toArray();
-            $allowedIds = array_unique(array_merge($allowedIds, $translatedIds));
-        }
-
-        return array_map('intval', $allowedIds);
+        return array_map('intval', $raw);
     }
 
-    /**
-     * Apply a coupon to an order (or cart).
-     */
-    public function applyCoupon(Order $order, $code, $appliedByUser = null)
+    public function applyCouponToOrder(Order $order, string $code, $appliedByUser = null)
     {
         $coupon = ProductCoupon::where('code', $code)->where('is_active', true)->first();
-        
+
         if (!$coupon) {
-            throw new \Exception("Coupon invalid.");
+            throw new \Exception("Invalid coupon code.");
         }
-        
+
         $userForValidation = $appliedByUser ?? $order->user;
         $this->validateCoupon($coupon, $order->subtotal_amount, $userForValidation, [], null, $order);
         
@@ -58,7 +40,7 @@ class CouponManager
         ];
     }
 
-    public function validateCoupon(ProductCoupon $coupon, $subtotal, $user = null, $existingCoupons = [], $guestEmail = null, $order = null)
+    public function validateCoupon(ProductCoupon $coupon, $subtotal, $user = null, $existingCoupons = [], $guestEmail = null, $orderOrItems = null)
     {
         // Date Check
         $now = Carbon::now();
@@ -70,22 +52,39 @@ class CouponManager
         
         // Product Restriction check
         $allowedProductIds = $this->getAllowedProductIds($coupon);
-        if (!empty($allowedProductIds) && $order && $order->relationLoaded('items')) {
+        if (!empty($allowedProductIds) && $orderOrItems) {
             $hasEligibleItem = false;
-            foreach ($order->items as $item) {
-                if (in_array((int)$item->product_id, $allowedProductIds, true)) {
-                    $hasEligibleItem = true;
-                    break;
+            if (is_array($orderOrItems)) {
+                foreach ($orderOrItems as $item) {
+                    $pId = is_array($item) ? ($item['product_id'] ?? null) : ($item->product_id ?? null);
+                    if ($pId && in_array((int)$pId, $allowedProductIds, true)) {
+                        $hasEligibleItem = true;
+                        break;
+                    }
                 }
+            } elseif (is_object($orderOrItems) && method_exists($orderOrItems, 'relationLoaded') && $orderOrItems->relationLoaded('items')) {
+                foreach ($orderOrItems->items as $item) {
+                    if (in_array((int)$item->product_id, $allowedProductIds, true)) {
+                        $hasEligibleItem = true;
+                        break;
+                    }
+                }
+            } else {
+                $hasEligibleItem = true;
             }
+
             if (!$hasEligibleItem) {
-                throw new \Exception("This coupon is not applicable to any items in your order.");
+                throw new \Exception("Promo code '{$coupon->code}' is not applicable to any items in your cart.");
             }
         }
 
         // Resolve Target Customer and Acting User info
-        $targetEmail = $order ? ($order->user?->email ?? data_get($order->billing_address, 'email')) : ($user ? $user->email : $guestEmail);
-        $targetUserId = $order ? $order->user_id : ($user ? $user->id : null);
+        $targetEmail = (is_object($orderOrItems) && isset($orderOrItems->user)) 
+            ? ($orderOrItems->user?->email ?? data_get($orderOrItems->billing_address, 'email')) 
+            : ($user ? $user->email : $guestEmail);
+        $targetUserId = (is_object($orderOrItems) && isset($orderOrItems->user_id)) 
+            ? $orderOrItems->user_id 
+            : ($user ? $user->id : null);
         $actingEmail = $user ? $user->email : null;
 
         // Limit per user check
@@ -108,13 +107,16 @@ class CouponManager
                     ->count();
 
                 if ($userUsageCount >= $coupon->usage_limit_per_user) {
-                    throw new \Exception("This customer has reached the usage limit ({$coupon->usage_limit_per_user} time) for this coupon code.");
+                    $timesStr = $coupon->usage_limit_per_user > 1 ? "{$coupon->usage_limit_per_user} times" : "once";
+                    throw new \Exception("You have already used the promo code '{$coupon->code}' on a previous order (limit: {$timesStr} per customer).");
                 }
             }
         }
 
         // Min Order Info
-        if ($coupon->min_order_value && $subtotal < $coupon->min_order_value) throw new \Exception("Order value too low.");
+        if ($coupon->min_order_value && $subtotal < $coupon->min_order_value) {
+            throw new \Exception("Your order does not meet the minimum requirement of " . format_currency((float)$coupon->min_order_value) . " for promo code '{$coupon->code}'.");
+        }
 
         // Email Restriction
         if (!empty($coupon->restricted_emails)) {
@@ -127,54 +129,68 @@ class CouponManager
             }
 
             if (!$allowed) {
-                throw new \Exception("This coupon is not available for this user or email.");
+                throw new \Exception("Promo code '{$coupon->code}' is reserved for specific customer accounts.");
             }
         }
 
         // Exclusive Logic
         if ($coupon->is_exclusive && !empty($existingCoupons)) {
-             throw new \Exception("Exclusive discounts cannot be combined with other discount codes.");
+             throw new \Exception("Exclusive promo code '{$coupon->code}' cannot be combined with other discounts.");
         }
 
         // Check against existing coupons
         foreach ($existingCoupons as $existing) {
              if ($existing->is_exclusive) {
-                 throw new \Exception("An exclusive coupon is already applied.");
+                 throw new \Exception("An exclusive promo code is already applied to this order.");
              }
              if ($existing->code === $coupon->code) {
-                 throw new \Exception("Coupon already applied.");
+                 throw new \Exception("Promo code '{$coupon->code}' is already applied.");
              }
         }
         
         return true;
     }
 
-    public function calculateDiscount(ProductCoupon $coupon, $subtotal, ?Order $order = null)
+    public function calculateDiscount(ProductCoupon $coupon, $subtotal, $orderOrItems = null)
     {
         $allowedProductIds = $this->getAllowedProductIds($coupon);
         
-        // If product restrictions exist and an order is provided, calculate subtotal only for eligible products
-        if (!empty($allowedProductIds) && $order && $order->relationLoaded('items')) {
+        // If product restrictions exist, calculate subtotal only for eligible products
+        if (!empty($allowedProductIds) && $orderOrItems) {
             $eligibleSubtotal = 0;
-            foreach ($order->items as $item) {
-                if (in_array((int)$item->product_id, $allowedProductIds, true)) {
-                    $eligibleSubtotal += ($item->price * $item->quantity);
+            if (is_array($orderOrItems)) {
+                foreach ($orderOrItems as $item) {
+                    $pId = is_array($item) ? ($item['product_id'] ?? null) : ($item->product_id ?? null);
+                    if ($pId && in_array((int)$pId, $allowedProductIds, true)) {
+                        $qty = is_array($item) ? ($item['quantity'] ?? 1) : ($item->quantity ?? 1);
+                        $price = is_array($item) ? ($item['original_price'] ?? $item['price'] ?? 0) : ($item->price ?? 0);
+                        $eligibleSubtotal += ((float)$price * (int)$qty);
+                    }
+                }
+            } elseif (is_object($orderOrItems) && method_exists($orderOrItems, 'relationLoaded') && $orderOrItems->relationLoaded('items')) {
+                foreach ($orderOrItems->items as $item) {
+                    if (in_array((int)$item->product_id, $allowedProductIds, true)) {
+                        $eligibleSubtotal += ((float)$item->price * (int)$item->quantity);
+                    }
                 }
             }
-            $subtotal = $eligibleSubtotal;
+            if ($eligibleSubtotal > 0) {
+                $subtotal = $eligibleSubtotal;
+            }
         }
 
-        if ($coupon->type === 'fixed_amount') {
-            return min($coupon->value, $subtotal);
+        if ($coupon->type === 'percent') {
+            $discount = $subtotal * ($coupon->value / 100);
+        } else {
+            $discount = $coupon->value;
         }
-        
-        // Percent
-        $amount = $subtotal * ($coupon->value / 100);
-        
-        if ($coupon->max_discount_value && $amount > $coupon->max_discount_value) {
-            $amount = $coupon->max_discount_value;
+
+        // Apply max discount cap if defined
+        if ($coupon->max_discount_value && $coupon->max_discount_value > 0) {
+            $discount = min($discount, (float)$coupon->max_discount_value);
         }
-        
-        return $amount;
+
+        // Discount cannot exceed subtotal
+        return min($discount, $subtotal);
     }
 }

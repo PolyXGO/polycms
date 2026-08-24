@@ -186,8 +186,9 @@
                                     Apply
                                 </button>
                             </div>
-                            <p v-if="localCouponError" class="mt-2 text-sm text-red-600 dark:text-red-400">
-                                {{ localCouponError }}
+                            <p v-if="localCouponError || cart.couponError" class="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-1.5">
+                                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <span>{{ localCouponError || cart.couponError }}</span>
                             </p>
 
                             <!-- Coupon List -->
@@ -195,7 +196,7 @@
                                 <template v-for="code in cart.couponCodes" :key="code">
                                     <div v-if="getAppliedCoupon(code)" class="flex items-center justify-between bg-green-50 dark:bg-green-900/20 px-3 py-2 rounded-md border border-green-200 dark:border-green-800">
                                         <div class="flex items-center text-sm text-green-700 dark:text-green-400">
-                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+                                            <svg class="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
                                             <div class="flex flex-col">
                                                 <span class="font-medium uppercase">{{ code }}</span>
                                                 <span v-if="getAppliedCoupon(code)?.title" class="text-xs text-green-600 dark:text-green-500">{{ getAppliedCoupon(code)?.title }}</span>
@@ -206,19 +207,45 @@
                                             Remove
                                         </button>
                                     </div>
-                                    <div v-else class="flex items-center justify-between bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-md border border-red-200 dark:border-red-800">
-                                        <div class="flex items-center text-sm text-red-700 dark:text-red-400">
-                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                            <div class="flex flex-col">
-                                                <span class="font-medium uppercase">{{ code }}</span>
-                                                <span class="text-xs text-red-600 dark:text-red-500">Invalid code</span>
-                                            </div>
-                                        </div>
-                                        <button @click="removeCoupon(code)" type="button" class="text-xs font-medium text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 ml-4">
-                                            Remove
-                                        </button>
-                                    </div>
                                 </template>
+                            </div>
+
+                            <!-- Available Coupons List (Clean & Compact) -->
+                            <div v-if="availableCoupons.length > 0" class="mt-4 pt-3 border-t border-dashed border-gray-200 dark:border-gray-700">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Available Coupons</span>
+                                    <span class="text-[11px] text-gray-400 dark:text-gray-500">{{ availableCoupons.length }} available</span>
+                                </div>
+                                <div class="space-y-1.5">
+                                    <div 
+                                        v-for="coupon in availableCoupons" 
+                                        :key="coupon.id" 
+                                        class="flex items-center justify-between p-2 rounded-lg bg-gray-50/70 dark:bg-gray-700/30 border border-gray-100 dark:border-gray-700/50 text-xs transition-colors hover:bg-gray-100/70 dark:hover:bg-gray-700/60"
+                                    >
+                                        <div class="flex items-center gap-2 min-w-0 pr-2">
+                                            <span class="font-mono font-bold text-xs px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300/60 dark:border-emerald-700/50 shrink-0">
+                                                {{ coupon.code }}
+                                            </span>
+                                            <span class="font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
+                                                {{ coupon.type === 'fixed_amount' ? formatCurrency(coupon.value) : Number(coupon.value) + '%' }} OFF
+                                            </span>
+                                            <span v-if="coupon.title || coupon.description" class="text-gray-500 dark:text-gray-400 truncate hidden sm:inline text-[11px]" :title="coupon.title || coupon.description">
+                                                - {{ coupon.title || coupon.description }}
+                                            </span>
+                                        </div>
+                                        <div class="flex items-center gap-2 shrink-0">
+                                            <button 
+                                                @click="applyCoupon(coupon.code)" 
+                                                type="button" 
+                                                :disabled="isCouponApplied(coupon.code)"
+                                                class="font-semibold transition-colors focus:outline-none text-xs"
+                                                :class="isCouponApplied(coupon.code) ? 'text-gray-400 dark:text-gray-500 cursor-default' : 'text-gray-900 hover:text-black dark:text-gray-100 dark:hover:text-white cursor-pointer'"
+                                            >
+                                                {{ isCouponApplied(coupon.code) ? '✓ Applied' : 'Apply' }}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -319,6 +346,7 @@ onMounted(async () => {
     await cart.syncWithServer();
     cart.calculateTotals();
     await loadServicesForCartItems();
+    fetchAvailableCoupons();
 });
 
 const onServiceChange = async (index: number, serviceId: number) => {
@@ -380,17 +408,32 @@ const removeItem = (index: number) => {
     cart.removeItem(index);
 };
 
+const availableCoupons = ref<any[]>([]);
+
+const fetchAvailableCoupons = async () => {
+    try {
+        const response = await axios.get('/api/v1/checkout/coupons');
+        availableCoupons.value = response.data.data || [];
+    } catch (error) {
+        console.error('Error fetching coupons', error);
+    }
+};
+
+const isCouponApplied = (code: string) => {
+    return (cart.totals.applied_coupons || []).some((c: any) => c.code?.toUpperCase() === code?.toUpperCase());
+};
+
 const localCouponError = ref('');
 
-const applyCoupon = async () => {
+const applyCoupon = async (code: string | null = null) => {
     localCouponError.value = '';
-    if (couponInput.value) {
-        try {
-            await cart.applyCoupon(couponInput.value);
-            couponInput.value = '';
-        } catch (e: any) {
-            localCouponError.value = e.message;
-        }
+    const codeToApply = code || couponInput.value;
+    if (!codeToApply) return;
+    try {
+        await cart.applyCoupon(codeToApply);
+        if (!code) couponInput.value = '';
+    } catch (e: any) {
+        localCouponError.value = e.message || cart.couponError || 'Invalid coupon code';
     }
 };
 

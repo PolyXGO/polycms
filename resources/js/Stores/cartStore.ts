@@ -248,9 +248,10 @@ export const useCartStore = defineStore('cart', {
             const isValid = this.totals.applied_coupons?.some(c => c.code === code);
 
             if (!isValid) {
-                this.couponCodes = this.couponCodes.filter(c => c !== code);
                 const errorMsg = this.couponError || 'Invalid coupon code';
+                this.couponCodes = this.couponCodes.filter(c => c !== code);
                 await this.calculateTotals();
+                this.couponError = errorMsg;
                 throw new Error(errorMsg);
             }
 
@@ -268,7 +269,7 @@ export const useCartStore = defineStore('cart', {
         },
 
         hasCoupon(code: string): boolean {
-            return this.couponCodes.includes(code);
+            return (this.totals.applied_coupons || []).some((c: any) => c.code?.toUpperCase() === code?.toUpperCase());
         },
 
         async calculateTotals() {
@@ -310,6 +311,13 @@ export const useCartStore = defineStore('cart', {
                     });
                     saveCartToStorage(this.items, this.couponCodes);
                 }
+
+                if (response.data.applied_coupons && Array.isArray(response.data.applied_coupons)) {
+                    this.couponCodes = response.data.applied_coupons.map((c: any) => c.code);
+                } else if (response.data.coupon_error) {
+                    this.couponCodes = [];
+                }
+                saveCartToStorage(this.items, this.couponCodes);
 
                 if (response.data.coupon_error) {
                     this.couponError = response.data.coupon_error;

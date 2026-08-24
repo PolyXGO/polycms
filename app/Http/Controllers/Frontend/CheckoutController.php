@@ -17,12 +17,8 @@ class CheckoutController extends Controller
      */
     public function index(Request $request)
     {
-        // Redirect to cart if it is empty
-        $cartService = app(\App\Services\Ecommerce\CartService::class);
-        $cart = $cartService->getCart($request);
-        if (!$cart || $cart->items->isEmpty()) {
-            return redirect()->route('cart');
-        }
+        // We allow rendering checkout; client-side Pinia/localStorage handles cart state
+        // and displays empty cart notice if needed without breaking direct checkout transitions.
 
         // We can pass initial data like user addresses if logged in
         $user = $request->user();

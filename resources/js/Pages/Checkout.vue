@@ -118,14 +118,20 @@ const fetchAvailableCoupons = async () => {
     }
 };
 
+const couponLocalError = ref('');
+
 const applyCoupon = async (code: string | null = null) => {
+    couponLocalError.value = '';
     const codeToApply = code || couponInput.value;
     if (!codeToApply) return;
     
-    await cart.applyCoupon(codeToApply);
-    
-    // If successful, clear input if it was manual entry
-    if (!code) couponInput.value = '';
+    try {
+        await cart.applyCoupon(codeToApply);
+        // If successful, clear input if it was manual entry
+        if (!code) couponInput.value = '';
+    } catch (e: any) {
+        couponLocalError.value = e.message || cart.couponError || 'Invalid coupon code';
+    }
 };
 
 const removeCoupon = async (code: string) => {
@@ -143,7 +149,7 @@ const closeCouponModal = () => {
 };
 
 const isCouponApplied = (code: string) => {
-    return cart.couponCodes.includes(code);
+    return (cart.totals.applied_coupons || []).some((c: any) => c.code?.toUpperCase() === code?.toUpperCase());
 };
 
 const isFreeOrder = computed(() => cart.total <= 0);
@@ -423,7 +429,10 @@ const finishPayment = () => {
                                 <input :disabled="processing" v-model="couponInput" type="text" class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 dark:focus:border-gray-400 dark:focus:ring-gray-400 sm:text-sm" placeholder="Enter coupon code" />
                                 <button :disabled="processing" @click="applyCoupon(null)" type="button" class="bg-gray-200 dark:bg-gray-600 px-4 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-white hover:bg-gray-300 disabled:opacity-50">Apply</button>
                             </div>
-                            <p v-if="cart.couponError" class="mt-2 text-sm text-red-600">{{ cart.couponError }}</p>
+                            <p v-if="couponLocalError || cart.couponError" class="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-1.5">
+                                <i class="fas fa-exclamation-circle shrink-0"></i>
+                                <span>{{ couponLocalError || cart.couponError }}</span>
+                            </p>
                             
                             <!-- Applied Coupons Display -->
                             <div v-if="cart.totals.applied_coupons && cart.totals.applied_coupons.length > 0" class="mt-4 space-y-2">
@@ -442,33 +451,48 @@ const finishPayment = () => {
                                 </div>
                             </div>
                             
-                            <!-- Available Coupons List -->
-                            <div v-if="availableCoupons.length > 0" class="mt-6">
-                                <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Available Discount Codes:</h3>
-                                <div class="space-y-3">
-                                    <div v-for="coupon in availableCoupons" :key="coupon.id" class="border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden bg-white dark:bg-gray-800">
-                                        <div class="bg-green-500 dark:bg-green-700 px-4 py-2 flex justify-between items-center text-white">
-                                            <span class="font-bold font-mono">{{ coupon.code }}</span>
-                                            <span class="font-bold">{{ coupon.type === 'fixed_amount' ? formatCurrency(coupon.value) : coupon.value + '%' }} OFF</span>
+                            <!-- Available Coupons List (Clean & Compact) -->
+                            <div v-if="availableCoupons.length > 0" class="mt-4 pt-3 border-t border-dashed border-gray-200 dark:border-gray-700">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Available Coupons</span>
+                                    <span class="text-[11px] text-gray-400 dark:text-gray-500">{{ availableCoupons.length }} available</span>
+                                </div>
+                                <div class="space-y-1.5">
+                                    <div 
+                                        v-for="coupon in availableCoupons" 
+                                        :key="coupon.id" 
+                                        class="flex items-center justify-between p-2 rounded-lg bg-gray-50/70 dark:bg-gray-700/30 border border-gray-100 dark:border-gray-700/50 text-xs transition-colors hover:bg-gray-100/70 dark:hover:bg-gray-700/60"
+                                    >
+                                        <div class="flex items-center gap-2 min-w-0 pr-2">
+                                            <span class="font-mono font-bold text-xs px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300/60 dark:border-emerald-700/50 shrink-0">
+                                                {{ coupon.code }}
+                                            </span>
+                                            <span class="font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
+                                                {{ coupon.type === 'fixed_amount' ? formatCurrency(coupon.value) : Number(coupon.value) + '%' }} OFF
+                                            </span>
+                                            <span v-if="coupon.title || coupon.description" class="text-gray-500 dark:text-gray-400 truncate hidden sm:inline text-[11px]" :title="coupon.title || coupon.description">
+                                                - {{ coupon.title || coupon.description }}
+                                            </span>
                                         </div>
-                                        <div class="p-3">
-                                            <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">{{ coupon.title || coupon.description }}</p>
-                                            <div v-if="coupon.min_order_value > 0" class="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                                                <i class="fas fa-shopping-cart mr-1"></i> Min: {{ formatCurrency(coupon.min_order_value) }}
-                                            </div>
-                                            <div class="flex items-center justify-between mt-3">
-                                                <button 
-                                                    @click="applyCoupon(coupon.code)" 
-                                                    type="button" 
-                                                    class="flex-1 bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-1.5 rounded mr-2 disabled:opacity-50"
-                                                    :disabled="isCouponApplied(coupon.code)"
-                                                >
-                                                    <i class="fas fa-check mr-1"></i> {{ isCouponApplied(coupon.code) ? 'Applied' : 'Apply' }}
-                                                </button>
-                                                <button @click="openCouponModal(coupon)" type="button" class="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
-                                                    <i class="fas fa-info-circle mr-1"></i> Details
-                                                </button>
-                                            </div>
+                                        <div class="flex items-center gap-2 shrink-0">
+                                            <button 
+                                                v-if="coupon.description || coupon.min_order_value > 0"
+                                                @click="openCouponModal(coupon)" 
+                                                type="button" 
+                                                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-0.5"
+                                                title="View details"
+                                            >
+                                                <i class="fas fa-info-circle text-[11px]"></i>
+                                            </button>
+                                            <button 
+                                                @click="applyCoupon(coupon.code)" 
+                                                type="button" 
+                                                :disabled="isCouponApplied(coupon.code)"
+                                                class="font-semibold transition-colors focus:outline-none text-xs"
+                                                :class="isCouponApplied(coupon.code) ? 'text-gray-400 dark:text-gray-500 cursor-default' : 'text-gray-900 hover:text-black dark:text-gray-100 dark:hover:text-white cursor-pointer'"
+                                            >
+                                                {{ isCouponApplied(coupon.code) ? '✓ Applied' : 'Apply' }}
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
