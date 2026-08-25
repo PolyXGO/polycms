@@ -819,58 +819,117 @@ watch(() => route.name, () => {
  height: 4px;
  background: transparent;
  }
+  :deep(.polycms-topbar .topbar-dropdown.touch-open > .topbar-dropdown-content) {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
 
- /* ===== Mobile responsive: topbar items overflow scroll ===== */
- @media (max-width: 1023px) {
- .polycms-topbar-container {
- padding: 0 4px;
- }
+    /* ===== Mobile responsive: topbar items overflow scroll & compact icons ===== */
+    @media (max-width: 1023px) {
+        .polycms-topbar {
+            max-width: 100vw;
+            overflow-x: auto;
+            overflow-y: visible;
+            scrollbar-width: none;
+        }
 
- .polycms-topbar-left {
- overflow: visible;
- flex-shrink: 1;
- min-width: 0;
- }
+        .polycms-topbar::-webkit-scrollbar {
+            display: none;
+        }
 
- /* Hide text labels, show only icons on very small screens */
- :deep(.polycms-topbar .topbar-dropdown > a),
- :deep(.polycms-topbar .topbar-button) {
- padding: 0 6px !important;
- gap: 4px !important;
- }
+        .polycms-topbar-container {
+            padding: 0 4px;
+            max-width: 100%;
+            overflow-x: auto;
+            overflow-y: visible;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+        }
 
- /* Dropdown sub-items: toggle inline on mobile instead of flyout */
- :deep(.polycms-topbar .topbar-dropdown.submenu > .topbar-dropdown-content) {
- position: relative !important;
- top: auto !important;
- left: auto !important;
- right: auto !important;
- margin: 0 !important;
- box-shadow: none !important;
- border: none !important;
- border-radius: 0 !important;
- padding-left: 12px !important;
- background: rgba(255, 255, 255, 0.03) !important;
- min-width: auto !important;
- }
+        .polycms-topbar-container::-webkit-scrollbar {
+            display: none;
+        }
 
- :deep(.polycms-topbar .topbar-dropdown-item) {
- min-height: 40px !important;
- }
- }
+        :deep(.polycms-topbar .topbar-dropdown.touch-open > .topbar-dropdown-content) {
+            position: fixed !important;
+            top: 38px !important;
+            left: 8px !important;
+            right: 8px !important;
+            width: auto !important;
+            max-width: none !important;
+            min-width: 0 !important;
+            max-height: calc(100vh - 52px) !important;
+            overflow-y: auto !important;
+            border-radius: 12px !important;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4) !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            z-index: 100005 !important;
+            background: rgb(var(--admin-theme-sidebar)) !important;
+        }
 
- @media (max-width: 639px) {
- /* On very small screens, hide label text in topbar items, show only icons */
- :deep(.polycms-topbar-left .topbar-dropdown > a > span:not(.topbar-icon)),
- :deep(.polycms-topbar-left > a > span:not(.topbar-icon)) {
- display: none !important;
- }
+        .polycms-topbar-left {
+            overflow: visible;
+            flex-shrink: 1;
+            min-width: 0;
+        }
 
- /* Reduce dropdown arrow on mobile */
- :deep(.polycms-topbar-left > .topbar-dropdown > a::after) {
- margin-left: 2px;
- }
- }
+        .polycms-topbar-right {
+            flex-shrink: 0;
+        }
+
+        /* Hide text labels, show only icons on mobile screens */
+        :deep(.polycms-topbar .topbar-dropdown > a),
+        :deep(.polycms-topbar .topbar-button) {
+            padding: 0 6px !important;
+            gap: 4px !important;
+        }
+
+        /* Dropdown sub-items: toggle inline on mobile instead of flyout */
+        :deep(.polycms-topbar .topbar-dropdown.submenu > .topbar-dropdown-content) {
+            position: relative !important;
+            top: auto !important;
+            left: auto !important;
+            right: auto !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+            border-radius: 0 !important;
+            padding-left: 12px !important;
+            background: rgba(255, 255, 255, 0.03) !important;
+            min-width: auto !important;
+        }
+
+        :deep(.polycms-topbar .topbar-dropdown-item) {
+            min-height: 40px !important;
+        }
+    }
+
+    @media (max-width: 768px) {
+        /* On mobile screens, hide label text on topbar trigger buttons if they have icons */
+        :deep(.polycms-topbar-left .topbar-dropdown > a > span:not(.topbar-icon)),
+        :deep(.polycms-topbar-left .topbar-dropdown > button > span:not(.topbar-icon)),
+        :deep(.polycms-topbar-left > a > span:not(.topbar-icon)),
+        :deep(.polycms-topbar-left > button > span:not(.topbar-icon)),
+        :deep(.polycms-topbar-left > div > a > span:not(.topbar-icon)),
+        :deep(.polycms-topbar-left > div > button > span:not(.topbar-icon)),
+        :deep(.polycms-topbar-right .topbar-dropdown > a > span:not(.topbar-icon)),
+        :deep(.polycms-topbar-right .topbar-dropdown > button > span:not(.topbar-icon)),
+        :deep(.polycms-topbar-right > a > span:not(.topbar-icon)),
+        :deep(.polycms-topbar-right > button > span:not(.topbar-icon)),
+        :deep(.polycms-topbar-right > div > a > span:not(.topbar-icon)),
+        :deep(.polycms-topbar-right > div > button > span:not(.topbar-icon)) {
+            display: none !important;
+        }
+
+        /* Reduce dropdown arrow on mobile */
+        :deep(.polycms-topbar-left > .topbar-dropdown > a::after),
+        :deep(.polycms-topbar-left .topbar-dropdown > a::after),
+        :deep(.polycms-topbar-right > .topbar-dropdown > a::after),
+        :deep(.polycms-topbar-right .topbar-dropdown > a::after) {
+            margin-left: 2px !important;
+        }
+    }
 
  /* ===== Settings Dropdown ===== */
  .topbar-settings-dropdown {

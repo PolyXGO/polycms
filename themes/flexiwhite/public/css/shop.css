@@ -146,16 +146,17 @@ html.dark .single-product-thumb-nav:hover,
 .single-product-price-row {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    margin-bottom: 2rem;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
 }
 
 .single-product-price {
-    font-size: 2rem;
+    font-size: 1.75rem;
+    font-weight: 800;
 }
 
 .single-product-price-strike {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
 }
 
 /* Badge specifically inside single product summary to ensure padding */
@@ -170,7 +171,7 @@ html.dark .single-product-thumb-nav:hover,
 .single-product-stock {
     font-weight: 500;
     font-size: 0.875rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
 }
 
 .single-product-stock.in-stock {
@@ -187,9 +188,9 @@ html.dark .single-product-thumb-nav:hover,
 
 .single-product-short-desc {
     color: var(--geist-accents-6);
-    font-size: 1.125rem;
-    line-height: 1.6;
-    margin-bottom: 2rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 1rem;
 }
 
 .product-packages-selector,
@@ -197,19 +198,19 @@ html.dark .single-product-thumb-nav:hover,
 #free-download-button-wrapper,
 #free-login-button-wrapper {
     width: 100%;
-    max-width: 360px;
+    max-width: 440px;
     box-sizing: border-box;
 }
 
 .package-option-label {
     display: flex;
     align-items: flex-start;
-    gap: 12px;
-    padding: 14px;
-    border: 2px solid var(--color-border, #e2e8f0);
-    border-radius: 12px;
+    gap: 8px;
+    padding: 7px 11px;
+    border: 1.5px solid var(--color-border, #e2e8f0);
+    border-radius: 8px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
     background: var(--theme-surface-color, var(--geist-background, #ffffff));
     position: relative;
     width: 100%;
@@ -227,45 +228,91 @@ html.dark .single-product-thumb-nav:hover,
 }
 
 .package-name-text {
-    font-weight: 700;
+    font-weight: 600;
+    font-size: 0.88rem;
     color: var(--theme-heading-color, var(--geist-foreground, #0f172a));
     transition: color 0.2s ease;
+    line-height: 1.25;
 }
 
 .package-price-text {
-    font-weight: 800;
+    font-weight: 700;
     color: var(--primary, #3b82f6);
-    font-size: 1.1rem;
+    font-size: 0.95rem;
+    line-height: 1.25;
 }
 
-.package-meta-text {
-    font-size: 0.82rem;
+.package-meta-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+    font-size: 0.75rem;
     color: var(--theme-body-muted-color, var(--geist-accents-5, #64748b));
-    margin-bottom: 2px;
-    transition: color 0.2s ease;
+    margin-top: 1px;
+    line-height: 1.25;
 }
 
 .package-key-info {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 6px;
-    font-weight: 600;
+    gap: 4px;
+    font-weight: 500;
     color: var(--theme-body-color, #334155);
-    margin-bottom: 2px;
-    transition: color 0.2s ease;
 }
 
 .package-key-info svg {
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
     color: var(--primary, #3b82f6);
     flex-shrink: 0;
 }
 
+.package-meta-dot {
+    color: #94a3b8;
+    font-size: 0.7rem;
+    line-height: 1;
+}
+
 .package-duration-info {
     color: var(--theme-body-muted-color, var(--geist-accents-5, #64748b));
-    font-size: 0.82rem;
-    transition: color 0.2s ease;
+    font-size: 0.75rem;
+}
+
+.lifetime-savings-nudge {
+    margin-top: 3px;
+    display: block;
+    color: #059669;
+    font-weight: 600;
+    font-size: 0.74rem;
+    line-height: 1.25;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+}
+
+.lifetime-savings-nudge svg {
+    display: none !important;
+}
+
+.package-capabilities-wrap {
+    margin-top: 4px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px 8px;
+    font-size: 0.72rem;
+}
+
+.package-cap-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--theme-body-color, #475569);
+}
+
+.package-cap-item i {
+    color: #10b981;
+    font-size: 0.72rem;
 }
 
 /* Dark mode for package options */
@@ -293,11 +340,24 @@ html.dark .package-key-info,
     color: #cbd5e1 !important;
 }
 
-html.dark .package-meta-text,
+html.dark .package-cap-item,
+.dark .package-cap-item {
+    color: #cbd5e1 !important;
+}
+
+html.dark .package-meta-row,
 html.dark .package-duration-info,
-.dark .package-meta-text,
+.dark .package-meta-row,
 .dark .package-duration-info {
     color: var(--theme-body-muted-color, #94a3b8) !important;
+}
+
+html.dark .lifetime-savings-nudge,
+.dark .lifetime-savings-nudge {
+    color: #10b981 !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
 }
 
 /* Media action buttons (Live Demo, Gallery, Video) */

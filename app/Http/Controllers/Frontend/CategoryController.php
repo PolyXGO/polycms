@@ -23,7 +23,14 @@ class CategoryController extends FrontendController
      */
     public function show(string $slug, Request $request): View
     {
-        $category = Category::where('slug', $slug)->firstOrFail();
+        $type = $request->get('type');
+        $query = Category::where('slug', $slug);
+        if ($type) {
+            $query->where('type', $type);
+        } else {
+            $query->orderByRaw("CASE type WHEN 'post' THEN 1 WHEN 'product' THEN 2 ELSE 3 END");
+        }
+        $category = $query->firstOrFail();
         $isAdmin = $this->isAdmin($request);
 
         $data = [
@@ -33,8 +40,11 @@ class CategoryController extends FrontendController
         // Determine content type from category type or request
         $type = $request->get('type', $category->type ?? 'post');
 
+        // All category IDs including descendants (child/sub categories)
+        $categoryIds = $category->allCategoryIds();
+
         if ($type === 'product') {
-            // Show products in this category
+            // Show products in this category and all its descendant subcategories
             $query = Product::with([
                 'categories:categories.id,categories.name,categories.slug',
                 'tags:tags.id,tags.name,tags.slug',
@@ -42,8 +52,8 @@ class CategoryController extends FrontendController
                     $q->select(['media.id', 'media.name', 'media.file_name', 'media.disk', 'media.path', 'media.mime_type', 'media.size', 'media.type', 'media.alt_text', 'media.metadata']);
                 }
             ])
-                ->whereHas('categories', function ($q) use ($category) {
-                    $q->where('categories.id', $category->id);
+                ->whereHas('categories', function ($q) use ($categoryIds) {
+                    $q->whereIn('categories.id', $categoryIds);
                 });
 
             if (!$isAdmin) {
@@ -60,15 +70,15 @@ class CategoryController extends FrontendController
             $data['products'] = $products;
             $viewName = 'categories.show';
         } else {
-            // Show posts in this category
+            // Show posts in this category and all its descendant subcategories
             $query = Post::with([
                 'user:id,name,email',
                 'categories:categories.id,categories.name,categories.slug',
                 'tags:post_tags.id,post_tags.name,post_tags.slug'
             ])
                 ->where('type', 'post')
-                ->whereHas('categories', function ($q) use ($category) {
-                    $q->where('categories.id', $category->id);
+                ->whereHas('categories', function ($q) use ($categoryIds) {
+                    $q->whereIn('categories.id', $categoryIds);
                 });
 
             if (!$isAdmin) {
@@ -178,9 +188,11 @@ class CategoryController extends FrontendController
         $category = ProductCategory::where('slug', $slug)->firstOrFail();
         $isAdmin = $this->isAdmin($request);
 
+        $categoryIds = $category->allCategoryIds();
+
         $query = Product::with(['categories', 'tags'])
-            ->whereHas('categories', function ($q) use ($category) {
-                $q->where('product_categories.id', $category->id);
+            ->whereHas('categories', function ($q) use ($categoryIds) {
+                $q->whereIn('product_categories.id', $categoryIds);
             });
 
         if (!$isAdmin) {

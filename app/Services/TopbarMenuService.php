@@ -510,24 +510,23 @@ class TopbarMenuService
                         ->first();
                 }
             } else {
-                // For pages.show (fallback) or custom routes, try both
-                $category = \App\Models\ProductCategory::withoutGlobalScope('locale')
+                // For pages.show (fallback) or custom routes, try matching Category (post first) then ProductCategory
+                $category = \App\Models\Category::withoutGlobalScope('locale')
                             ->where('slug', $slug)
                             ->where('locale', $currentLocale)
-                            ->first() 
+                            ->orderByRaw("CASE type WHEN 'post' THEN 1 WHEN 'product' THEN 2 ELSE 3 END")
+                            ->first()
+                            ?? \App\Models\ProductCategory::withoutGlobalScope('locale')
+                            ->where('slug', $slug)
+                            ->where('locale', $currentLocale)
+                            ->first()
                             ?? \App\Models\Category::withoutGlobalScope('locale')
                             ->where('slug', $slug)
-                            ->where('locale', $currentLocale)
+                            ->orderByRaw("CASE type WHEN 'post' THEN 1 WHEN 'product' THEN 2 ELSE 3 END")
+                            ->first()
+                            ?? \App\Models\ProductCategory::withoutGlobalScope('locale')
+                            ->where('slug', $slug)
                             ->first();
-                
-                if (!$category) {
-                    $category = \App\Models\ProductCategory::withoutGlobalScope('locale')
-                                ->where('slug', $slug)
-                                ->first() 
-                                ?? \App\Models\Category::withoutGlobalScope('locale')
-                                ->where('slug', $slug)
-                                ->first();
-                }
             }
 
             if ($category && ($user->hasRole(['admin', 'editor']) || $user->can('update', $category))) {

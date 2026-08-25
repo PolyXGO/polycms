@@ -44,9 +44,20 @@ class PostController extends FrontendController
 
         // Category filter
         if ($request->has('category')) {
-            $query->whereHas('categories', function ($q) use ($request) {
-                $q->where('slug', $request->get('category'));
-            });
+            $catSlug = (string) $request->get('category');
+            $cat = \App\Models\Category::where('slug', $catSlug)
+                ->orderByRaw("CASE type WHEN 'post' THEN 1 WHEN 'product' THEN 2 ELSE 3 END")
+                ->first();
+            if ($cat) {
+                $categoryIds = $cat->allCategoryIds();
+                $query->whereHas('categories', function ($q) use ($categoryIds) {
+                    $q->whereIn('categories.id', $categoryIds);
+                });
+            } else {
+                $query->whereHas('categories', function ($q) use ($catSlug) {
+                    $q->where('slug', $catSlug);
+                });
+            }
         }
 
         // Search

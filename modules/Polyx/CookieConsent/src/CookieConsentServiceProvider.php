@@ -57,10 +57,11 @@ class CookieConsentServiceProvider extends ServiceProvider
         });
     }
 
-    public function boot(Kernel $kernel): void
+    public function boot(): void
     {
-        // Inject middleware into all web requests
-        $kernel->pushMiddleware(\Polyx\CookieConsent\Http\Middleware\InjectCookieConsentBanner::class);
+        // Inject middleware into web requests group
+        $router = $this->app['router'];
+        $router->pushMiddlewareToGroup('web', \Polyx\CookieConsent\Http\Middleware\InjectCookieConsentBanner::class);
 
         // Register Blade directive so themes can conditionally block scripts
         \Illuminate\Support\Facades\Blade::if('consent', function() {

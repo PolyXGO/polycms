@@ -945,7 +945,9 @@ class AppServiceProvider extends ServiceProvider
                 } elseif ($routeName === 'products.show') {
                     $entity = \App\Models\Product::where('slug', $slug)->first();
                 } elseif ($routeName === 'categories.show') {
-                    $entity = \App\Models\Category::where('slug', $slug)->first();
+                    $entity = \App\Models\Category::where('slug', $slug)
+                        ->orderByRaw("CASE type WHEN 'post' THEN 1 WHEN 'product' THEN 2 ELSE 3 END")
+                        ->first();
                 } elseif ($routeName === 'product-categories.show') {
                     $entity = \App\Models\ProductCategory::where('slug', $slug)->first();
                 } elseif ($routeName === 'product-brands.show') {

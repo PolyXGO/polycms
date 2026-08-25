@@ -31,7 +31,10 @@ class PageController extends FrontendController
 
         // Check if category base is empty, and if so, check if this slug is a category
         if ($categoryBase === '') {
-            $category = \App\Models\Category::where('slug', $slug)->first();
+            $category = \App\Models\Category::where('slug', $slug)
+                ->when($request->has('type'), fn($q) => $q->where('type', $request->get('type')))
+                ->orderByRaw("CASE type WHEN 'post' THEN 1 WHEN 'product' THEN 2 ELSE 3 END")
+                ->first();
             if ($category) {
                 return app(\App\Http\Controllers\Frontend\CategoryController::class)->show($slug, $request);
             }

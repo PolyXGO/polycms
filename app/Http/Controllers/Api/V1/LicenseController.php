@@ -310,6 +310,17 @@ class LicenseController extends Controller
         try {
             $license = ProductLicense::where('license_key', $key)->first();
             if (!$license) {
+                // Allow modules (e.g. MarketIntegration for Envato) to resolve and auto-claim external keys on the fly (JIT)
+                $license = \App\Facades\Hook::applyFilters('license.resolve_external_key', null, [
+                    'license_key' => $key,
+                    'domain' => $domain,
+                    'hardware_id' => $hwid,
+                    'module' => $moduleKey,
+                    'request' => $request,
+                ]);
+            }
+
+            if (!$license) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid license key.',

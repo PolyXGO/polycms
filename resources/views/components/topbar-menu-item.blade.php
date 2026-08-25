@@ -13,7 +13,10 @@ $method = $item['method'] ?? 'GET';
         data-momentum="right"
         onmouseenter="checkTopbarMenuAlignment(this)"
     >
-        <a href="{{ $url }}" class="{{ $isHighlight ? 'topbar-highlight' : '' }} {{ $hasChildren ? 'has-arrow' : '' }} {{ ($isSubSub ?? false) ? 'topbar-dropdown-item' : '' }}">
+        <a href="{{ $url }}" 
+            class="{{ $isHighlight ? 'topbar-highlight' : '' }} {{ $hasChildren ? 'has-arrow' : '' }} {{ ($isSubSub ?? false) ? 'topbar-dropdown-item' : '' }}"
+            onclick="handleTopbarDropdownClick(event, this)"
+        >
             @if($icon)
                 <span class="topbar-icon">@include('components.topbar-icon', ['icon' => $icon])</span>
             @endif

@@ -456,7 +456,8 @@ $isLoginPage = request()->is('admin/login', 'account/login', 'login', 'register'
         display: none !important;
     }
 
-    .polycms-topbar .topbar-dropdown:hover > .topbar-dropdown-content {
+    .polycms-topbar .topbar-dropdown:hover > .topbar-dropdown-content,
+    .polycms-topbar .topbar-dropdown.touch-open > .topbar-dropdown-content {
         display: flex !important;
         flex-direction: column !important;
         opacity: 1 !important;
@@ -596,6 +597,50 @@ $isLoginPage = request()->is('admin/login', 'account/login', 'login', 'register'
     }
     body.polycms-topbar-active header {
         top: 32px !important;
+    }
+
+    @media (max-width: 1023px) {
+        .polycms-topbar .topbar-dropdown.touch-open > .topbar-dropdown-content {
+            position: fixed !important;
+            top: 38px !important;
+            left: 8px !important;
+            right: 8px !important;
+            width: auto !important;
+            max-width: none !important;
+            min-width: 0 !important;
+            max-height: calc(100vh - 52px) !important;
+            overflow-y: auto !important;
+            border-radius: 12px !important;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.25) !important;
+            border: 1px solid var(--poly-tb-dropdown-border) !important;
+            z-index: 100005 !important;
+            background: var(--poly-tb-bg) !important;
+        }
+
+        .polycms-topbar .topbar-dropdown.submenu.touch-open > .topbar-dropdown-content {
+            position: relative !important;
+            top: auto !important;
+            left: auto !important;
+            right: auto !important;
+            width: 100% !important;
+            box-shadow: none !important;
+            border: none !important;
+            padding-left: 12px !important;
+            background: rgba(125, 125, 125, 0.05) !important;
+            border-radius: 0 !important;
+        }
+
+        .polycms-topbar .topbar-dropdown.touch-open > a {
+            background: var(--poly-tb-hover-bg) !important;
+            color: var(--poly-tb-link-hover) !important;
+        }
+
+        .polycms-topbar .topbar-dropdown-item {
+            padding: 12px 16px !important;
+            font-size: 13px !important;
+            min-height: 42px !important;
+            border-bottom: 1px solid rgba(156, 163, 175, 0.08) !important;
+        }
     }
 
     @media (max-width: 768px) {
@@ -1419,6 +1464,51 @@ $isLoginPage = request()->is('admin/login', 'account/login', 'login', 'register'
             if (themeToggle) rightMenu.appendChild(themeToggle);
         }
 
+        // Touch & Click handler for mobile / tablet dropdowns
+        window.handleTopbarDropdownClick = function(event, element) {
+            const dropdown = element.closest('.topbar-dropdown');
+            if (!dropdown) return;
+
+            // Check if touch device or mobile/tablet screen width
+            const isTouchOrMobile = ('ontouchstart' in window) || (window.innerWidth < 1024) || (window.matchMedia && window.matchMedia('(hover: none)').matches);
+
+            if (isTouchOrMobile) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                const wasOpen = dropdown.classList.contains('touch-open');
+
+                // Close other top-level dropdowns and switcher panels
+                document.querySelectorAll('.polycms-topbar .topbar-dropdown.touch-open').forEach(dd => {
+                    if (dd !== dropdown && !dd.contains(dropdown) && !dropdown.contains(dd)) {
+                        dd.classList.remove('touch-open');
+                    }
+                });
+
+                document.querySelectorAll('.topbar-switcher-panel').forEach(panel => {
+                    panel.style.display = 'none';
+                });
+
+                if (!wasOpen) {
+                    dropdown.classList.add('touch-open');
+                    if (typeof window.checkTopbarMenuAlignment === 'function') {
+                        window.checkTopbarMenuAlignment(dropdown);
+                    }
+                } else {
+                    dropdown.classList.remove('touch-open');
+                }
+            }
+        };
+
+        // Close dropdowns on outside tap/click
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.topbar-dropdown') && !e.target.closest('.topbar-switcher-dropdown')) {
+                document.querySelectorAll('.polycms-topbar .topbar-dropdown.touch-open').forEach(dd => {
+                    dd.classList.remove('touch-open');
+                });
+            }
+        });
+
         // Alignment check function for zig-zag (snake) logic
         window.checkTopbarMenuAlignment = function(dropdown) {
             const dropdownContent = dropdown.querySelector('.topbar-dropdown-content');
@@ -1488,6 +1578,9 @@ $isLoginPage = request()->is('admin/login', 'account/login', 'login', 'register'
                 const link = document.createElement('a');
                 link.href = url;
                 link.className = (isHighlight ? 'topbar-highlight ' : '') + 'has-arrow';
+                link.onclick = function(e) {
+                    window.handleTopbarDropdownClick(e, this);
+                };
 
                 if (icon) {
                     const iconSpan = document.createElement('span');

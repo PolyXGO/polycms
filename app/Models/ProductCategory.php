@@ -141,11 +141,12 @@ class ProductCategory extends Model
      */
     public function descendants(): Collection
     {
-        if (!$this->path) {
+        $descendantIds = $this->descendantIds();
+        if (empty($descendantIds)) {
             return collect([]);
         }
 
-        return static::where('path', 'like', $this->path . '/%')
+        return static::whereIn('id', $descendantIds)
             ->orderBy('depth')
             ->orderBy('order')
             ->orderBy('name')
@@ -157,13 +158,42 @@ class ProductCategory extends Model
      */
     public function descendantIds(): array
     {
-        if (!$this->path) {
-            return [];
+        $ids = [];
+        if ($this->path) {
+            $ids = static::where('path', 'like', $this->path . '/%')
+                ->pluck('id')
+                ->toArray();
         }
 
-        return static::where('path', 'like', $this->path . '/%')
-            ->pluck('id')
-            ->toArray();
+        if (empty($ids)) {
+            $ids = $this->getDescendantIdsRecursively();
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    /**
+     * Fallback recursive retrieval of descendant IDs
+     */
+    public function getDescendantIdsRecursively(): array
+    {
+        $ids = [];
+        $children = static::where('parent_id', $this->id)->get();
+
+        foreach ($children as $child) {
+            $ids[] = $child->id;
+            $ids = array_merge($ids, $child->getDescendantIdsRecursively());
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    /**
+     * Get self ID and all descendant category IDs
+     */
+    public function allCategoryIds(): array
+    {
+        return array_values(array_unique(array_merge([$this->id], $this->descendantIds())));
     }
 
     /**

@@ -28,9 +28,10 @@ class InjectCookieConsentBanner
         $settings = app(SettingsService::class);
         $isEnabled = $settings->get('cookie_consent_is_enabled', true);
 
-        // Use $_COOKIE instead of $request->cookie() because JS creates raw (unencrypted) cookies,
-        // Laravel EncryptCookies middleware silently discards them if using $request->cookie().
-        if (!$isEnabled || isset($_COOKIE['polycms_consent'])) {
+        // Do not check $_COOKIE on the server because the HTML response may be cached
+        // by PageCacheMiddleware (Full Page Cache). The banner must always be injected
+        // with display:none and client-side JavaScript will reveal it only if consent is absent.
+        if (!$isEnabled) {
             return $response;
         }
 
@@ -47,6 +48,7 @@ $bannerHtml = <<<HTML
 <!-- PolyCMS Cookie Consent Banner -->
 <style>
     #polycms-cookie-consent {
+        display: none;
         position: fixed;
         bottom: 0;
         left: 0;
@@ -55,7 +57,6 @@ $bannerHtml = <<<HTML
         background-color: #111;
         color: #fff;
         padding: 16px 20px;
-        display: flex;
         align-items: center;
         justify-content: center;
         gap: 18px;
@@ -160,7 +161,7 @@ $bannerHtml = <<<HTML
         }
     }
 </style>
-<div id="polycms-cookie-consent">
+<div id="polycms-cookie-consent" style="display: none;">
     <div class="polycms-cookie-inner">
     <div class="polycms-cookie-message">
         <div class="polycms-cookie-icon">
@@ -178,16 +179,29 @@ $bannerHtml = <<<HTML
 
 <script>
 (function() {
+    var banner = document.getElementById("polycms-cookie-consent");
+    if (!banner) return;
+
+    var consentCookie = document.cookie.match(/(?:^|;\s*)polycms_consent=([^;]*)/);
+    // If user has NOT given consent yet, show the banner
+    if (!consentCookie) {
+        banner.style.display = "flex";
+    }
+
     function setCookie(value) {
         var d = new Date();
         d.setTime(d.getTime() + (365*24*60*60*1000));
-        document.cookie = "polycms_consent=" + value + ";expires=" + d.toUTCString() + ";path=/";
-        document.getElementById("polycms-cookie-consent").style.display = "none";
+        document.cookie = "polycms_consent=" + value + ";expires=" + d.toUTCString() + ";path=/;SameSite=Lax";
+        banner.style.display = "none";
     }
 
-    document.getElementById("cookie-accept").addEventListener("click", function() { setCookie("accepted"); });
-    document.getElementById("cookie-reject").addEventListener("click", function() { setCookie("rejected"); });
-    document.getElementById("cookie-customize").addEventListener("click", function() {
+    var btnAccept = document.getElementById("cookie-accept");
+    var btnReject = document.getElementById("cookie-reject");
+    var btnCustomize = document.getElementById("cookie-customize");
+
+    if (btnAccept) btnAccept.addEventListener("click", function() { setCookie("accepted"); });
+    if (btnReject) btnReject.addEventListener("click", function() { setCookie("rejected"); });
+    if (btnCustomize) btnCustomize.addEventListener("click", function() {
         window.location.href = "{$policyUrl}";
     });
 })();
