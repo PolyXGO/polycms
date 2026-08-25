@@ -439,6 +439,167 @@
                         {!! \App\Facades\Hook::doAction('theme.product.single.after_title', $product) !!}
 
                         @php
+                            $projectHubProject = null;
+                            $projectHubLatestRelease = null;
+                            $projectHubFreeRelease = null;
+                            $freeDownloadRequiresAuth = true;
+                            $freeDownloadUrl = null;
+                            $hasWindowsInstaller = false;
+                            $hasMacosInstaller = false;
+                            $isSalePaused = ($product->isSalesPaused() || $product->stock_status === 'disabled_add_to_cart');
+                            $isFreeDownloadDisabled = false;
+
+                            if (class_exists('\Modules\Polyx\ProjectHub\Models\Project')) {
+                                $productIds = [$product->id];
+                                if (!empty($product->translation_group_id)) {
+                                    $groupProductIds = \App\Models\Product::withoutGlobalScope('locale')
+                                        ->where('translation_group_id', $product->translation_group_id)
+                                        ->pluck('id')
+                                        ->toArray();
+                                    $productIds = array_merge($productIds, $groupProductIds);
+                                }
+                                $slugProductIds = \App\Models\Product::withoutGlobalScope('locale')
+                                    ->where('slug', $product->slug)
+                                    ->pluck('id')
+                                    ->toArray();
+                                $productIds = array_unique(array_filter(array_merge($productIds, $slugProductIds)));
+
+                                $mainProjectHubProject = \Modules\Polyx\ProjectHub\Models\Project::withoutGlobalScope('locale')->whereHas('products', function ($q) use ($productIds) {
+                                    $q->withoutGlobalScope('locale')->whereIn('products.id', $productIds);
+                                })->where('status', 'published')->first();
+                                
+                                if ($mainProjectHubProject) {
+                                    $projectHubProject = $mainProjectHubProject;
+                                    $currentLocale = \Illuminate\Support\Facades\App::getLocale() ?: 'en';
+                                    if ($mainProjectHubProject->locale !== $currentLocale && !empty($mainProjectHubProject->translation_group_id)) {
+                                        $translatedProject = \Modules\Polyx\ProjectHub\Models\Project::withoutGlobalScope('locale')
+                                            ->where('translation_group_id', $mainProjectHubProject->translation_group_id)
+                                            ->where('locale', $currentLocale)
+                                            ->where('status', 'published')
+                                            ->first();
+                                        if ($translatedProject) {
+                                            $projectHubProject = $translatedProject;
+                                        }
+                                    }
+
+                                    $projectHubLatestRelease = $projectHubProject->releases()
+                                        ->where('status', 'published')
+                                        ->orderByDesc('released_at')
+                                        ->orderByDesc('id')
+                                        ->first();
+
+                                    if (!$projectHubLatestRelease && $mainProjectHubProject->id !== $projectHubProject->id) {
+                                        $projectHubLatestRelease = $mainProjectHubProject->releases()
+                                            ->where('status', 'published')
+                                            ->orderByDesc('released_at')
+                                            ->orderByDesc('id')
+                                            ->first();
+                                    }
+
+                                    $projectHubFreeRelease = $projectHubProject->releases()
+                                        ->where('status', 'published')
+                                        ->whereNotNull('free_download_url')
+                                        ->where('free_download_url', '!=', '')
+                                        ->orderByDesc('released_at')
+                                        ->orderByDesc('id')
+                                        ->first();
+
+                                    if (!$projectHubFreeRelease && $mainProjectHubProject->id !== $projectHubProject->id) {
+                                        $projectHubFreeRelease = $mainProjectHubProject->releases()
+                                            ->where('status', 'published')
+                                            ->whereNotNull('free_download_url')
+                                            ->where('free_download_url', '!=', '')
+                                            ->orderByDesc('released_at')
+                                            ->orderByDesc('id')
+                                            ->first();
+                                    }
+                                        
+                                    $freeDownloadRequiresAuth = (data_get($projectHubProject->settings, 'free_download_requires_auth', true) !== false);
+                                    $disableFreeOnPaused = (data_get($projectHubProject->settings, 'disable_free_download_on_sale_paused', true) !== false);
+                                    $isFreeDownloadDisabled = ($isSalePaused && $disableFreeOnPaused);
+                                    
+                                    if ($projectHubFreeRelease) {
+                                        $freeDownloadUrl = $projectHubFreeRelease->free_download_url;
+                                        if ($freeDownloadUrl && (str_starts_with($freeDownloadUrl, 'http://') || str_starts_with($freeDownloadUrl, 'https://'))) {
+                                            $parsedUrl = parse_url($freeDownloadUrl);
+                                            if (isset($parsedUrl['path']) && str_starts_with($parsedUrl['path'], '/storage/')) {
+                                                $freeDownloadUrl = $parsedUrl['path'];
+                                            }
+                                        }
+                                    }
+
+                                    $hasWindowsInstaller = !empty($projectHubLatestRelease?->installer_windows_url);
+                                    $hasMacosInstaller = !empty($projectHubLatestRelease?->installer_macos_url);
+                                }
+                            }
+
+                            // Query Available Coupons for this product
+                            $availableCoupons = collect();
+                            if (class_exists('\App\Models\Ecommerce\ProductCoupon')) {
+                                try {
+                                    $now = \Carbon\Carbon::now();
+                                    $productCategoryIds = $product->categories ? $product->categories->pluck('id')->toArray() : [];
+                                    
+                                    $availableCoupons = \App\Models\Ecommerce\ProductCoupon::where('is_active', true)
+                                        ->where(function ($q) use ($now) {
+                                            $q->whereNull('starts_at')->orWhere('starts_at', '<=', $now);
+                                        })
+                                        ->where(function ($q) use ($now) {
+                                            $q->whereNull('expires_at')->orWhere('expires_at', '>=', $now);
+                                        })
+                                        ->where(function ($q) {
+                                            $q->whereNull('usage_limit')->orWhereRaw('usage_count < usage_limit');
+                                        })
+                                        ->get()
+                                        ->filter(function ($coupon) use ($product, $productCategoryIds) {
+                                            $scope = $coupon->scope_config ?? [];
+                                            
+                                            // Excluded products check
+                                            if (!empty($scope['excluded_product_ids']) && is_array($scope['excluded_product_ids'])) {
+                                                if (in_array((int)$product->id, array_map('intval', $scope['excluded_product_ids']), true)) {
+                                                    return false;
+                                                }
+                                            }
+                                            
+                                            $allowedProductIds = !empty($scope['product_ids']) && is_array($scope['product_ids']) ? array_map('intval', $scope['product_ids']) : [];
+                                            $allowedCategoryIds = !empty($scope['category_ids']) && is_array($scope['category_ids']) ? array_map('intval', $scope['category_ids']) : [];
+                                            
+                                            // If both are empty, coupon applies storewide
+                                            if (empty($allowedProductIds) && empty($allowedCategoryIds)) {
+                                                return true;
+                                            }
+                                            
+                                            // If specific products defined
+                                            if (!empty($allowedProductIds) && in_array((int)$product->id, $allowedProductIds, true)) {
+                                                return true;
+                                            }
+                                            
+                                            // If specific categories defined
+                                            if (!empty($allowedCategoryIds) && count(array_intersect($productCategoryIds, $allowedCategoryIds)) > 0) {
+                                                return true;
+                                            }
+                                            
+                                            return false;
+                                        })->values();
+                                } catch (\Throwable $e) {}
+                            }
+
+                            $bestDiscountText = '';
+                            $maxPercent = 0;
+                            $maxFixed = 0;
+                            foreach ($availableCoupons as $c) {
+                                if ($c->type === 'percent' && (float)$c->value > $maxPercent) {
+                                    $maxPercent = (float)$c->value;
+                                } elseif ($c->type === 'fixed_amount' && (float)$c->value > $maxFixed) {
+                                    $maxFixed = (float)$c->value;
+                                }
+                            }
+                            if ($maxPercent > 0) {
+                                $bestDiscountText = $maxPercent >= 100 ? _l('100% OFF') : _l('Save up to :percent%', ['percent' => (int)$maxPercent]);
+                            } elseif ($maxFixed > 0) {
+                                $bestDiscountText = _l('Save up to :amount', ['amount' => format_currency($maxFixed)]);
+                            }
+
                             $mainProductPrice = (float) ($product->price ?? 0);
                             $isCommerceOffersActive = class_exists(\App\Services\ModuleManager::class) 
                                 && app(\App\Services\ModuleManager::class)->isModuleEnabled('Polyx.CommerceOffers');
@@ -488,7 +649,87 @@
                                 <span class="product-price single-product-price">{{ format_currency($currentPrice) }}</span>
                             @endif
                         </div>
+
+                        @if($availableCoupons->isNotEmpty())
+                            <div class="product-coupons-trigger" onclick="openProductCouponsModal()" style="cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; max-width: 360px; margin-top: 8px; margin-bottom: 10px; padding: 8px 12px; background: rgba(248, 250, 252, 0.9); border: 1px solid rgba(226, 232, 240, 0.95); border-radius: 8px; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); box-sizing: border-box; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                                <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                                    <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 6px; background: #0f172a; color: #fff; font-size: 11px; flex-shrink: 0;">
+                                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                    </span>
+                                    <div style="line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                        <span style="font-weight: 700; font-size: 0.8125rem; color: #0f172a;" class="coupons-trigger-title">{{ _l('Verified Coupons & Special Deals') }}</span>
+                                        @if($bestDiscountText)
+                                            <span style="display: inline-block; margin-left: 4px; font-size: 0.6875rem; font-weight: 700; background: #0f172a; color: #fff; padding: 1px 6px; border-radius: 4px; font-family: ui-monospace, monospace;">{{ $bestDiscountText }}</span>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; font-weight: 600; color: #64748b; white-space: nowrap; flex-shrink: 0;">
+                                    <span>{{ $availableCoupons->count() }} {{ _l('deals') }}</span>
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                                </div>
+                            </div>
+                        @endif
+
                         {!! \App\Facades\Hook::doAction('theme.product.single.after_price', $product) !!}
+
+                        @if(($hasWindowsInstaller || $hasMacosInstaller) && !$isSalePaused)
+                            <div class="desktop-installers-wrapper" style="width: 100%; max-width: 360px; margin-top: 10px; margin-bottom: 12px; display: grid; grid-template-columns: {{ ($hasWindowsInstaller && $hasMacosInstaller) ? 'repeat(2, minmax(0, 1fr))' : '1fr' }}; gap: 8px;">
+                                @if($hasWindowsInstaller)
+                                    <a href="{{ route('projects.download-installer', ['release' => $projectHubLatestRelease->id, 'platform' => 'windows']) }}" 
+                                       class="btn btn-download-windows" 
+                                       style="display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 10px 8px; font-weight: 600; font-size: 0.8125rem; border-radius: 6px; background-color: #0284c7; color: #fff; transition: all 0.2s ease; border: 1px solid #0284c7; text-decoration: none; white-space: nowrap;"
+                                       onmouseover="this.style.backgroundColor='#0369a1'; this.style.borderColor='#0369a1'"
+                                       onmouseout="this.style.backgroundColor='#0284c7'; this.style.borderColor='#0284c7'">
+                                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="margin-right: 6px; display: inline-block; vertical-align: middle; flex-shrink: 0;">
+                                            <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.901-1.802"/>
+                                        </svg>
+                                        {{ _l('Download Windows') }}
+                                    </a>
+                                @endif
+
+                                @if($hasMacosInstaller)
+                                    <a href="{{ route('projects.download-installer', ['release' => $projectHubLatestRelease->id, 'platform' => 'macos']) }}" 
+                                       class="btn btn-download-macos" 
+                                       style="display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 10px 8px; font-weight: 600; font-size: 0.8125rem; border-radius: 6px; background-color: #334155; color: #fff; transition: all 0.2s ease; border: 1px solid #334155; text-decoration: none; white-space: nowrap;"
+                                       onmouseover="this.style.backgroundColor='#1e293b'; this.style.borderColor='#1e293b'"
+                                       onmouseout="this.style.backgroundColor='#334155'; this.style.borderColor='#334155'">
+                                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="margin-right: 6px; display: inline-block; vertical-align: middle; flex-shrink: 0;">
+                                            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 0.92-2.85-.9.04-1.99.6-2.61 1.34-.55.63-.99 1.68-.87 2.7.99.08 2.01-.5 2.56-1.19z"/>
+                                        </svg>
+                                        {{ _l('Download macOS') }}
+                                    </a>
+                                @endif
+                            </div>
+                        @elseif($projectHubFreeRelease && !$isFreeDownloadDisabled)
+                            <!-- Free Download Button (Visible when logged in OR when auth is not required) -->
+                            <div id="free-download-button-wrapper" style="width: 100%; max-width: 360px; margin-top: 10px; margin-bottom: 12px; box-sizing: border-box; display: {{ (!$freeDownloadRequiresAuth || auth()->check()) ? 'block' : 'none' }};">
+                                <a id="free-download-link"
+                                   href="{{ route('projects.download-free', $projectHubFreeRelease->id) }}" 
+                                   class="btn" 
+                                   style="display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 10px 8px; font-weight: 600; font-size: 0.8125rem; border-radius: 6px; background-color: #10b981; color: #fff; transition: all 0.2s ease; border: 1px solid #10b981; text-decoration: none;"
+                                   onmouseover="this.style.backgroundColor='#059669'; this.style.borderColor='#059669'"
+                                   onmouseout="this.style.backgroundColor='#10b981'; this.style.borderColor='#10b981'">
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right: 6px; display: inline-block; vertical-align: middle;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                    {{ _l('Download Free Version') }}
+                                </a>
+                            </div>
+
+                            <!-- Register/Login Button (Visible only when auth is required AND user is guest) -->
+                            @if($freeDownloadRequiresAuth && !auth()->check())
+                                <div id="free-login-button-wrapper" style="width: 100%; max-width: 360px; margin-top: 10px; margin-bottom: 12px; box-sizing: border-box; display: block;">
+                                    <a href="{{ route('register') }}?redirect={{ urlencode(request()->fullUrl()) }}" 
+                                       class="btn btn-secondary" 
+                                       style="display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 10px 8px; font-weight: 600; font-size: 0.8125rem; border-radius: 6px; text-decoration: none; border-style: solid; border-width: 1px;">
+                                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right: 6px; display: inline-block; vertical-align: middle;">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                                        </svg>
+                                        {{ _l('Register / Login to Download Free') }}
+                                    </a>
+                                </div>
+                            @endif
+                        @endif
 
                         <div class="single-product-stats-row">
                             {!! \App\Facades\Hook::doAction('theme.product.single.meta', $product) !!}
@@ -749,131 +990,7 @@
                                     'yearly_keys' => $yearlyKeys,
                                     'lifetime_keys' => $lifetimeKeys,
                                 ]);
-
-                                $projectHubProject = null;
-                                $projectHubLatestRelease = null;
-                                $projectHubFreeRelease = null;
-                                $freeDownloadRequiresAuth = true;
-                                $freeDownloadUrl = null;
-                                $hasWindowsInstaller = false;
-                                $hasMacosInstaller = false;
-                                $isSalePaused = ($product->isSalesPaused() || $product->stock_status === 'disabled_add_to_cart');
-                                $isFreeDownloadDisabled = false;
-
-                                if (class_exists('\Modules\Polyx\ProjectHub\Models\Project')) {
-                                    $productIds = [$product->id];
-                                    if (!empty($product->translation_group_id)) {
-                                        $groupProductIds = \App\Models\Product::withoutGlobalScope('locale')
-                                            ->where('translation_group_id', $product->translation_group_id)
-                                            ->pluck('id')
-                                            ->toArray();
-                                        $productIds = array_merge($productIds, $groupProductIds);
-                                    }
-                                    $slugProductIds = \App\Models\Product::withoutGlobalScope('locale')
-                                        ->where('slug', $product->slug)
-                                        ->pluck('id')
-                                        ->toArray();
-                                    $productIds = array_unique(array_filter(array_merge($productIds, $slugProductIds)));
-
-                                    $mainProjectHubProject = \Modules\Polyx\ProjectHub\Models\Project::withoutGlobalScope('locale')->whereHas('products', function ($q) use ($productIds) {
-                                        $q->withoutGlobalScope('locale')->whereIn('products.id', $productIds);
-                                    })->where('status', 'published')->first();
-                                    
-                                    if ($mainProjectHubProject) {
-                                        $projectHubProject = $mainProjectHubProject;
-                                        $currentLocale = \Illuminate\Support\Facades\App::getLocale() ?: 'en';
-                                        if ($mainProjectHubProject->locale !== $currentLocale && !empty($mainProjectHubProject->translation_group_id)) {
-                                            $translatedProject = \Modules\Polyx\ProjectHub\Models\Project::withoutGlobalScope('locale')
-                                                ->where('translation_group_id', $mainProjectHubProject->translation_group_id)
-                                                ->where('locale', $currentLocale)
-                                                ->where('status', 'published')
-                                                ->first();
-                                            if ($translatedProject) {
-                                                $projectHubProject = $translatedProject;
-                                            }
-                                        }
-
-                                        $projectHubLatestRelease = $projectHubProject->releases()
-                                            ->where('status', 'published')
-                                            ->orderByDesc('released_at')
-                                            ->orderByDesc('id')
-                                            ->first();
-
-                                        if (!$projectHubLatestRelease && $mainProjectHubProject->id !== $projectHubProject->id) {
-                                            $projectHubLatestRelease = $mainProjectHubProject->releases()
-                                                ->where('status', 'published')
-                                                ->orderByDesc('released_at')
-                                                ->orderByDesc('id')
-                                                ->first();
-                                        }
-
-                                        $projectHubFreeRelease = $projectHubProject->releases()
-                                            ->where('status', 'published')
-                                            ->whereNotNull('free_download_url')
-                                            ->where('free_download_url', '!=', '')
-                                            ->orderByDesc('released_at')
-                                            ->orderByDesc('id')
-                                            ->first();
-
-                                        if (!$projectHubFreeRelease && $mainProjectHubProject->id !== $projectHubProject->id) {
-                                            $projectHubFreeRelease = $mainProjectHubProject->releases()
-                                                ->where('status', 'published')
-                                                ->whereNotNull('free_download_url')
-                                                ->where('free_download_url', '!=', '')
-                                                ->orderByDesc('released_at')
-                                                ->orderByDesc('id')
-                                                ->first();
-                                        }
-                                            
-                                        $freeDownloadRequiresAuth = (data_get($projectHubProject->settings, 'free_download_requires_auth', true) !== false);
-                                        $disableFreeOnPaused = (data_get($projectHubProject->settings, 'disable_free_download_on_sale_paused', true) !== false);
-                                        $isFreeDownloadDisabled = ($isSalePaused && $disableFreeOnPaused);
-                                        
-                                        if ($projectHubFreeRelease) {
-                                            $freeDownloadUrl = $projectHubFreeRelease->free_download_url;
-                                            if ($freeDownloadUrl && (str_starts_with($freeDownloadUrl, 'http://') || str_starts_with($freeDownloadUrl, 'https://'))) {
-                                                $parsedUrl = parse_url($freeDownloadUrl);
-                                                if (isset($parsedUrl['path']) && str_starts_with($parsedUrl['path'], '/storage/')) {
-                                                    $freeDownloadUrl = $parsedUrl['path'];
-                                                }
-                                            }
-                                        }
-
-                                        $hasWindowsInstaller = !empty($projectHubLatestRelease?->installer_windows_url);
-                                        $hasMacosInstaller = !empty($projectHubLatestRelease?->installer_macos_url);
-                                    }
-                                }
                             @endphp
-
-                            @if(($hasWindowsInstaller || $hasMacosInstaller) && !$isSalePaused)
-                                <div class="desktop-installers-wrapper" style="width: 100%; max-width: 360px; margin-top: 10px; margin-bottom: 12px; display: grid; grid-template-columns: {{ ($hasWindowsInstaller && $hasMacosInstaller) ? 'repeat(2, minmax(0, 1fr))' : '1fr' }}; gap: 8px;">
-                                    @if($hasWindowsInstaller)
-                                        <a href="{{ route('projects.download-installer', ['release' => $projectHubLatestRelease->id, 'platform' => 'windows']) }}" 
-                                           class="btn btn-download-windows" 
-                                           style="display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 10px 8px; font-weight: 600; font-size: 0.8125rem; border-radius: 6px; background-color: #0284c7; color: #fff; transition: all 0.2s ease; border: 1px solid #0284c7; text-decoration: none; white-space: nowrap;"
-                                           onmouseover="this.style.backgroundColor='#0369a1'; this.style.borderColor='#0369a1'"
-                                           onmouseout="this.style.backgroundColor='#0284c7'; this.style.borderColor='#0284c7'">
-                                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="margin-right: 6px; display: inline-block; vertical-align: middle; flex-shrink: 0;">
-                                                <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.901-1.802"/>
-                                            </svg>
-                                            {{ _l('Download Windows') }}
-                                        </a>
-                                    @endif
-
-                                    @if($hasMacosInstaller)
-                                        <a href="{{ route('projects.download-installer', ['release' => $projectHubLatestRelease->id, 'platform' => 'macos']) }}" 
-                                           class="btn btn-download-macos" 
-                                           style="display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 10px 8px; font-weight: 600; font-size: 0.8125rem; border-radius: 6px; background-color: #334155; color: #fff; transition: all 0.2s ease; border: 1px solid #334155; text-decoration: none; white-space: nowrap;"
-                                           onmouseover="this.style.backgroundColor='#1e293b'; this.style.borderColor='#1e293b'"
-                                           onmouseout="this.style.backgroundColor='#334155'; this.style.borderColor='#334155'">
-                                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="margin-right: 6px; display: inline-block; vertical-align: middle; flex-shrink: 0;">
-                                                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 0.92-2.85-.9.04-1.99.6-2.61 1.34-.55.63-.99 1.68-.87 2.7.99.08 2.01-.5 2.56-1.19z"/>
-                                            </svg>
-                                            {{ _l('Download macOS') }}
-                                        </a>
-                                    @endif
-                                </div>
-                            @endif
 
                                 <div class="product-packages-selector mb-3" style="margin-top: 6px; margin-bottom: 12px; width: 100%;">
                                     <label class="block text-xs font-bold text-gray-700 dark:text-zinc-300 mb-1.5" style="font-weight: 700; margin-bottom: 6px; display: block; letter-spacing: 0.02em;">{{ _l('Choose a Package / Plan:') }}</label>
@@ -1247,77 +1364,46 @@
                             @endif
                         </div>
 
-
-
                         @if($projectHubFreeRelease && !$isFreeDownloadDisabled && !($hasWindowsInstaller || $hasMacosInstaller))
-                             <!-- 1. Download Button (Visible when logged in OR when auth is not required) -->
-                             <div id="free-download-button-wrapper" style="width: 100%; max-width: 360px; margin-top: 12px; margin-bottom: 8px; box-sizing: border-box; display: {{ (!$freeDownloadRequiresAuth || auth()->check()) ? 'block' : 'none' }};">
-                                 <a id="free-download-link"
-                                    href="{{ route('projects.download-free', $projectHubFreeRelease->id) }}" 
-                                    class="btn" 
-                                    style="display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 12px; font-weight: 600; font-size: 0.875rem; border-radius: 6px; background-color: #10b981; color: #fff; transition: all 0.2s ease; border: 1px solid #10b981; text-decoration: none;"
-                                    onmouseover="this.style.backgroundColor='#059669'; this.style.borderColor='#059669'"
-                                    onmouseout="this.style.backgroundColor='#10b981'; this.style.borderColor='#10b981'">
-                                     <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right: 8px; display: inline-block; vertical-align: middle;">
-                                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                     </svg>
-                                     {{ _l('Download Free Version') }}
-                                 </a>
-                             </div>
+                            <!-- Client-side authentication check script (covers both web session & Sanctum localstorage) -->
+                            <script>
+                                (function() {
+                                    function checkClientAuth() {
+                                        const isFreeDisabled = {{ ($isFreeDownloadDisabled || $hasWindowsInstaller || $hasMacosInstaller) ? 'true' : 'false' }};
+                                        const downloadBtn = document.getElementById('free-download-button-wrapper');
+                                        const loginBtn = document.getElementById('free-login-button-wrapper');
+                                        
+                                        if (isFreeDisabled) {
+                                            if (loginBtn) loginBtn.style.display = 'none';
+                                            if (downloadBtn) downloadBtn.style.display = 'none';
+                                            return;
+                                        }
 
-                             <!-- 2. Register/Login Button (Visible only when auth is required AND user is guest) -->
-                             @if($freeDownloadRequiresAuth && !auth()->check())
-                                 <div id="free-login-button-wrapper" style="width: 100%; max-width: 360px; margin-top: 12px; margin-bottom: 8px; box-sizing: border-box; display: block;">
-                                     <a href="{{ route('register') }}?redirect={{ urlencode(request()->fullUrl()) }}" 
-                                        class="btn btn-secondary" 
-                                        style="display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 12px; font-weight: 600; font-size: 0.875rem; border-radius: 6px; text-decoration: none; border-style: solid; border-width: 1px;">
-                                         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right: 8px; display: inline-block; vertical-align: middle;">
-                                             <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                                         </svg>
-                                         {{ _l('Register / Login to Download Free') }}
-                                     </a>
-                                 </div>
-                             @endif
-
-                             <!-- 3. Client-side authentication check script (covers both web session & Sanctum localstorage) -->
-                             <script>
-                                 (function() {
-                                     function checkClientAuth() {
-                                         const isFreeDisabled = {{ ($isFreeDownloadDisabled || $hasWindowsInstaller || $hasMacosInstaller) ? 'true' : 'false' }};
-                                         const downloadBtn = document.getElementById('free-download-button-wrapper');
-                                         const loginBtn = document.getElementById('free-login-button-wrapper');
-                                         
-                                         if (isFreeDisabled) {
-                                             if (loginBtn) loginBtn.style.display = 'none';
-                                             if (downloadBtn) downloadBtn.style.display = 'none';
-                                             return;
-                                         }
-
-                                         const authToken = localStorage.getItem('auth_token');
-                                         const hasAuthToken = !!authToken;
-                                         
-                                         if (hasAuthToken) {
-                                             if (loginBtn) loginBtn.style.display = 'none';
-                                             if (downloadBtn) {
-                                                 downloadBtn.style.display = 'block';
-                                                 const downloadLink = document.getElementById('free-download-link');
-                                                 if (downloadLink) {
-                                                     let url = '{{ route('projects.download-free', $projectHubFreeRelease->id) }}';
-                                                     url += (url.includes('?') ? '&' : '?') + 'auth_token=' + encodeURIComponent(authToken);
-                                                     downloadLink.setAttribute('href', url);
-                                                 }
-                                             }
-                                         }
-                                     }
-                                     
-                                     // Check immediately and on DOMContentLoaded
-                                     checkClientAuth();
-                                     document.addEventListener('DOMContentLoaded', checkClientAuth);
-                                     
-                                     // Listen for Inertia navigation success to re-check
-                                     document.addEventListener('inertia:success', checkClientAuth);
-                                 })();
-                             </script>
+                                        const authToken = localStorage.getItem('auth_token');
+                                        const hasAuthToken = !!authToken;
+                                        
+                                        if (hasAuthToken) {
+                                            if (loginBtn) loginBtn.style.display = 'none';
+                                            if (downloadBtn) {
+                                                downloadBtn.style.display = 'block';
+                                                const downloadLink = document.getElementById('free-download-link');
+                                                if (downloadLink) {
+                                                    let url = '{{ route('projects.download-free', $projectHubFreeRelease->id) }}';
+                                                    url += (url.includes('?') ? '&' : '?') + 'auth_token=' + encodeURIComponent(authToken);
+                                                    downloadLink.setAttribute('href', url);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Check immediately and on DOMContentLoaded
+                                    checkClientAuth();
+                                    document.addEventListener('DOMContentLoaded', checkClientAuth);
+                                    
+                                    // Listen for Inertia navigation success to re-check
+                                    document.addEventListener('inertia:success', checkClientAuth);
+                                })();
+                            </script>
                         @endif
 
                         <div class="single-product-meta">
@@ -2782,6 +2868,203 @@
         });
     })();
 </script>
+@endif
+
+@if(isset($availableCoupons) && $availableCoupons->isNotEmpty())
+    <!-- Verified Coupons & Special Deals Popup Modal (Vercel Style) -->
+    <div id="product-coupons-modal" style="display: none; position: fixed; inset: 0; z-index: 999999; align-items: center; justify-content: center; padding: 16px; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(6px);">
+        <div class="product-coupons-modal-card" style="width: 100%; max-width: 520px; max-height: 88vh; background: #ffffff; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e2e8f0; animation: polyModalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
+            
+            <!-- Modal Header -->
+            <div style="padding: 20px 24px 16px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; background: #ffffff;">
+                <div>
+                    <div style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 9999px; border: 1px solid #e2e8f0; background: #f8fafc; color: #475569; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">
+                        <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></span>
+                        {{ _l('Verified Offers') }}
+                    </div>
+                    <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: #0f172a; letter-spacing: -0.02em;">
+                        {{ _l('Verified Coupons & Special Deals') }}
+                    </h3>
+                    <p style="margin: 4px 0 0; font-size: 0.8125rem; color: #64748b; line-height: 1.45;">
+                        {{ _l('Apply verified promo codes at checkout to save instantly on') }} <strong>{{ $product->name }}</strong>.
+                    </p>
+                </div>
+                <button type="button" onclick="closeProductCouponsModal()" style="background: none; border: none; font-size: 20px; line-height: 1; color: #94a3b8; cursor: pointer; padding: 6px 8px; border-radius: 8px; transition: all 0.15s ease;" onmouseover="this.style.color='#0f172a'; this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.color='#94a3b8'; this.style.backgroundColor='transparent'">✕</button>
+            </div>
+
+            <!-- Modal Body (List of Verified Coupon Cards - Vercel DNA) -->
+            <div style="padding: 20px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; flex: 1; background: #f8fafc;">
+                @foreach($availableCoupons as $coupon)
+                    @php
+                        $valFormatted = $coupon->type === 'percent' 
+                            ? ((float)$coupon->value >= 100 ? _l('100% OFF') : ((int)$coupon->value . '% OFF'))
+                            : format_currency((float)$coupon->value) . ' ' . _l('OFF');
+                        $isSpecific = !empty($coupon->scope_config['product_ids']) && in_array((int)$product->id, array_map('intval', $coupon->scope_config['product_ids']));
+                        $minSpendText = (float)$coupon->min_order_value > 0 ? _l('Min spend: :val', ['val' => format_currency((float)$coupon->min_order_value)]) : _l('No minimum spend');
+                        $expiryText = $coupon->expires_at ? _l('Expires: :date', ['date' => $coupon->expires_at->format('M d, Y')]) : _l('No expiration');
+                    @endphp
+                    <div class="product-coupon-ticket" style="padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; background: #ffffff; transition: all 0.2s ease; display: flex; flex-direction: column; justify-content: space-between; gap: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+                        <div>
+                            <!-- Top row with discount badge & scope -->
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span style="padding: 2px 8px; border-radius: 6px; background: #f1f5f9; color: #0f172a; font-family: ui-monospace, monospace; font-weight: 800; font-size: 0.75rem; border: 1px solid #e2e8f0;">
+                                        {{ $valFormatted }}
+                                    </span>
+                                    <span style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 6px; border-radius: 4px; background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0;">
+                                        {{ $isSpecific ? _l('Exclusive') : _l('Storewide') }}
+                                    </span>
+                                </div>
+                                <span style="font-size: 0.72rem; color: #64748b; font-weight: 500;">
+                                    {{ $isSpecific ? _l('Selected Item') : _l('All Products') }}
+                                </span>
+                            </div>
+
+                            <!-- Title & Description -->
+                            <h4 style="margin: 0; font-size: 0.875rem; font-weight: 700; color: #0f172a; line-height: 1.35;">{{ $coupon->title ?: $coupon->code }}</h4>
+                            @if(!empty($coupon->description))
+                                <p style="margin: 4px 0 0; font-size: 0.775rem; color: #64748b; line-height: 1.4;">{{ $coupon->description }}</p>
+                            @endif
+                            <div style="display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 6px; font-size: 0.7rem; color: #94a3b8; font-weight: 500;">
+                                <span>• {{ $minSpendText }}</span>
+                                <span>• {{ $expiryText }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Bottom row: Code box & Use / Copy Code button -->
+                        <div style="padding-top: 10px; border-top: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <span style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.8125rem; font-weight: 700; background: #f8fafc; color: #0f172a; padding: 4px 8px; border-radius: 6px; border: 1px solid #e2e8f0; letter-spacing: 0.04em;">
+                                    {{ $coupon->code }}
+                                </span>
+                            </div>
+                            <button type="button" class="btn-copy-coupon" data-code="{{ $coupon->code }}" onclick="copyCouponCode(this, '{{ $coupon->code }}')" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 0.75rem; font-weight: 700; border-radius: 6px; background: #0f172a; color: #ffffff; border: 1px solid #0f172a; cursor: pointer; transition: all 0.15s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" onmouseover="this.style.backgroundColor='#1e293b'" onmouseout="this.style.backgroundColor='#0f172a'">
+                                <span>{{ _l('Copy Code') }}</span>
+                                <span style="font-size: 0.8rem;">&rarr;</span>
+                            </button>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            <!-- Modal Footer -->
+            <div style="padding: 14px 24px; background: #ffffff; border-top: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                <span style="font-size: 0.75rem; color: #64748b; font-weight: 500;">
+                    💡 {{ _l('Apply verified promo codes at checkout to save instantly.') }}
+                </span>
+                <button type="button" onclick="closeProductCouponsModal()" style="padding: 6px 14px; font-size: 0.8125rem; font-weight: 600; border-radius: 6px; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; cursor: pointer; transition: all 0.15s ease;" onmouseover="this.style.backgroundColor='#e2e8f0'" onmouseout="this.style.backgroundColor='#f1f5f9'">{{ _l('Close') }}</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script for Coupon Modal & Copy action -->
+    <script>
+        function openProductCouponsModal() {
+            const modal = document.getElementById('product-coupons-modal');
+            if (modal) {
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+        }
+        function closeProductCouponsModal() {
+            const modal = document.getElementById('product-coupons-modal');
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+        }
+        function copyCouponCode(btn, code) {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(code).then(() => showCopiedFeedback(btn));
+            } else {
+                const textArea = document.createElement('textarea');
+                textArea.value = code;
+                textArea.style.position = 'fixed';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showCopiedFeedback(btn);
+                } catch (err) {}
+                document.body.removeChild(textArea);
+            }
+        }
+        function showCopiedFeedback(btn) {
+            const span = btn.querySelector('span');
+            const originalText = span ? span.textContent : 'Copy Code';
+            btn.style.backgroundColor = '#10b981';
+            btn.style.borderColor = '#10b981';
+            if (span) span.textContent = '✓ {{ _l('Copied!') }}';
+            setTimeout(() => {
+                btn.style.backgroundColor = '#0f172a';
+                btn.style.borderColor = '#0f172a';
+                if (span) span.textContent = originalText;
+            }, 2000);
+        }
+
+        // Close on backdrop click and Escape key
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('product-coupons-modal');
+            if (modal) {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        closeProductCouponsModal();
+                    }
+                });
+            }
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeProductCouponsModal();
+                }
+            });
+        });
+    </script>
+    <style>
+        @keyframes polyModalFadeIn {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .product-coupons-trigger:hover {
+            border-color: #94a3b8 !important;
+            background: #f1f5f9 !important;
+            transform: translateY(-1px);
+        }
+        html.dark .product-coupons-trigger {
+            background: rgba(39, 39, 42, 0.6) !important;
+            border-color: #3f3f46 !important;
+        }
+        html.dark .product-coupons-trigger .coupons-trigger-title {
+            color: #f4f4f5 !important;
+        }
+        html.dark .product-coupons-modal-card {
+            background: #18181b !important;
+            border-color: #27272a !important;
+            color: #f4f4f5 !important;
+        }
+        html.dark .product-coupons-modal-card > div:first-child,
+        html.dark .product-coupons-modal-card > div:last-child {
+            background: #18181b !important;
+            border-color: #27272a !important;
+        }
+        html.dark .product-coupons-modal-card > div:nth-child(2) {
+            background: #09090b !important;
+        }
+        html.dark .product-coupon-ticket {
+            background: #18181b !important;
+            border-color: #27272a !important;
+        }
+        html.dark .product-coupon-ticket span,
+        html.dark .product-coupon-ticket h4 {
+            color: #f4f4f5 !important;
+        }
+        html.dark .btn-copy-coupon {
+            background: #ffffff !important;
+            color: #0f172a !important;
+            border-color: #ffffff !important;
+        }
+    </style>
 @endif
 
 @endsection
