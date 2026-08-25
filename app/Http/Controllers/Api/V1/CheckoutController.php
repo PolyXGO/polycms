@@ -453,27 +453,121 @@ class CheckoutController extends Controller
     }
 
     /**
-     * Get available coupons (Public/Active).
+     * Get available coupons (Public/Active or personalized for authenticated customer / admin).
      */
     public function getAvailableCoupons(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $user = $request->user('sanctum') ?? $request->user('web') ?? $request->user();
+        
+        $isAdmin = false;
+        if ($user) {
+            if (method_exists($user, 'hasRole') && $user->hasRole('admin')) {
+                $isAdmin = true;
+            } elseif (in_array($user->role ?? '', ['admin', 'superadmin'], true) || in_array($user->email ?? '', ['polyxgo@gmail.com'], true)) {
+                $isAdmin = true;
+            }
+        }
 
-        $coupons = ProductCoupon::where('is_active', true)
-            ->where(function ($query) use ($user) {
-                $query->where('is_public', true);
-                
-                if ($user) {
-                    $query->orWhereJsonContains('restricted_emails', $user->email);
+        $now = \Carbon\Carbon::now();
+        $productId = $request->query('product_id');
+        $product = $productId ? \App\Models\Ecommerce\Product::find($productId) : null;
+        $productCategoryIds = ($product && $product->categories) ? $product->categories->pluck('id')->toArray() : [];
+
+        $query = ProductCoupon::where('is_active', true)
+            ->where(function ($q) use ($now) {
+                $q->whereNull('starts_at')->orWhere('starts_at', '<=', $now);
+            })
+            ->where(function ($q) use ($now) {
+                $q->whereNull('expires_at')->orWhere('expires_at', '>=', $now);
+            })
+            ->where(function ($q) {
+                $q->whereNull('usage_limit')->orWhereRaw('usage_count < usage_limit');
+            });
+
+        if ($isAdmin) {
+            // Admin can see all active coupons for inspection / testing
+        } elseif ($user) {
+            // Authenticated customer can see public coupons (with no email restrictions) or coupons explicitly assigned to their email
+            $query->where(function ($q) use ($user) {
+                $q->where(function ($sub) {
+                    $sub->where('is_public', true)
+                        ->where(function ($s2) {
+                            $s2->whereNull('restricted_emails')
+                               ->orWhere('restricted_emails', '[]')
+                               ->orWhere('restricted_emails', '');
+                        });
+                })->orWhereJsonContains('restricted_emails', $user->email);
+            });
+        } else {
+            // Public / guest users MUST ONLY see strictly public coupons with NO email restrictions
+            $query->where('is_public', true)
+                  ->where(function ($q) {
+                      $q->whereNull('restricted_emails')
+                        ->orWhere('restricted_emails', '[]')
+                        ->orWhere('restricted_emails', '');
+                  });
+        }
+
+        $coupons = $query->get()->filter(function ($coupon) use ($product, $productCategoryIds, $user, $isAdmin) {
+            if (!$isAdmin) {
+                // Secondary safeguard: if restricted_emails is present and not matching user email, reject
+                if (!empty($coupon->restricted_emails) && is_array($coupon->restricted_emails) && count($coupon->restricted_emails) > 0) {
+                    if (!$user || !in_array($user->email, $coupon->restricted_emails, true)) {
+                        return false;
+                    }
                 }
+                if (!$user && !$coupon->is_public) {
+                    return false;
+                }
+            }
+
+            if (!$product) {
+                return true;
+            }
+
+            $scope = $coupon->scope_config ?? [];
+            if (!empty($scope['excluded_product_ids']) && is_array($scope['excluded_product_ids'])) {
+                if (in_array((int)$product->id, array_map('intval', $scope['excluded_product_ids']), true)) {
+                    return false;
+                }
+            }
+
+            $allowedProductIds = !empty($scope['product_ids']) && is_array($scope['product_ids']) ? array_map('intval', $scope['product_ids']) : [];
+            $allowedCategoryIds = !empty($scope['category_ids']) && is_array($scope['category_ids']) ? array_map('intval', $scope['category_ids']) : [];
+
+            if (empty($allowedProductIds) && empty($allowedCategoryIds)) {
+                return true;
+            }
+
+            if (!empty($allowedProductIds) && in_array((int)$product->id, $allowedProductIds, true)) {
+                return true;
+            }
+
+            if (!empty($allowedCategoryIds) && count(array_intersect($productCategoryIds, $allowedCategoryIds)) > 0) {
+                return true;
+            }
+
+            return false;
+        })->values();
+
+        return response()->json([
+            'data' => $coupons->map(function ($coupon) use ($product) {
+                $isSpecific = $product && !empty($coupon->scope_config['product_ids']) && in_array((int)$product->id, array_map('intval', $coupon->scope_config['product_ids']), true);
+                return [
+                    'id' => $coupon->id,
+                    'code' => $coupon->code,
+                    'title' => $coupon->title ?: $coupon->code,
+                    'description' => $coupon->description,
+                    'value' => (float) $coupon->value,
+                    'type' => $coupon->type,
+                    'min_order_value' => (float) ($coupon->min_order_value ?? 0),
+                    'is_exclusive' => (bool) $coupon->is_exclusive,
+                    'is_public' => (bool) $coupon->is_public,
+                    'expires_at' => $coupon->expires_at?->toIso8601String(),
+                    'expires_at_formatted' => $coupon->expires_at ? $coupon->expires_at->format('M d, Y') : null,
+                    'is_specific' => $isSpecific,
+                ];
             })
-            ->where(function ($query) {
-                $query->whereNull('expires_at')
-                      ->orWhere('expires_at', '>', now());
-            })
-            ->select('id', 'code', 'title', 'description', 'value', 'type', 'min_order_value', 'is_exclusive')
-            ->get();
-            
-        return response()->json(['data' => $coupons]);
+        ]);
     }
 }

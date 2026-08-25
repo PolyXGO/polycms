@@ -533,7 +533,7 @@
                                 }
                             }
 
-                            // Query Available Coupons for this product
+                            // Query Available Public Coupons for this product (Strictly Public & Cache-Safe)
                             $availableCoupons = collect();
                             if (class_exists('\App\Models\Ecommerce\ProductCoupon')) {
                                 try {
@@ -541,6 +541,12 @@
                                     $productCategoryIds = $product->categories ? $product->categories->pluck('id')->toArray() : [];
                                     
                                     $availableCoupons = \App\Models\Ecommerce\ProductCoupon::where('is_active', true)
+                                        ->where('is_public', true)
+                                        ->where(function ($q) {
+                                            $q->whereNull('restricted_emails')
+                                              ->orWhere('restricted_emails', '[]')
+                                              ->orWhere('restricted_emails', '');
+                                        })
                                         ->where(function ($q) use ($now) {
                                             $q->whereNull('starts_at')->orWhere('starts_at', '<=', $now);
                                         })
@@ -552,6 +558,14 @@
                                         })
                                         ->get()
                                         ->filter(function ($coupon) use ($product, $productCategoryIds) {
+                                            // Ensure not restricted to specific emails or private
+                                            if (!empty($coupon->restricted_emails) && is_array($coupon->restricted_emails) && count($coupon->restricted_emails) > 0) {
+                                                return false;
+                                            }
+                                            if (!$coupon->is_public) {
+                                                return false;
+                                            }
+
                                             $scope = $coupon->scope_config ?? [];
                                             
                                             // Excluded products check
@@ -650,7 +664,7 @@
                             @endif
                         </div>
 
-                        @if($availableCoupons->isNotEmpty())
+                        <div id="product-coupons-trigger-wrapper" style="{{ $availableCoupons->isNotEmpty() ? '' : 'display: none;' }}">
                             <div class="product-coupons-trigger" onclick="openProductCouponsModal()" style="cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; max-width: 360px; margin-top: 8px; margin-bottom: 10px; padding: 8px 12px; background: rgba(248, 250, 252, 0.9); border: 1px solid rgba(226, 232, 240, 0.95); border-radius: 8px; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); box-sizing: border-box; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
                                 <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
                                     <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 6px; background: #0f172a; color: #fff; font-size: 11px; flex-shrink: 0;">
@@ -658,17 +672,15 @@
                                     </span>
                                     <div style="line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                         <span style="font-weight: 700; font-size: 0.8125rem; color: #0f172a;" class="coupons-trigger-title">{{ _l('Verified Coupons & Special Deals') }}</span>
-                                        @if($bestDiscountText)
-                                            <span style="display: inline-block; margin-left: 4px; font-size: 0.6875rem; font-weight: 700; background: #0f172a; color: #fff; padding: 1px 6px; border-radius: 4px; font-family: ui-monospace, monospace;">{{ $bestDiscountText }}</span>
-                                        @endif
+                                        <span id="product-coupons-best-badge" style="{{ $bestDiscountText ? '' : 'display: none;' }}; margin-left: 4px; font-size: 0.6875rem; font-weight: 700; background: #0f172a; color: #fff; padding: 1px 6px; border-radius: 4px; font-family: ui-monospace, monospace;">{{ $bestDiscountText }}</span>
                                     </div>
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; font-weight: 600; color: #64748b; white-space: nowrap; flex-shrink: 0;">
-                                    <span>{{ $availableCoupons->count() }} {{ _l('deals') }}</span>
+                                    <span id="product-coupons-deals-count">{{ $availableCoupons->count() }} {{ _l('deals') }}</span>
                                     <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                                 </div>
                             </div>
-                        @endif
+                        </div>
 
                         {!! \App\Facades\Hook::doAction('theme.product.single.after_price', $product) !!}
 
@@ -2870,114 +2882,115 @@
 </script>
 @endif
 
-@if(isset($availableCoupons) && $availableCoupons->isNotEmpty())
     <!-- Verified Coupons & Special Deals Popup Modal (Vercel Style - 2 Columns Grid) -->
     <div id="product-coupons-modal" style="display: none; position: fixed; inset: 0; z-index: 999999; align-items: center; justify-content: center; padding: 16px; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(6px);">
-        <div class="product-coupons-modal-card" style="width: 100%; max-width: 820px; max-height: 88vh; background: #ffffff; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e2e8f0; animation: polyModalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
+        <div class="product-coupons-modal-card">
             
             <!-- Modal Header -->
-            <div style="padding: 20px 24px 16px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; background: #ffffff;">
+            <div class="product-coupons-modal-head">
                 <div>
-                    <div style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 9999px; border: 1px solid #e2e8f0; background: #f8fafc; color: #475569; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">
-                        <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></span>
+                    <div class="product-coupons-modal-pill">
+                        <span class="product-coupons-pill-dot"></span>
                         {{ _l('Verified Offers') }}
                     </div>
-                    <h3 style="margin: 0; font-size: 1.2rem; font-weight: 800; color: #0f172a; letter-spacing: -0.02em;">
+                    <h3 class="product-coupons-modal-title">
                         {{ _l('Verified Coupons & Special Deals') }}
                     </h3>
-                    <p style="margin: 4px 0 0; font-size: 0.8125rem; color: #64748b; line-height: 1.45;">
+                    <p class="product-coupons-modal-sub">
                         {{ _l('Apply verified promo codes at checkout to save instantly on') }} <strong>{{ $product->name }}</strong>.
                     </p>
                 </div>
-                <button type="button" onclick="closeProductCouponsModal()" style="background: none; border: none; font-size: 20px; line-height: 1; color: #94a3b8; cursor: pointer; padding: 6px 8px; border-radius: 8px; transition: all 0.15s ease;" onmouseover="this.style.color='#0f172a'; this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.color='#94a3b8'; this.style.backgroundColor='transparent'">✕</button>
+                <button type="button" class="btn-close-product-coupons" onclick="closeProductCouponsModal()" title="{{ _l('Close') }}">✕</button>
             </div>
 
             <!-- Modal Body (2-Column Grid of Verified Coupon Cards) -->
-            <div style="padding: 20px 24px; overflow-y: auto; flex: 1; background: #f8fafc;">
+            <div class="product-coupons-modal-body">
                 <div class="product-coupons-grid">
-                    @foreach($availableCoupons as $coupon)
-                        @php
-                            $valFormatted = $coupon->type === 'percent' 
-                                ? ((float)$coupon->value >= 100 ? _l('100% OFF') : ((int)$coupon->value . '% OFF'))
-                                : format_currency((float)$coupon->value) . ' ' . _l('OFF');
-                            $isSpecific = !empty($coupon->scope_config['product_ids']) && in_array((int)$product->id, array_map('intval', $coupon->scope_config['product_ids']));
-                            $minSpendText = (float)$coupon->min_order_value > 0 ? _l('Min spend: :val', ['val' => format_currency((float)$coupon->min_order_value)]) : _l('No minimum spend');
-                            $expiryText = $coupon->expires_at ? _l('Expires: :date', ['date' => $coupon->expires_at->format('M d, Y')]) : _l('No expiration');
-                            
-                            $desc = $coupon->description ?? '';
-                            $isLongDesc = mb_strlen($desc) > 60;
-                            $shortDesc = $isLongDesc ? mb_substr($desc, 0, 60) . '...' : $desc;
-                        @endphp
-                        <div class="product-coupon-ticket" style="padding: 14px 16px; border-radius: 12px; border: 1px solid #e2e8f0; background: #ffffff; transition: all 0.2s ease; display: flex; flex-direction: column; justify-content: space-between; gap: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
-                            <div>
-                                <!-- Top row with discount badge & scope -->
-                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-                                    <div style="display: flex; align-items: center; gap: 6px;">
-                                        <span style="padding: 2px 7px; border-radius: 6px; background: #f1f5f9; color: #0f172a; font-family: ui-monospace, monospace; font-weight: 800; font-size: 0.75rem; border: 1px solid #e2e8f0;">
-                                            {{ $valFormatted }}
-                                        </span>
-                                        <span style="font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 6px; border-radius: 4px; background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0;">
-                                            {{ $isSpecific ? _l('Exclusive') : _l('Storewide') }}
-                                        </span>
-                                    </div>
-                                    <span style="font-size: 0.6875rem; color: #64748b; font-weight: 500;">
-                                        {{ $isSpecific ? _l('Selected Item') : _l('All Products') }}
-                                    </span>
-                                </div>
-
-                                <!-- Title -->
-                                <h4 style="margin: 4px 0 2px; font-size: 0.85rem; font-weight: 700; color: #0f172a; line-height: 1.35;">{{ $coupon->title ?: $coupon->code }}</h4>
+                    @if(isset($availableCoupons) && $availableCoupons->isNotEmpty())
+                        @foreach($availableCoupons as $coupon)
+                            @php
+                                $valFormatted = $coupon->type === 'percent' 
+                                    ? ((float)$coupon->value >= 100 ? _l('100% OFF') : ((int)$coupon->value . '% OFF'))
+                                    : format_currency((float)$coupon->value) . ' ' . _l('OFF');
+                                $isSpecific = !empty($coupon->scope_config['product_ids']) && in_array((int)$product->id, array_map('intval', $coupon->scope_config['product_ids']));
+                                $minSpendText = (float)$coupon->min_order_value > 0 ? _l('Min spend: :val', ['val' => format_currency((float)$coupon->min_order_value)]) : _l('No minimum spend');
+                                $expiryText = $coupon->expires_at ? _l('Expires: :date', ['date' => $coupon->expires_at->format('M d, Y')]) : _l('No expiration');
                                 
-                                <!-- Description with Expand / Collapse for long texts -->
-                                @if(!empty($desc))
-                                    <div class="coupon-desc-wrapper" style="margin-top: 4px; font-size: 0.75rem; color: #64748b; line-height: 1.45;">
-                                        @if($isLongDesc)
-                                            <div class="coupon-desc-collapsed" style="display: block;">
-                                                <span>{{ $shortDesc }}</span>
-                                                <button type="button" onclick="toggleCouponDesc(this)" style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; line-height: 1; vertical-align: middle; margin-left: 4px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; color: #0284c7; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: all 0.15s ease;" title="{{ _l('Expand details') }}">+</button>
-                                            </div>
-                                            <div class="coupon-desc-expanded" style="display: none;">
-                                                <span>{{ $desc }}</span>
-                                                <button type="button" onclick="toggleCouponDesc(this)" style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; line-height: 1; vertical-align: middle; margin-left: 4px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; color: #64748b; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: all 0.15s ease;" title="{{ _l('Collapse details') }}">-</button>
-                                            </div>
-                                        @else
-                                            <p style="margin: 0;">{{ $desc }}</p>
-                                        @endif
+                                $desc = $coupon->description ?? '';
+                                $isLongDesc = mb_strlen($desc) > 60;
+                                $shortDesc = $isLongDesc ? mb_substr($desc, 0, 60) . '...' : $desc;
+                            @endphp
+                            <div class="product-coupon-ticket">
+                                <div>
+                                    <!-- Top row with discount badge & scope -->
+                                    <div class="product-coupon-ticket-head">
+                                        <div class="product-coupon-badges-left">
+                                            <span class="product-coupon-val-badge">
+                                                {{ $valFormatted }}
+                                            </span>
+                                            <span class="product-coupon-scope-badge">
+                                                {{ $isSpecific ? _l('Exclusive') : _l('Storewide') }}
+                                            </span>
+                                        </div>
+                                        <span class="product-coupon-scope-target">
+                                            {{ $isSpecific ? _l('Selected Item') : _l('All Products') }}
+                                        </span>
                                     </div>
-                                @endif
 
-                                <div style="display: flex; flex-wrap: wrap; gap: 3px 8px; margin-top: 6px; font-size: 0.6875rem; color: #94a3b8; font-weight: 500;">
-                                    <span>• {{ $minSpendText }}</span>
-                                    <span>• {{ $expiryText }}</span>
+                                    <!-- Title -->
+                                    <h4 class="product-coupon-title">{{ $coupon->title ?: $coupon->code }}</h4>
+                                    
+                                    <!-- Description with Expand / Collapse for long texts -->
+                                    @if(!empty($desc))
+                                        <div class="coupon-desc-wrapper">
+                                            @if($isLongDesc)
+                                                <div class="coupon-desc-collapsed" style="display: block;">
+                                                    <span>{{ $shortDesc }}</span>
+                                                    <button type="button" onclick="toggleCouponDesc(this)" class="btn-toggle-desc" title="{{ _l('Expand details') }}">+</button>
+                                                </div>
+                                                <div class="coupon-desc-expanded" style="display: none;">
+                                                    <span>{{ $desc }}</span>
+                                                    <button type="button" onclick="toggleCouponDesc(this)" class="btn-toggle-desc" title="{{ _l('Collapse details') }}">-</button>
+                                                </div>
+                                            @else
+                                                <p style="margin: 0;">{{ $desc }}</p>
+                                            @endif
+                                        </div>
+                                    @endif
+
+                                    <div class="product-coupon-meta">
+                                        <span>• {{ $minSpendText }}</span>
+                                        <span>• {{ $expiryText }}</span>
+                                    </div>
+                                </div>
+
+                                <!-- Bottom row: Code box & Use / Copy Code button -->
+                                <div class="product-coupon-foot">
+                                    <span class="product-coupon-code">
+                                        {{ $coupon->code }}
+                                    </span>
+                                    <button type="button" class="btn-copy-coupon" data-code="{{ $coupon->code }}" onclick="copyCouponCode(this, '{{ $coupon->code }}')">
+                                        <span>{{ _l('Copy Code') }}</span>
+                                        <span style="font-size: 0.75rem;">&rarr;</span>
+                                    </button>
                                 </div>
                             </div>
-
-                            <!-- Bottom row: Code box & Use / Copy Code button -->
-                            <div style="padding-top: 10px; margin-top: 6px; border-top: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                                <span style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.775rem; font-weight: 700; background: #f8fafc; color: #0f172a; padding: 3px 7px; border-radius: 6px; border: 1px solid #e2e8f0; letter-spacing: 0.04em;">
-                                    {{ $coupon->code }}
-                                </span>
-                                <button type="button" class="btn-copy-coupon" data-code="{{ $coupon->code }}" onclick="copyCouponCode(this, '{{ $coupon->code }}')" style="display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px; font-size: 0.75rem; font-weight: 700; border-radius: 6px; background: #0f172a; color: #ffffff; border: 1px solid #0f172a; cursor: pointer; transition: all 0.15s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.05); white-space: nowrap; flex-shrink: 0;" onmouseover="this.style.backgroundColor='#1e293b'" onmouseout="this.style.backgroundColor='#0f172a'">
-                                    <span>{{ _l('Copy Code') }}</span>
-                                    <span style="font-size: 0.75rem;">&rarr;</span>
-                                </button>
-                            </div>
-                        </div>
-                    @endforeach
+                        @endforeach
+                    @endif
                 </div>
             </div>
 
             <!-- Modal Footer -->
-            <div style="padding: 14px 24px; background: #ffffff; border-top: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-                <span style="font-size: 0.75rem; color: #64748b; font-weight: 500;">
+            <div class="product-coupons-modal-footer">
+                <span class="product-coupons-footer-tip">
                     💡 {{ _l('Apply verified promo codes at checkout to save instantly.') }}
                 </span>
-                <button type="button" onclick="closeProductCouponsModal()" style="padding: 6px 14px; font-size: 0.8125rem; font-weight: 600; border-radius: 6px; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; cursor: pointer; transition: all 0.15s ease;" onmouseover="this.style.backgroundColor='#e2e8f0'" onmouseout="this.style.backgroundColor='#f1f5f9'">{{ _l('Close') }}</button>
+                <button type="button" class="btn-close-footer" onclick="closeProductCouponsModal()">{{ _l('Close') }}</button>
             </div>
         </div>
     </div>
 
-    <!-- Script for Coupon Modal, Expand/Collapse & Copy action -->
+    <!-- Script for Coupon Modal, Expand/Collapse, Copy action & Personalized Client Hydration -->
     <script>
         function openProductCouponsModal() {
             const modal = document.getElementById('product-coupons-modal');
@@ -3039,6 +3052,117 @@
             }, 2000);
         }
 
+        // Dynamic Client-side Coupon Hydration for Logged-in Customer / Administrator
+        (function initPersonalizedCoupons() {
+            const authToken = localStorage.getItem('auth_token');
+            const url = '/checkout/coupons?product_id={{ $product->id }}';
+            const headers = { 'Accept': 'application/json' };
+            if (authToken) {
+                headers['Authorization'] = 'Bearer ' + authToken;
+            }
+
+            // If admin or logged-in user is detected, fetch personalized / admin coupons dynamically
+            if (authToken) {
+                fetch(url, { headers, credentials: 'include' })
+                    .then(res => res.ok ? res.json() : null)
+                    .then(res => {
+                        if (!res || !Array.isArray(res.data) || res.data.length === 0) return;
+                        renderCouponsClientSide(res.data);
+                    })
+                    .catch(() => {});
+            }
+
+            function renderCouponsClientSide(coupons) {
+                const grid = document.querySelector('.product-coupons-grid');
+                const triggerWrapper = document.getElementById('product-coupons-trigger-wrapper');
+                const countSpan = document.getElementById('product-coupons-deals-count');
+                const bestBadge = document.getElementById('product-coupons-best-badge');
+                if (!grid) return;
+
+                let maxPercent = 0;
+                let maxFixed = 0;
+                let html = '';
+
+                coupons.forEach(coupon => {
+                    const val = parseFloat(coupon.value) || 0;
+                    if (coupon.type === 'percent' && val > maxPercent) maxPercent = val;
+                    if (coupon.type === 'fixed_amount' && val > maxFixed) maxFixed = val;
+
+                    const valFormatted = coupon.type === 'percent'
+                        ? (val >= 100 ? '100% OFF' : Math.round(val) + '% OFF')
+                        : '$' + val.toFixed(2) + ' OFF';
+                    const isSpecific = !!coupon.is_specific;
+                    const minSpend = parseFloat(coupon.min_order_value) || 0;
+                    const minSpendText = minSpend > 0 ? 'Min spend: $' + minSpend.toFixed(2) : '{{ _l('No minimum spend') }}';
+                    const expiryText = coupon.expires_at_formatted ? 'Expires: ' + coupon.expires_at_formatted : '{{ _l('No expiration') }}';
+                    const desc = coupon.description || '';
+                    const isLongDesc = desc.length > 60;
+                    const shortDesc = isLongDesc ? desc.substring(0, 60) + '...' : desc;
+
+                    html += `
+                        <div class="product-coupon-ticket">
+                            <div>
+                                <div class="product-coupon-ticket-head">
+                                    <div class="product-coupon-badges-left">
+                                        <span class="product-coupon-val-badge">
+                                            ${valFormatted}
+                                        </span>
+                                        <span class="product-coupon-scope-badge">
+                                            ${isSpecific ? '{{ _l('Exclusive') }}' : '{{ _l('Storewide') }}'}
+                                        </span>
+                                    </div>
+                                    <span class="product-coupon-scope-target">
+                                        ${isSpecific ? '{{ _l('Selected Item') }}' : '{{ _l('All Products') }}'}
+                                    </span>
+                                </div>
+                                <h4 class="product-coupon-title">${coupon.title || coupon.code}</h4>
+                                ${desc ? `
+                                    <div class="coupon-desc-wrapper">
+                                        ${isLongDesc ? `
+                                            <div class="coupon-desc-collapsed" style="display: block;">
+                                                <span>${shortDesc}</span>
+                                                <button type="button" onclick="toggleCouponDesc(this)" class="btn-toggle-desc" title="{{ _l('Expand details') }}">+</button>
+                                            </div>
+                                            <div class="coupon-desc-expanded" style="display: none;">
+                                                <span>${desc}</span>
+                                                <button type="button" onclick="toggleCouponDesc(this)" class="btn-toggle-desc" title="{{ _l('Collapse details') }}">-</button>
+                                            </div>
+                                        ` : `<p style="margin: 0;">${desc}</p>`}
+                                    </div>
+                                ` : ''}
+                                <div class="product-coupon-meta">
+                                    <span>• ${minSpendText}</span>
+                                    <span>• ${expiryText}</span>
+                                </div>
+                            </div>
+                            <div class="product-coupon-foot">
+                                <span class="product-coupon-code">
+                                    ${coupon.code}
+                                </span>
+                                <button type="button" class="btn-copy-coupon" data-code="${coupon.code}" onclick="copyCouponCode(this, '${coupon.code}')">
+                                    <span>{{ _l('Copy Code') }}</span>
+                                    <span style="font-size: 0.75rem;">&rarr;</span>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                grid.innerHTML = html;
+                if (triggerWrapper) triggerWrapper.style.display = 'block';
+                if (countSpan) countSpan.textContent = coupons.length + ' {{ _l('deals') }}';
+                if (bestBadge) {
+                    if (maxPercent > 0) {
+                        bestBadge.textContent = maxPercent >= 100 ? '{{ _l('100% OFF') }}' : 'Save up to ' + Math.round(maxPercent) + '%';
+                        bestBadge.style.display = 'inline-block';
+                    } else if (maxFixed > 0) {
+                        bestBadge.textContent = 'Save up to $' + maxFixed.toFixed(2);
+                        bestBadge.style.display = 'inline-block';
+                    }
+                }
+            }
+        })();
+
         // Close on backdrop click and Escape key
         document.addEventListener('DOMContentLoaded', () => {
             const modal = document.getElementById('product-coupons-modal');
@@ -3061,23 +3185,385 @@
             from { opacity: 0; transform: scale(0.96); }
             to { opacity: 1; transform: scale(1); }
         }
+        
+        /* Modal Structure */
+        .product-coupons-modal-card {
+            width: 100%;
+            max-width: 780px;
+            max-height: 88vh;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            animation: polyModalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .product-coupons-modal-head {
+            padding: 18px 22px 14px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            background: #ffffff;
+        }
+        .product-coupons-modal-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 6px;
+        }
+        .product-coupons-pill-dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #10b981;
+        }
+        .product-coupons-modal-title {
+            margin: 0;
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.02em;
+            line-height: 1.3;
+        }
+        .product-coupons-modal-sub {
+            margin: 4px 0 0;
+            font-size: 0.8rem;
+            color: #64748b;
+            line-height: 1.4;
+        }
+        .btn-close-product-coupons {
+            background: none;
+            border: none;
+            font-size: 18px;
+            line-height: 1;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 6px 8px;
+            border-radius: 8px;
+            transition: all 0.15s ease;
+        }
+        .btn-close-product-coupons:hover {
+            color: #0f172a;
+            background-color: #f1f5f9;
+        }
+        
+        /* Modal Body */
+        .product-coupons-modal-body {
+            padding: 16px 20px;
+            overflow-y: auto;
+            flex: 1;
+            background: #f8fafc;
+        }
         .product-coupons-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 12px;
             align-items: stretch;
         }
-        @media (max-width: 680px) {
-            .product-coupons-grid {
-                grid-template-columns: 1fr;
-                gap: 10px;
-            }
+        
+        /* Coupon Ticket Card */
+        .product-coupon-ticket {
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 10px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
         }
+        .product-coupon-ticket-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .product-coupon-badges-left {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .product-coupon-val-badge {
+            padding: 2px 7px;
+            border-radius: 6px;
+            background: #f1f5f9;
+            color: #0f172a;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-weight: 800;
+            font-size: 0.75rem;
+            line-height: 1.2;
+            border: 1px solid #e2e8f0;
+            white-space: nowrap;
+            display: inline-block;
+        }
+        .product-coupon-scope-badge {
+            font-size: 0.625rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: #f1f5f9;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+            white-space: nowrap;
+            display: inline-block;
+        }
+        .product-coupon-scope-target {
+            font-size: 0.6875rem;
+            color: #64748b;
+            font-weight: 500;
+            white-space: nowrap;
+            text-align: right;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .product-coupon-title {
+            margin: 4px 0 2px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.35;
+        }
+        .coupon-desc-wrapper {
+            margin-top: 4px;
+            font-size: 0.75rem;
+            color: #64748b;
+            line-height: 1.45;
+        }
+        .btn-toggle-desc {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            line-height: 1;
+            vertical-align: middle;
+            margin-left: 4px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            color: #0284c7;
+            font-size: 0.75rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .coupon-desc-expanded .btn-toggle-desc {
+            color: #64748b;
+        }
+        .product-coupon-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px 8px;
+            margin-top: 6px;
+            font-size: 0.6875rem;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+        .product-coupon-foot {
+            padding-top: 10px;
+            margin-top: 6px;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .product-coupon-code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.775rem;
+            font-weight: 700;
+            background: #f8fafc;
+            color: #0f172a;
+            padding: 3px 7px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            letter-spacing: 0.04em;
+            white-space: nowrap;
+        }
+        .btn-copy-coupon {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border-radius: 6px;
+            background: #0f172a;
+            color: #ffffff;
+            border: 1px solid #0f172a;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .btn-copy-coupon:hover {
+            background-color: #1e293b;
+        }
+        
+        /* Modal Footer */
+        .product-coupons-modal-footer {
+            padding: 12px 20px;
+            background: #ffffff;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .product-coupons-footer-tip {
+            font-size: 0.75rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+        .btn-close-footer {
+            padding: 5px 14px;
+            font-size: 0.775rem;
+            font-weight: 600;
+            border-radius: 6px;
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .btn-close-footer:hover {
+            background-color: #e2e8f0;
+        }
+
+        /* Trigger Bar */
         .product-coupons-trigger:hover {
             border-color: #94a3b8 !important;
             background: #f1f5f9 !important;
             transform: translateY(-1px);
         }
+
+        /* ========================================================= */
+        /* RESPONSIVE MOBILE STYLES (Clean, Well-balanced, No Overflows) */
+        /* ========================================================= */
+        @media (max-width: 680px) {
+            #product-coupons-modal {
+                padding: 10px !important;
+            }
+            .product-coupons-modal-card {
+                max-height: 92vh !important;
+                border-radius: 14px !important;
+            }
+            .product-coupons-modal-head {
+                padding: 14px 14px 10px !important;
+                gap: 8px !important;
+            }
+            .product-coupons-modal-pill {
+                font-size: 0.6rem !important;
+                padding: 1px 6px !important;
+                margin-bottom: 4px !important;
+            }
+            .product-coupons-modal-title {
+                font-size: 0.95rem !important;
+                line-height: 1.25 !important;
+            }
+            .product-coupons-modal-sub {
+                font-size: 0.725rem !important;
+                line-height: 1.35 !important;
+                margin-top: 2px !important;
+            }
+            .btn-close-product-coupons {
+                padding: 4px 6px !important;
+                font-size: 16px !important;
+            }
+            .product-coupons-modal-body {
+                padding: 10px 12px !important;
+            }
+            .product-coupons-grid {
+                grid-template-columns: 1fr !important;
+                gap: 8px !important;
+            }
+            .product-coupon-ticket {
+                padding: 10px 12px !important;
+                gap: 8px !important;
+                border-radius: 10px !important;
+            }
+            .product-coupon-ticket-head {
+                margin-bottom: 4px !important;
+                gap: 6px !important;
+            }
+            .product-coupon-badges-left {
+                gap: 4px !important;
+            }
+            .product-coupon-val-badge {
+                font-size: 0.7rem !important;
+                padding: 2px 6px !important;
+            }
+            .product-coupon-scope-badge {
+                font-size: 0.575rem !important;
+                padding: 1px 4px !important;
+            }
+            .product-coupon-scope-target {
+                font-size: 0.625rem !important;
+            }
+            .product-coupon-title {
+                font-size: 0.8rem !important;
+                line-height: 1.3 !important;
+                margin: 2px 0 1px !important;
+            }
+            .coupon-desc-wrapper {
+                margin-top: 2px !important;
+                font-size: 0.7rem !important;
+                line-height: 1.35 !important;
+            }
+            .product-coupon-meta {
+                margin-top: 4px !important;
+                font-size: 0.625rem !important;
+                gap: 2px 6px !important;
+            }
+            .product-coupon-foot {
+                padding-top: 8px !important;
+                margin-top: 4px !important;
+                gap: 6px !important;
+            }
+            .product-coupon-code {
+                font-size: 0.725rem !important;
+                padding: 2px 6px !important;
+            }
+            .btn-copy-coupon {
+                padding: 4px 10px !important;
+                font-size: 0.7rem !important;
+            }
+            .product-coupons-modal-footer {
+                padding: 10px 14px !important;
+                gap: 8px !important;
+            }
+            .product-coupons-footer-tip {
+                font-size: 0.6875rem !important;
+                line-height: 1.3 !important;
+            }
+            .btn-close-footer {
+                padding: 4px 10px !important;
+                font-size: 0.725rem !important;
+            }
+        }
+
+        /* Dark Mode Support */
         html.dark .product-coupons-trigger {
             background: rgba(39, 39, 42, 0.6) !important;
             border-color: #3f3f46 !important;
@@ -3090,32 +3576,58 @@
             border-color: #27272a !important;
             color: #f4f4f5 !important;
         }
-        html.dark .product-coupons-modal-card > div:first-child,
-        html.dark .product-coupons-modal-card > div:last-child {
+        html.dark .product-coupons-modal-head,
+        html.dark .product-coupons-modal-footer {
             background: #18181b !important;
             border-color: #27272a !important;
         }
-        html.dark .product-coupons-modal-card > div:nth-child(2) {
+        html.dark .product-coupons-modal-pill {
+            background: #27272a !important;
+            border-color: #3f3f46 !important;
+            color: #a1a1aa !important;
+        }
+        html.dark .product-coupons-modal-title {
+            color: #f4f4f5 !important;
+        }
+        html.dark .product-coupons-modal-sub,
+        html.dark .product-coupons-footer-tip {
+            color: #a1a1aa !important;
+        }
+        html.dark .product-coupons-modal-body {
             background: #09090b !important;
         }
         html.dark .product-coupon-ticket {
             background: #18181b !important;
             border-color: #27272a !important;
         }
-        html.dark .product-coupon-ticket span,
-        html.dark .product-coupon-ticket h4 {
+        html.dark .product-coupon-val-badge,
+        html.dark .product-coupon-scope-badge,
+        html.dark .product-coupon-code,
+        html.dark .btn-close-footer {
+            background: #27272a !important;
+            border-color: #3f3f46 !important;
             color: #f4f4f5 !important;
+        }
+        html.dark .product-coupon-title {
+            color: #f4f4f5 !important;
+        }
+        html.dark .product-coupon-scope-target,
+        html.dark .coupon-desc-wrapper,
+        html.dark .product-coupon-meta {
+            color: #a1a1aa !important;
+        }
+        html.dark .product-coupon-foot {
+            border-color: #27272a !important;
         }
         html.dark .btn-copy-coupon {
             background: #ffffff !important;
             color: #0f172a !important;
             border-color: #ffffff !important;
         }
-        html.dark .coupon-desc-wrapper button {
+        html.dark .btn-toggle-desc {
             background: #27272a !important;
             border-color: #3f3f46 !important;
         }
     </style>
-@endif
 
 @endsection
