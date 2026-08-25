@@ -470,7 +470,7 @@ class CheckoutController extends Controller
 
         $now = \Carbon\Carbon::now();
         $productId = $request->query('product_id');
-        $product = $productId ? \App\Models\Ecommerce\Product::find($productId) : null;
+        $product = $productId ? \App\Models\Product::find($productId) : null;
         $productCategoryIds = ($product && $product->categories) ? $product->categories->pluck('id')->toArray() : [];
 
         $query = ProductCoupon::where('is_active', true)

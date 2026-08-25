@@ -389,8 +389,16 @@
 
                         <!-- Product Media Actions (Live Preview, Gallery, Video) -->
                         @php
+                            $primaryProduct = $primaryProduct ?? $product->getPrimaryProduct();
+
                             $demoUrl = trim((string) data_get($product->settings, 'demo_url', ''));
+                            if (empty($demoUrl) && $primaryProduct) {
+                                $demoUrl = trim((string) data_get($primaryProduct->settings, 'demo_url', ''));
+                            }
                             $demoLabel = trim((string) (data_get($product->settings, 'demo_label', '') ?: data_get($product->settings, 'preview_label', '')));
+                            if (empty($demoLabel) && $primaryProduct) {
+                                $demoLabel = trim((string) (data_get($primaryProduct->settings, 'demo_label', '') ?: data_get($primaryProduct->settings, 'preview_label', '')));
+                            }
                             $demoButtonText = !empty($demoLabel) ? _l($demoLabel) : _l('Preview');
                             $galleryItems = collect($product->media ?? [])->map(function ($media) use ($product) {
                                 return [
@@ -399,7 +407,19 @@
                                     'alt' => $product->name,
                                 ];
                             })->filter(fn ($item) => !empty($item['url']))->values();
+                            if ($galleryItems->isEmpty() && $primaryProduct) {
+                                $galleryItems = collect($primaryProduct->media ?? [])->map(function ($media) use ($product) {
+                                    return [
+                                        'url' => $media->url ?? '',
+                                        'thumbnail_url' => $media->thumbnail_url ?? $media->url ?? '',
+                                        'alt' => $product->name,
+                                    ];
+                                })->filter(fn ($item) => !empty($item['url']))->values();
+                            }
                             $previewVideos = collect(data_get($product->settings, 'preview_videos', []))->filter(fn($v) => !empty($v['link']))->values();
+                            if ($previewVideos->isEmpty() && $primaryProduct) {
+                                $previewVideos = collect(data_get($primaryProduct->settings, 'preview_videos', []))->filter(fn($v) => !empty($v['link']))->values();
+                            }
                         @endphp
 
                         @php
@@ -795,7 +815,9 @@
                                 'slug' => $product->slug,
                                 'permalink' => $product->frontend_url
                             ];
-                            $purchaseCtaSummary = data_get($product->settings, 'purchase_cta_summary');
+                            $primaryProduct = $product->getPrimaryProduct() ?? $product;
+
+                            $purchaseCtaSummary = data_get($primaryProduct->settings, 'purchase_cta_summary') ?? data_get($product->settings, 'purchase_cta_summary');
                         @endphp
                         @if(!empty($purchaseCtaSummary))
                             <div class="single-product-purchase-cta" style="margin-top: 12px; margin-bottom: 16px; font-size: 0.95rem; line-height: 1.5; color: #475569;">
@@ -804,7 +826,7 @@
                         @endif
 
                         @php
-                            $purchaseButtons = data_get($product->settings, 'purchase_options.buttons', []);
+                            $purchaseButtons = data_get($primaryProduct->settings, 'purchase_options.buttons', []) ?: data_get($product->settings, 'purchase_options.buttons', []);
                             $activeButtons = collect($purchaseButtons)->filter(fn($btn) => data_get($btn, 'is_active', false))->values();
                             
                             $buttonPresets = collect();
@@ -1358,7 +1380,7 @@
                                         @else
                                             <i class="fas fa-external-link-alt"></i>
                                         @endif
-                                        <span>{{ data_get($extBtn, 'label') }}</span>
+                                        <span>{{ _l(data_get($extBtn, 'label')) }}</span>
                                         @if(data_get($extBtn, 'price'))
                                             <span class="ext-btn-price" style="margin-left: auto; opacity: 0.85; font-size: 0.85rem;">{{ format_currency(data_get($extBtn, 'price')) }}</span>
                                         @endif
@@ -3055,7 +3077,7 @@
         // Dynamic Client-side Coupon Hydration for Logged-in Customer / Administrator
         (function initPersonalizedCoupons() {
             const authToken = localStorage.getItem('auth_token');
-            const url = '/checkout/coupons?product_id={{ $product->id }}';
+            const url = '/api/v1/checkout/coupons?product_id={{ $product->id }}';
             const headers = { 'Accept': 'application/json' };
             if (authToken) {
                 headers['Authorization'] = 'Bearer ' + authToken;

@@ -488,6 +488,47 @@ class Product extends Model
         return $loaded;
     }
 
+    /**
+     * Multilingual Fallback: Get the primary/default translation of this product
+     */
+    public function getPrimaryProduct(): ?Product
+    {
+        if (empty($this->translation_group_id)) {
+            return $this;
+        }
+
+        $defaultLocale = 'en';
+        try {
+            if (class_exists(\App\Models\Language::class)) {
+                $defaultLang = \App\Models\Language::where('is_default', true)->value('code');
+                if ($defaultLang) {
+                    $defaultLocale = $defaultLang;
+                }
+            }
+        } catch (\Throwable $e) {
+            $defaultLocale = config('app.locale', 'en');
+        }
+
+        if ($this->locale === $defaultLocale) {
+            return $this;
+        }
+
+        $primary = static::withoutGlobalScope('locale')
+            ->where('translation_group_id', $this->translation_group_id)
+            ->where('locale', $defaultLocale)
+            ->first();
+
+        if (!$primary) {
+            $primary = static::withoutGlobalScope('locale')
+                ->where('translation_group_id', $this->translation_group_id)
+                ->where('id', '!=', $this->id)
+                ->orderBy('id', 'asc')
+                ->first();
+        }
+
+        return $primary ?: $this;
+    }
+
     // ─── Variant Relationships ────────────────────────────────
 
     /**

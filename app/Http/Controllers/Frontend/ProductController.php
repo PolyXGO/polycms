@@ -122,24 +122,17 @@ class ProductController extends FrontendController
                 ->sum('order_items.quantity');
         }
 
+        $primaryProduct = $product->getPrimaryProduct();
+
+        // Multilingual fallback: Inherit service packages from primary product if not present on translated product
+        if ($primaryProduct && (!$product->services || $product->services->isEmpty()) && $primaryProduct->services && $primaryProduct->services->isNotEmpty()) {
+            $product->setRelation('services', $primaryProduct->services);
+        }
+
         $productVersion = data_get($product->settings, 'version')
             ?? data_get($product->settings, 'product_version')
             ?? data_get($product->settings, 'module_version')
-            ?? null;
-
-        if (!$productVersion && !empty($product->translation_group_id)) {
-            $defaultLocale = config('app.locale', 'en');
-            $primaryProduct = \App\Models\Product::withoutGlobalScope('locale')
-                ->where('translation_group_id', $product->translation_group_id)
-                ->where('locale', $defaultLocale)
-                ->first();
-            if ($primaryProduct) {
-                $productVersion = data_get($primaryProduct->settings, 'version')
-                    ?? data_get($primaryProduct->settings, 'product_version')
-                    ?? data_get($primaryProduct->settings, 'module_version')
-                    ?? null;
-            }
-        }
+            ?? ($primaryProduct ? (data_get($primaryProduct->settings, 'version') ?? data_get($primaryProduct->settings, 'product_version') ?? data_get($primaryProduct->settings, 'module_version')) : null);
 
         [$productFaqItems, $hasProductFaqTab] = $this->resolveProductFaqItems($product);
         [$productCustomTabs, $hasProductCustomTabs, $defaultProductCustomTabId] = $this->resolveProductCustomTabs($product);
@@ -265,6 +258,7 @@ class ProductController extends FrontendController
 
         $data = [
             'product' => $product,
+            'primaryProduct' => $primaryProduct,
             'productSalesCount' => $salesCount,
             'productVersion' => $productVersion,
             'productFaqItems' => $productFaqItems,

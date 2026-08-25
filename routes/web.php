@@ -93,10 +93,9 @@ Route::middleware('auth')->group(function () {
 // Public order status checking for both guest and registered checkouts
 Route::get('/account/orders/{code}/sepay-status', [\App\Http\Controllers\Frontend\AccountController::class, 'checkStatusWeb'])->name('account.orders.sepay-status');
 
-// Authenticated Checkout Routes (Hybrid) - Move to web middleware to access Session
+// Authenticated & Public Checkout Routes (Hybrid) - Move to web middleware to access Session
+Route::get('/checkout/coupons', [\App\Http\Controllers\Api\V1\CheckoutController::class, 'getAvailableCoupons'])->name('checkout.coupons');
 Route::prefix('api/v1')->group(function () {
-    Route::get('/checkout/coupons', [\App\Http\Controllers\Api\V1\CheckoutController::class, 'getAvailableCoupons'])->name('api.v1.checkout.coupons');
-    Route::post('/checkout/calculate', [\App\Http\Controllers\Api\V1\CheckoutController::class, 'calculate'])->name('api.v1.checkout.calculate');
     Route::get('/checkout/coupons', [\App\Http\Controllers\Api\V1\CheckoutController::class, 'getAvailableCoupons'])->name('api.v1.checkout.coupons');
     Route::post('/checkout/calculate', [\App\Http\Controllers\Api\V1\CheckoutController::class, 'calculate'])->name('api.v1.checkout.calculate');
     Route::post('/checkout/process', [\App\Http\Controllers\Api\V1\CheckoutController::class, 'process'])->name('api.v1.checkout.process');

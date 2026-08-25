@@ -108,9 +108,21 @@ class UpdateProduct
                 }
             }
 
+            // Multilingual: Primary language is the Single Source of Truth for purchase options & CTA summary
+            $primaryProduct = $product->getPrimaryProduct();
+            $isPrimaryProduct = !$primaryProduct || $primaryProduct->id === $product->id;
+            if (!$isPrimaryProduct && isset($data['settings']) && is_array($data['settings'])) {
+                if (isset($primaryProduct->settings['purchase_options'])) {
+                    $data['settings']['purchase_options'] = $primaryProduct->settings['purchase_options'];
+                }
+                if (isset($primaryProduct->settings['purchase_cta_summary'])) {
+                    $data['settings']['purchase_cta_summary'] = $primaryProduct->settings['purchase_cta_summary'];
+                }
+            }
+
             $product->update($this->filterPersistableProductData($data));
 
-            // Sync product type, pricing, and service packages across all translations in group
+            // Sync product type, pricing, service packages, and purchase options across all translations in group
             if (!empty($product->translation_group_id)) {
                 Product::withoutGlobalScope('locale')
                     ->where('translation_group_id', $product->translation_group_id)
@@ -163,6 +175,31 @@ class UpdateProduct
                             if (!$isReferenced) {
                                 $delSib->delete();
                             }
+                        }
+                    }
+                }
+
+                // If primary product is updated, sync purchase_options and purchase_cta_summary across all siblings
+                if ($isPrimaryProduct) {
+                    $siblingProducts = Product::withoutGlobalScope('locale')
+                        ->where('translation_group_id', $product->translation_group_id)
+                        ->where('id', '!=', $product->id)
+                        ->get();
+
+                    foreach ($siblingProducts as $sibling) {
+                        $sibSettings = $sibling->settings ?? [];
+                        $hasChanges = false;
+                        if (isset($product->settings['purchase_options'])) {
+                            $sibSettings['purchase_options'] = $product->settings['purchase_options'];
+                            $hasChanges = true;
+                        }
+                        if (isset($product->settings['purchase_cta_summary'])) {
+                            $sibSettings['purchase_cta_summary'] = $product->settings['purchase_cta_summary'];
+                            $hasChanges = true;
+                        }
+                        if ($hasChanges) {
+                            $sibling->settings = $sibSettings;
+                            $sibling->saveQuietly();
                         }
                     }
                 }

@@ -109,7 +109,7 @@
   </div>
 
   <!-- Purchase CTA Summary Section -->
-  <div class="pt-4 border-t border-admin-theme-border space-y-2">
+  <div v-if="isDefaultLanguage" class="pt-4 border-t border-admin-theme-border space-y-2">
     <label class="block text-sm font-semibold text-admin-theme-text">{{ $t('Purchase CTA Summary') || 'Lời Kêu Gọi Mua Hàng (Summary CTA)' }}</label>
     <p class="text-xs text-admin-theme-text-muted mt-0.5">
       {{ $t('A brief call-to-action text displayed right after the price/title and before the purchase buttons to increase conversion rate.') || 'Mô tả ngắn gọn hoặc thông điệp kêu gọi hành động hiển thị ngay dưới giá/tiêu đề sản phẩm để kích thích mua hàng.' }}
@@ -124,191 +124,211 @@
 
   <!-- Unified Purchase Buttons & Channels Section -->
   <div class="pt-4 border-t border-admin-theme-border">
-    <div class="mb-3">
-      <p class="text-sm font-semibold text-admin-theme-text">{{ $t('Purchase Buttons & Channels') || 'Kênh Mua Hàng & Nút Bấm' }}</p>
-      <p class="text-xs text-admin-theme-text-muted mt-0.5">
-        {{ $t('Manage purchase buttons displayed on the product page. You can sort them by reordering.') || 'Quản lý thứ tự hiển thị các nút mua hàng trên trang chi tiết sản phẩm. Bật/tắt hoặc sắp xếp vị trí tuỳ ý.' }}
+    <div class="mb-3 flex items-center justify-between">
+      <div>
+        <p class="text-sm font-semibold text-admin-theme-text">{{ $t('Purchase Buttons & Channels') || 'Kênh Mua Hàng & Nút Bấm' }}</p>
+        <p class="text-xs text-admin-theme-text-muted mt-0.5">
+          {{ $t('Manage purchase buttons displayed on the product page. You can sort them by reordering.') || 'Quản lý thứ tự hiển thị các nút mua hàng trên trang chi tiết sản phẩm. Bật/tắt hoặc sắp xếp vị trí tuỳ ý.' }}
+        </p>
+      </div>
+      <span v-if="!isDefaultLanguage" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-300 dark:border-amber-700/50 flex items-center gap-1.5 shrink-0">
+        <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+        {{ $t('Source of Truth: Primary Language') || 'Source of Truth: Ngôn ngữ chính' }}
+      </span>
+    </div>
+
+    <!-- If not default language, show Source of Truth info banner -->
+    <div v-if="!isDefaultLanguage" class="p-4 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/70 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 text-sm space-y-2">
+      <div class="flex items-center gap-2 font-semibold text-amber-900 dark:text-amber-200">
+        <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>{{ $t('Managed in Primary Language (:lang)', { lang: defaultLanguageName }) || ('Cấu hình tập trung ở Ngôn ngữ chính (' + defaultLanguageName + ')') }}</span>
+      </div>
+      <p class="text-xs text-amber-700 dark:text-amber-400/90 leading-relaxed">
+        {{ $t('Purchase buttons, external channels (Shopee, Lazada, Tiki...), and CTA summary are centralized from the primary language product as the Single Source of Truth. Button labels will be automatically translated based on the customer language.') || 'Các nút mua hàng, kênh sàn ngoài (Shopee, Lazada, Tiki...) và tóm tắt kêu gọi mua hàng được quản lý duy nhất tại ngôn ngữ chính (Source of Truth). Khi khách hàng xem ở ngôn ngữ này, hệ thống sẽ tự động kế thừa và dịch các nhãn nút tương ứng.' }}
       </p>
     </div>
 
-    <!-- Empty state -->
-    <div v-if="!form.settings?.purchase_options?.buttons || form.settings.purchase_options.buttons.length === 0" class="text-center py-6 border border-dashed border-admin-theme-border rounded-lg text-admin-theme-text-muted text-sm">
-      {{ $t('No purchase buttons added yet.') || 'Chưa cấu hình nút mua hàng nào.' }}
-    </div>
+    <template v-else>
+      <!-- Empty state -->
+      <div v-if="!form.settings?.purchase_options?.buttons || form.settings.purchase_options.buttons.length === 0" class="text-center py-6 border border-dashed border-admin-theme-border rounded-lg text-admin-theme-text-muted text-sm">
+        {{ $t('No purchase buttons added yet.') || 'Chưa cấu hình nút mua hàng nào.' }}
+      </div>
 
-    <!-- Buttons Repeater List -->
-    <div v-else class="space-y-4">
-      <div
-        v-for="(btn, index) in form.settings.purchase_options.buttons"
-        :key="btn.id"
-        class="p-4 rounded-xl border border-admin-theme-border bg-admin-theme-base/50 dark:bg-admin-theme-surface/30 relative space-y-3"
-      >
-        <!-- Header: Order & Reorder & Remove -->
-        <div class="flex items-center justify-between gap-3 pb-2 border-b border-admin-theme-border/50">
-          <div class="flex items-center gap-1.5">
-            <span class="text-xs font-semibold text-admin-theme-text-secondary bg-admin-theme-border/50 px-2 py-0.5 rounded">
-              #{{ index + 1 }}
-            </span>
-            <span
-              class="text-xs font-semibold px-2 py-0.5 rounded"
-              :class="btn.type === 'direct' ? 'bg-green-100 text-green-800 dark:bg-green-950/30 dark:text-green-400' : 'bg-blue-100 text-blue-800 dark:bg-blue-950/30 dark:text-blue-400'"
-            >
-              {{ btn.type === 'direct' ? ($t('Direct') || 'Mua tại site') : ($t('External') || 'Link sàn ngoài') }}
-            </span>
-            <span class="text-sm font-medium text-admin-theme-text ml-1">
-              {{ getPlatformLabel(btn) }}
-            </span>
+      <!-- Buttons Repeater List -->
+      <div v-else class="space-y-4">
+        <div
+          v-for="(btn, index) in form.settings.purchase_options.buttons"
+          :key="btn.id"
+          class="p-4 rounded-xl border border-admin-theme-border bg-admin-theme-base/50 dark:bg-admin-theme-surface/30 relative space-y-3"
+        >
+          <!-- Header: Order & Reorder & Remove -->
+          <div class="flex items-center justify-between gap-3 pb-2 border-b border-admin-theme-border/50">
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs font-semibold text-admin-theme-text-secondary bg-admin-theme-border/50 px-2 py-0.5 rounded">
+                #{{ index + 1 }}
+              </span>
+              <span
+                class="text-xs font-semibold px-2 py-0.5 rounded"
+                :class="btn.type === 'direct' ? 'bg-green-100 text-green-800 dark:bg-green-950/30 dark:text-green-400' : 'bg-blue-100 text-blue-800 dark:bg-blue-950/30 dark:text-blue-400'"
+              >
+                {{ btn.type === 'direct' ? ($t('Direct') || 'Mua tại site') : ($t('External') || 'Link sàn ngoài') }}
+              </span>
+              <span class="text-sm font-medium text-admin-theme-text ml-1">
+                {{ getPlatformLabel(btn) }}
+              </span>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+              <!-- Sort Up -->
+              <button
+                type="button"
+                :disabled="index === 0"
+                @click="moveButton(index, -1)"
+                class="p-1 rounded text-admin-theme-text-secondary hover:bg-admin-theme-border disabled:opacity-30 disabled:hover:bg-transparent"
+                title="Move Up"
+              >
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                </svg>
+              </button>
+              <!-- Sort Down -->
+              <button
+                type="button"
+                :disabled="index === form.settings.purchase_options.buttons.length - 1"
+                @click="moveButton(index, 1)"
+                class="p-1 rounded text-admin-theme-text-secondary hover:bg-admin-theme-border disabled:opacity-30 disabled:hover:bg-transparent"
+                title="Move Down"
+              >
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              <!-- Delete (Only allowed for external buttons) -->
+              <button
+                v-if="btn.type !== 'direct'"
+                type="button"
+                @click="removeButton(index)"
+                class="p-1 rounded text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 ml-1"
+                title="Remove"
+              >
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
           </div>
 
-          <div class="flex items-center gap-1.5">
-            <!-- Sort Up -->
-            <button
-              type="button"
-              :disabled="index === 0"
-              @click="moveButton(index, -1)"
-              class="p-1 rounded text-admin-theme-text-secondary hover:bg-admin-theme-border disabled:opacity-30 disabled:hover:bg-transparent"
-              title="Move Up"
-            >
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-              </svg>
-            </button>
-            <!-- Sort Down -->
-            <button
-              type="button"
-              :disabled="index === form.settings.purchase_options.buttons.length - 1"
-              @click="moveButton(index, 1)"
-              class="p-1 rounded text-admin-theme-text-secondary hover:bg-admin-theme-border disabled:opacity-30 disabled:hover:bg-transparent"
-              title="Move Down"
-            >
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            <!-- Delete (Only allowed for external buttons) -->
-            <button
-              v-if="btn.type !== 'direct'"
-              type="button"
-              @click="removeButton(index)"
-              class="p-1 rounded text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 ml-1"
-              title="Remove"
-            >
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </button>
-          </div>
-        </div>
+          <!-- Form fields layout -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <!-- Button Label Input -->
+            <div class="space-y-1">
+              <label class="block text-xs font-medium text-admin-theme-text-secondary">{{ $t('Button Label') || 'Nhãn nút bấm' }}</label>
+              <input
+                v-model="btn.label"
+                type="text"
+                class="w-full px-3 py-1.5 text-sm border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text placeholder-admin-theme-text-muted focus:ring-admin-theme-primary focus:border-admin-theme-primary"
+                :placeholder="btn.type === 'direct' ? (isVi ? 'Ví dụ: Thêm vào giỏ hàng' : 'e.g. Add to Cart') : (isVi ? 'Ví dụ: Mua ngay' : 'e.g. Buy Now')"
+                required
+              />
+            </div>
 
-        <!-- Form fields layout -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <!-- Button Label Input -->
-          <div class="space-y-1">
-            <label class="block text-xs font-medium text-admin-theme-text-secondary">{{ $t('Button Label') || 'Nhãn nút bấm' }}</label>
+            <!-- Price (For external type) or Helper Text (For direct type) -->
+            <div v-if="btn.type === 'external'" class="space-y-1">
+              <label class="block text-xs font-medium text-admin-theme-text-secondary">{{ $t('Price (optional)') || 'Giá bán (nếu có)' }}</label>
+              <input
+                v-model.number="btn.price"
+                type="number"
+                min="0"
+                step="0.01"
+                class="w-full px-3 py-1.5 text-sm border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text placeholder-admin-theme-text-muted focus:ring-admin-theme-primary focus:border-admin-theme-primary"
+                :placeholder="$t('Optional') || 'Để trống nếu cùng giá'"
+              />
+            </div>
+            <div v-else class="flex items-center text-xs text-admin-theme-text-muted bg-admin-theme-border/20 px-3 py-1.5 rounded-lg border border-admin-theme-border/40">
+              <span>{{ $t('This button automatically initiates standard shopping cart checkout workflow.') || 'Nút này tự động kích hoạt giỏ hàng và thanh toán trực tiếp của website.' }}</span>
+            </div>
+          </div>
+
+          <!-- URL Input (Only external type) -->
+          <div v-if="btn.type === 'external'" class="space-y-1">
+            <label class="block text-xs font-medium text-admin-theme-text-secondary">{{ $t('Product URL') || 'Đường dẫn sản phẩm (URL)' }}</label>
             <input
-              v-model="btn.label"
-              type="text"
+              v-model="btn.url"
+              type="url"
               class="w-full px-3 py-1.5 text-sm border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text placeholder-admin-theme-text-muted focus:ring-admin-theme-primary focus:border-admin-theme-primary"
-              :placeholder="btn.type === 'direct' ? (isVi ? 'Ví dụ: Thêm vào giỏ hàng' : 'e.g. Add to Cart') : (isVi ? 'Ví dụ: Mua ngay' : 'e.g. Buy Now')"
+              :placeholder="$t('https://...')"
               required
             />
           </div>
 
-          <!-- Price (For external type) or Helper Text (For direct type) -->
-          <div v-if="btn.type === 'external'" class="space-y-1">
-            <label class="block text-xs font-medium text-admin-theme-text-secondary">{{ $t('Price (optional)') || 'Giá bán (nếu có)' }}</label>
-            <input
-              v-model.number="btn.price"
-              type="number"
-              min="0"
-              step="0.01"
-              :disabled="!isDefaultLanguage"
-              class="w-full px-3 py-1.5 text-sm border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text placeholder-admin-theme-text-muted focus:ring-admin-theme-primary focus:border-admin-theme-primary disabled:bg-gray-100 disabled:text-gray-400 dark:disabled:bg-gray-800"
-              :placeholder="$t('Optional') || 'Để trống nếu cùng giá'"
-            />
-          </div>
-          <div v-else class="flex items-center text-xs text-admin-theme-text-muted bg-admin-theme-border/20 px-3 py-1.5 rounded-lg border border-admin-theme-border/40">
-            <span>{{ $t('This button automatically initiates standard shopping cart checkout workflow.') || 'Nút này tự động kích hoạt giỏ hàng và thanh toán trực tiếp của website.' }}</span>
-          </div>
-        </div>
-
-        <!-- URL Input (Only external type) -->
-        <div v-if="btn.type === 'external'" class="space-y-1">
-          <label class="block text-xs font-medium text-admin-theme-text-secondary">{{ $t('Product URL') || 'Đường dẫn sản phẩm (URL)' }}</label>
-          <input
-            v-model="btn.url"
-            type="url"
-            class="w-full px-3 py-1.5 text-sm border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text placeholder-admin-theme-text-muted focus:ring-admin-theme-primary focus:border-admin-theme-primary"
-            :placeholder="$t('https://...')"
-            required
-          />
-        </div>
-
-        <!-- Button Style Preset Selection -->
-        <div class="space-y-1">
-          <label class="block text-xs font-medium text-admin-theme-text-secondary">{{ $t('Button Style Preset') || 'Kiểu giao diện nút (Preset Style)' }}</label>
-          <div class="flex items-center gap-2">
-            <div class="flex-1 px-3 py-1.5 text-sm border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text flex items-center justify-between min-w-0 gap-3">
-              <div class="flex items-center gap-2 min-w-0">
-                <span class="truncate font-medium">
-                  {{ getSelectedPresetName(btn.preset_uuid) }}
-                </span>
-                <!-- Mini Preview of the active style -->
-                <span
-                  v-if="btn.preset_uuid && presets.length > 0"
-                  :style="getPresetStyle(btn.preset_uuid)"
-                  class="ml-2 shrink-0 shadow-sm"
+          <!-- Button Style Preset Selection -->
+          <div class="space-y-1">
+            <label class="block text-xs font-medium text-admin-theme-text-secondary">{{ $t('Button Style Preset') || 'Kiểu giao diện nút (Preset Style)' }}</label>
+            <div class="flex items-center gap-2">
+              <div class="flex-1 px-3 py-1.5 text-sm border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text flex items-center justify-between min-w-0 gap-3">
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="truncate font-medium">
+                    {{ getSelectedPresetName(btn.preset_uuid) }}
+                  </span>
+                  <!-- Mini Preview of the active style -->
+                  <span
+                    v-if="btn.preset_uuid && presets.length > 0"
+                    :style="getPresetStyle(btn.preset_uuid)"
+                    class="ml-2 shrink-0 shadow-sm"
+                  >
+                    {{ btn.label || 'Preview' }}
+                  </span>
+                </div>
+                <button
+                  v-if="btn.preset_uuid"
+                  type="button"
+                  @click="btn.preset_uuid = ''"
+                  class="text-xs text-red-500 hover:text-red-600 font-semibold ml-2 shrink-0"
+                  title="Reset to Default"
                 >
-                  {{ btn.label || 'Preview' }}
-                </span>
+                  {{ $t('Use Default') || 'Dùng Mặc định' }}
+                </button>
               </div>
               <button
-                v-if="btn.preset_uuid"
                 type="button"
-                @click="btn.preset_uuid = ''"
-                class="text-xs text-red-500 hover:text-red-600 font-semibold ml-2 shrink-0"
-                title="Reset to Default"
+                @click="openPresetModal(btn)"
+                class="px-3 py-1.5 text-xs font-bold rounded-lg border border-admin-theme-primary text-admin-theme-primary hover:bg-admin-theme-primary/5 transition-colors whitespace-nowrap flex items-center gap-1 shrink-0"
               >
-                {{ $t('Use Default') || 'Dùng Mặc định' }}
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                {{ $t('Select') || 'Chọn' }}
               </button>
             </div>
-            <button
-              type="button"
-              @click="openPresetModal(btn)"
-              class="px-3 py-1.5 text-xs font-bold rounded-lg border border-admin-theme-primary text-admin-theme-primary hover:bg-admin-theme-primary/5 transition-colors whitespace-nowrap flex items-center gap-1 shrink-0"
-            >
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              {{ $t('Select') || 'Chọn' }}
-            </button>
+          </div>
+
+          <!-- Toggle Switch / Checkbox is_active -->
+          <div class="flex items-center pt-1">
+            <label class="inline-flex items-center gap-2 text-xs text-admin-theme-text-secondary cursor-pointer">
+              <input
+                v-model="btn.is_active"
+                type="checkbox"
+                class="w-4 h-4 text-admin-theme-primary rounded focus:ring-admin-theme-primary border-admin-theme-input-border transition-all duration-200"
+              />
+              <span>{{ $t('Active / Display this button') || 'Kích hoạt / Hiển thị nút này' }}</span>
+            </label>
           </div>
         </div>
 
-        <!-- Toggle Switch / Checkbox is_active -->
-        <div class="flex items-center pt-1">
-          <label class="inline-flex items-center gap-2 text-xs text-admin-theme-text-secondary cursor-pointer">
-            <input
-              v-model="btn.is_active"
-              type="checkbox"
-              class="w-4 h-4 text-admin-theme-primary rounded focus:ring-admin-theme-primary border-admin-theme-input-border transition-all duration-200"
-            />
-            <span>{{ $t('Active / Display this button') || 'Kích hoạt / Hiển thị nút này' }}</span>
-          </label>
+        <!-- Add External Channel button at the bottom of the list -->
+        <div class="flex justify-end pt-2">
+          <button
+            type="button"
+            @click="addPurchaseButton('external')"
+            class="inline-flex items-center px-4 py-2 text-xs font-semibold rounded-lg bg-admin-theme-primary text-admin-theme-primary-content hover:bg-admin-theme-primary-hover transition-colors shadow-sm"
+          >
+            + {{ $t('Add External Channel') || 'Thêm nút Link sàn/ngoài' }}
+          </button>
         </div>
       </div>
-
-      <!-- Add External Channel button at the bottom of the list -->
-      <div class="flex justify-end pt-2">
-        <button
-          type="button"
-          @click="addPurchaseButton('external')"
-          class="inline-flex items-center px-4 py-2 text-xs font-semibold rounded-lg bg-admin-theme-primary text-admin-theme-primary-content hover:bg-admin-theme-primary-hover transition-colors shadow-sm"
-        >
-          + {{ $t('Add External Channel') || 'Thêm nút Link sàn/ngoài' }}
-        </button>
-      </div>
-    </div>
+    </template>
   </div>
   </div>
 </template>
@@ -389,6 +409,10 @@ const isDefaultLanguage = computed(() => {
   }
   const match = activeLanguages.value.find(l => l.code === (form.value.locale || 'en'));
   return match ? match.is_default : true;
+});
+const defaultLanguageName = computed(() => {
+  const def = activeLanguages.value.find(l => l.is_default);
+  return def ? def.name : 'English';
 });
 
 onMounted(async () => {
