@@ -151,7 +151,7 @@ class LanguageHelper
         // Reset translations for this locale to ensure fresh load
         self::$translations[$locale] = [];
 
-        // Load core translations
+        // Load core translations (.php and .json)
         $corePath = base_path("lang/{$locale}.php");
         if (file_exists($corePath)) {
             $coreTranslations = require $corePath;
@@ -162,7 +162,16 @@ class LanguageHelper
                 );
             }
         }
-
+        $coreJsonPath = base_path("lang/{$locale}.json");
+        if (file_exists($coreJsonPath)) {
+            $coreJson = @json_decode(file_get_contents($coreJsonPath), true);
+            if (is_array($coreJson)) {
+                self::$translations[$locale] = array_merge(
+                    self::$translations[$locale],
+                    $coreJson
+                );
+            }
+        }
 
         // Load module translations (deeply discovered via Manager)
         if (app()->bound(ModuleManager::class)) {
@@ -180,7 +189,16 @@ class LanguageHelper
                               );
                          }
                      }
-
+                     $jsonFile = $module['path'] . "/lang/{$locale}.json";
+                     if (file_exists($jsonFile)) {
+                         $moduleJson = @json_decode(file_get_contents($jsonFile), true);
+                         if (is_array($moduleJson)) {
+                              self::$translations[$locale] = array_merge(
+                                  self::$translations[$locale],
+                                  $moduleJson
+                              );
+                         }
+                     }
                  }
              }
         }
@@ -207,7 +225,16 @@ class LanguageHelper
                           );
                      }
                  }
-
+                 $jsonFile = base_path($theme->path . "/lang/{$locale}.json");
+                 if (file_exists($jsonFile)) {
+                     $themeJson = @json_decode(file_get_contents($jsonFile), true);
+                     if (is_array($themeJson)) {
+                          self::$translations[$locale] = array_merge(
+                              self::$translations[$locale],
+                              $themeJson
+                          );
+                     }
+                 }
             }
         }
     }

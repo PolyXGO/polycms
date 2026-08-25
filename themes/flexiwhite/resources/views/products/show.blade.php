@@ -2871,9 +2871,9 @@
 @endif
 
 @if(isset($availableCoupons) && $availableCoupons->isNotEmpty())
-    <!-- Verified Coupons & Special Deals Popup Modal (Vercel Style) -->
+    <!-- Verified Coupons & Special Deals Popup Modal (Vercel Style - 2 Columns Grid) -->
     <div id="product-coupons-modal" style="display: none; position: fixed; inset: 0; z-index: 999999; align-items: center; justify-content: center; padding: 16px; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(6px);">
-        <div class="product-coupons-modal-card" style="width: 100%; max-width: 520px; max-height: 88vh; background: #ffffff; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e2e8f0; animation: polyModalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
+        <div class="product-coupons-modal-card" style="width: 100%; max-width: 820px; max-height: 88vh; background: #ffffff; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e2e8f0; animation: polyModalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
             
             <!-- Modal Header -->
             <div style="padding: 20px 24px 16px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; background: #ffffff;">
@@ -2882,7 +2882,7 @@
                         <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></span>
                         {{ _l('Verified Offers') }}
                     </div>
-                    <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: #0f172a; letter-spacing: -0.02em;">
+                    <h3 style="margin: 0; font-size: 1.2rem; font-weight: 800; color: #0f172a; letter-spacing: -0.02em;">
                         {{ _l('Verified Coupons & Special Deals') }}
                     </h3>
                     <p style="margin: 4px 0 0; font-size: 0.8125rem; color: #64748b; line-height: 1.45;">
@@ -2892,59 +2892,79 @@
                 <button type="button" onclick="closeProductCouponsModal()" style="background: none; border: none; font-size: 20px; line-height: 1; color: #94a3b8; cursor: pointer; padding: 6px 8px; border-radius: 8px; transition: all 0.15s ease;" onmouseover="this.style.color='#0f172a'; this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.color='#94a3b8'; this.style.backgroundColor='transparent'">✕</button>
             </div>
 
-            <!-- Modal Body (List of Verified Coupon Cards - Vercel DNA) -->
-            <div style="padding: 20px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; flex: 1; background: #f8fafc;">
-                @foreach($availableCoupons as $coupon)
-                    @php
-                        $valFormatted = $coupon->type === 'percent' 
-                            ? ((float)$coupon->value >= 100 ? _l('100% OFF') : ((int)$coupon->value . '% OFF'))
-                            : format_currency((float)$coupon->value) . ' ' . _l('OFF');
-                        $isSpecific = !empty($coupon->scope_config['product_ids']) && in_array((int)$product->id, array_map('intval', $coupon->scope_config['product_ids']));
-                        $minSpendText = (float)$coupon->min_order_value > 0 ? _l('Min spend: :val', ['val' => format_currency((float)$coupon->min_order_value)]) : _l('No minimum spend');
-                        $expiryText = $coupon->expires_at ? _l('Expires: :date', ['date' => $coupon->expires_at->format('M d, Y')]) : _l('No expiration');
-                    @endphp
-                    <div class="product-coupon-ticket" style="padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; background: #ffffff; transition: all 0.2s ease; display: flex; flex-direction: column; justify-content: space-between; gap: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
-                        <div>
-                            <!-- Top row with discount badge & scope -->
-                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                                <div style="display: flex; align-items: center; gap: 6px;">
-                                    <span style="padding: 2px 8px; border-radius: 6px; background: #f1f5f9; color: #0f172a; font-family: ui-monospace, monospace; font-weight: 800; font-size: 0.75rem; border: 1px solid #e2e8f0;">
-                                        {{ $valFormatted }}
-                                    </span>
-                                    <span style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 6px; border-radius: 4px; background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0;">
-                                        {{ $isSpecific ? _l('Exclusive') : _l('Storewide') }}
+            <!-- Modal Body (2-Column Grid of Verified Coupon Cards) -->
+            <div style="padding: 20px 24px; overflow-y: auto; flex: 1; background: #f8fafc;">
+                <div class="product-coupons-grid">
+                    @foreach($availableCoupons as $coupon)
+                        @php
+                            $valFormatted = $coupon->type === 'percent' 
+                                ? ((float)$coupon->value >= 100 ? _l('100% OFF') : ((int)$coupon->value . '% OFF'))
+                                : format_currency((float)$coupon->value) . ' ' . _l('OFF');
+                            $isSpecific = !empty($coupon->scope_config['product_ids']) && in_array((int)$product->id, array_map('intval', $coupon->scope_config['product_ids']));
+                            $minSpendText = (float)$coupon->min_order_value > 0 ? _l('Min spend: :val', ['val' => format_currency((float)$coupon->min_order_value)]) : _l('No minimum spend');
+                            $expiryText = $coupon->expires_at ? _l('Expires: :date', ['date' => $coupon->expires_at->format('M d, Y')]) : _l('No expiration');
+                            
+                            $desc = $coupon->description ?? '';
+                            $isLongDesc = mb_strlen($desc) > 60;
+                            $shortDesc = $isLongDesc ? mb_substr($desc, 0, 60) . '...' : $desc;
+                        @endphp
+                        <div class="product-coupon-ticket" style="padding: 14px 16px; border-radius: 12px; border: 1px solid #e2e8f0; background: #ffffff; transition: all 0.2s ease; display: flex; flex-direction: column; justify-content: space-between; gap: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+                            <div>
+                                <!-- Top row with discount badge & scope -->
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <span style="padding: 2px 7px; border-radius: 6px; background: #f1f5f9; color: #0f172a; font-family: ui-monospace, monospace; font-weight: 800; font-size: 0.75rem; border: 1px solid #e2e8f0;">
+                                            {{ $valFormatted }}
+                                        </span>
+                                        <span style="font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 6px; border-radius: 4px; background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0;">
+                                            {{ $isSpecific ? _l('Exclusive') : _l('Storewide') }}
+                                        </span>
+                                    </div>
+                                    <span style="font-size: 0.6875rem; color: #64748b; font-weight: 500;">
+                                        {{ $isSpecific ? _l('Selected Item') : _l('All Products') }}
                                     </span>
                                 </div>
-                                <span style="font-size: 0.72rem; color: #64748b; font-weight: 500;">
-                                    {{ $isSpecific ? _l('Selected Item') : _l('All Products') }}
-                                </span>
+
+                                <!-- Title -->
+                                <h4 style="margin: 4px 0 2px; font-size: 0.85rem; font-weight: 700; color: #0f172a; line-height: 1.35;">{{ $coupon->title ?: $coupon->code }}</h4>
+                                
+                                <!-- Description with Expand / Collapse for long texts -->
+                                @if(!empty($desc))
+                                    <div class="coupon-desc-wrapper" style="margin-top: 4px; font-size: 0.75rem; color: #64748b; line-height: 1.45;">
+                                        @if($isLongDesc)
+                                            <div class="coupon-desc-collapsed" style="display: block;">
+                                                <span>{{ $shortDesc }}</span>
+                                                <button type="button" onclick="toggleCouponDesc(this)" style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; line-height: 1; vertical-align: middle; margin-left: 4px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; color: #0284c7; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: all 0.15s ease;" title="{{ _l('Expand details') }}">+</button>
+                                            </div>
+                                            <div class="coupon-desc-expanded" style="display: none;">
+                                                <span>{{ $desc }}</span>
+                                                <button type="button" onclick="toggleCouponDesc(this)" style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; line-height: 1; vertical-align: middle; margin-left: 4px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; color: #64748b; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: all 0.15s ease;" title="{{ _l('Collapse details') }}">-</button>
+                                            </div>
+                                        @else
+                                            <p style="margin: 0;">{{ $desc }}</p>
+                                        @endif
+                                    </div>
+                                @endif
+
+                                <div style="display: flex; flex-wrap: wrap; gap: 3px 8px; margin-top: 6px; font-size: 0.6875rem; color: #94a3b8; font-weight: 500;">
+                                    <span>• {{ $minSpendText }}</span>
+                                    <span>• {{ $expiryText }}</span>
+                                </div>
                             </div>
 
-                            <!-- Title & Description -->
-                            <h4 style="margin: 0; font-size: 0.875rem; font-weight: 700; color: #0f172a; line-height: 1.35;">{{ $coupon->title ?: $coupon->code }}</h4>
-                            @if(!empty($coupon->description))
-                                <p style="margin: 4px 0 0; font-size: 0.775rem; color: #64748b; line-height: 1.4;">{{ $coupon->description }}</p>
-                            @endif
-                            <div style="display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 6px; font-size: 0.7rem; color: #94a3b8; font-weight: 500;">
-                                <span>• {{ $minSpendText }}</span>
-                                <span>• {{ $expiryText }}</span>
-                            </div>
-                        </div>
-
-                        <!-- Bottom row: Code box & Use / Copy Code button -->
-                        <div style="padding-top: 10px; border-top: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                            <div style="display: flex; align-items: center; gap: 6px;">
-                                <span style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.8125rem; font-weight: 700; background: #f8fafc; color: #0f172a; padding: 4px 8px; border-radius: 6px; border: 1px solid #e2e8f0; letter-spacing: 0.04em;">
+                            <!-- Bottom row: Code box & Use / Copy Code button -->
+                            <div style="padding-top: 10px; margin-top: 6px; border-top: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                <span style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.775rem; font-weight: 700; background: #f8fafc; color: #0f172a; padding: 3px 7px; border-radius: 6px; border: 1px solid #e2e8f0; letter-spacing: 0.04em;">
                                     {{ $coupon->code }}
                                 </span>
+                                <button type="button" class="btn-copy-coupon" data-code="{{ $coupon->code }}" onclick="copyCouponCode(this, '{{ $coupon->code }}')" style="display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px; font-size: 0.75rem; font-weight: 700; border-radius: 6px; background: #0f172a; color: #ffffff; border: 1px solid #0f172a; cursor: pointer; transition: all 0.15s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.05); white-space: nowrap; flex-shrink: 0;" onmouseover="this.style.backgroundColor='#1e293b'" onmouseout="this.style.backgroundColor='#0f172a'">
+                                    <span>{{ _l('Copy Code') }}</span>
+                                    <span style="font-size: 0.75rem;">&rarr;</span>
+                                </button>
                             </div>
-                            <button type="button" class="btn-copy-coupon" data-code="{{ $coupon->code }}" onclick="copyCouponCode(this, '{{ $coupon->code }}')" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 0.75rem; font-weight: 700; border-radius: 6px; background: #0f172a; color: #ffffff; border: 1px solid #0f172a; cursor: pointer; transition: all 0.15s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" onmouseover="this.style.backgroundColor='#1e293b'" onmouseout="this.style.backgroundColor='#0f172a'">
-                                <span>{{ _l('Copy Code') }}</span>
-                                <span style="font-size: 0.8rem;">&rarr;</span>
-                            </button>
                         </div>
-                    </div>
-                @endforeach
+                    @endforeach
+                </div>
             </div>
 
             <!-- Modal Footer -->
@@ -2957,7 +2977,7 @@
         </div>
     </div>
 
-    <!-- Script for Coupon Modal & Copy action -->
+    <!-- Script for Coupon Modal, Expand/Collapse & Copy action -->
     <script>
         function openProductCouponsModal() {
             const modal = document.getElementById('product-coupons-modal');
@@ -2971,6 +2991,21 @@
             if (modal) {
                 modal.style.display = 'none';
                 document.body.style.overflow = '';
+            }
+        }
+        function toggleCouponDesc(btn) {
+            const wrapper = btn.closest('.coupon-desc-wrapper');
+            if (!wrapper) return;
+            const collapsed = wrapper.querySelector('.coupon-desc-collapsed');
+            const expanded = wrapper.querySelector('.coupon-desc-expanded');
+            if (collapsed && expanded) {
+                if (collapsed.style.display === 'none') {
+                    collapsed.style.display = 'block';
+                    expanded.style.display = 'none';
+                } else {
+                    collapsed.style.display = 'none';
+                    expanded.style.display = 'block';
+                }
             }
         }
         function copyCouponCode(btn, code) {
@@ -3026,6 +3061,18 @@
             from { opacity: 0; transform: scale(0.96); }
             to { opacity: 1; transform: scale(1); }
         }
+        .product-coupons-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            align-items: stretch;
+        }
+        @media (max-width: 680px) {
+            .product-coupons-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+        }
         .product-coupons-trigger:hover {
             border-color: #94a3b8 !important;
             background: #f1f5f9 !important;
@@ -3063,6 +3110,10 @@
             background: #ffffff !important;
             color: #0f172a !important;
             border-color: #ffffff !important;
+        }
+        html.dark .coupon-desc-wrapper button {
+            background: #27272a !important;
+            border-color: #3f3f46 !important;
         }
     </style>
 @endif
