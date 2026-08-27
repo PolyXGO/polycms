@@ -1494,27 +1494,37 @@
                         ->exists();
                 }
 
+                // 1. Build fixed standard tabs in exact priority order:
+                // Description -> Documentation -> Updates & Roadmap -> FAQ's
+                $fixedTabs = collect();
+
                 if ($hasDescriptionTab) {
-                    $tabs->push(['id' => 'description', 'title' => _l('Description'), 'type' => 'description']);
+                    $fixedTabs->push(['id' => 'description', 'title' => _l('Description'), 'type' => 'description']);
                 }
-                if ($hasPrivateContent) {
-                    $tabs->push(['id' => 'premium-content', 'title' => _l('Premium Content'), 'type' => 'premium-content']);
-                }
-                if ($hasFaqTab) {
-                    $tabs->push(['id' => 'faqs', 'title' => _l("FAQ's"), 'type' => 'faq']);
-                }
-                if (!empty($projectReleases) && ($projectReleases->isNotEmpty() || $projectFeatures->isNotEmpty())) {
-                    $tabs->push(['id' => 'updates-roadmap', 'title' => _l('Updates & Roadmap'), 'type' => 'updates-roadmap']);
-                }
+
                 if (!empty($hasProductDocumentationTab) && !empty($productDocumentationPosts) && $productDocumentationPosts->isNotEmpty()) {
                     $docTitle = data_get($product->settings, 'documentation.title');
                     if (empty(trim((string)$docTitle))) {
                         $docTitle = _l('Documentation');
                     }
-                    $tabs->push(['id' => 'documentation', 'title' => $docTitle, 'type' => 'documentation']);
+                    $fixedTabs->push(['id' => 'documentation', 'title' => $docTitle, 'type' => 'documentation']);
+                }
+
+                if (!empty($projectReleases) && ($projectReleases->isNotEmpty() || $projectFeatures->isNotEmpty())) {
+                    $fixedTabs->push(['id' => 'updates-roadmap', 'title' => _l('Updates & Roadmap'), 'type' => 'updates-roadmap']);
+                }
+
+                if ($hasFaqTab) {
+                    $fixedTabs->push(['id' => 'faqs', 'title' => _l("FAQ's"), 'type' => 'faq']);
+                }
+
+                // 2. Build other / custom tabs
+                $otherTabs = collect();
+                if ($hasPrivateContent) {
+                    $otherTabs->push(['id' => 'premium-content', 'title' => _l('Premium Content'), 'type' => 'premium-content']);
                 }
                 foreach ($customTabPanels as $tab) {
-                    $tabs->push([
+                    $otherTabs->push([
                         'id' => $tab['id'],
                         'source_id' => $tab['source_id'] ?? $tab['id'],
                         'title' => (string) ($tab['title'] ?? ''),
@@ -1522,22 +1532,25 @@
                         'content' => (string) ($tab['content'] ?? ''),
                     ]);
                 }
+                $otherTabs->push(['id' => 'rate', 'title' => _l('Ratings'), 'type' => 'rate']);
+                $otherTabs->push(['id' => 'review', 'title' => _l('Comments'), 'type' => 'review']);
+                $otherTabs = $otherTabs->filter(fn ($tab) => !empty($tab['title']))->values();
 
-                $tabs->push(['id' => 'rate', 'title' => _l('Ratings'), 'type' => 'rate']);
-                $tabs->push(['id' => 'review', 'title' => _l('Comments'), 'type' => 'review']);
-
-                $tabs = $tabs->filter(fn ($tab) => !empty($tab['title']))->values();
-
-                
-                // Order tabs based on settings
+                // 3. Custom sorting applies strictly to other/custom tabs (fixed tabs are excluded from custom reordering)
                 $tabOrder = data_get($product->settings, 'tabs.tab_order', []);
                 if (!empty($tabOrder) && is_array($tabOrder)) {
-                    $tabs = $tabs->sortBy(function ($tab) use ($tabOrder) {
-                        $matchId = $tab['source_id'] ?? $tab['id'];
-                        $index = array_search($matchId, $tabOrder);
-                        return $index !== false ? $index : 999;
-                    })->values();
+                    $cleanTabOrder = array_values(array_diff($tabOrder, ['description', 'documentation', 'updates-roadmap', 'faqs']));
+                    if (!empty($cleanTabOrder)) {
+                        $otherTabs = $otherTabs->sortBy(function ($tab) use ($cleanTabOrder) {
+                            $matchId = $tab['source_id'] ?? $tab['id'];
+                            $index = array_search($matchId, $cleanTabOrder);
+                            return $index !== false ? $index : 999;
+                        })->values();
+                    }
                 }
+
+                // 4. Merge: Fixed standard tabs first (in exact order), then sorted custom/other tabs
+                $tabs = $fixedTabs->concat($otherTabs)->values();
 
                 $configuredDefaultTabId = (string) ($defaultProductCustomTabId ?? '');
                 $defaultTabId = $tabs->first()['id'] ?? 'description';
@@ -1548,10 +1561,12 @@
                     });
                     if ($configuredDefaultTabId === 'description' && $tabs->contains(fn ($tab) => $tab['id'] === 'description')) {
                         $defaultTabId = 'description';
-                    } elseif ($configuredDefaultTabId === 'faqs' && $tabs->contains(fn ($tab) => $tab['id'] === 'faqs')) {
-                        $defaultTabId = 'faqs';
                     } elseif ($configuredDefaultTabId === 'documentation' && $tabs->contains(fn ($tab) => $tab['id'] === 'documentation')) {
                         $defaultTabId = 'documentation';
+                    } elseif ($configuredDefaultTabId === 'updates-roadmap' && $tabs->contains(fn ($tab) => $tab['id'] === 'updates-roadmap')) {
+                        $defaultTabId = 'updates-roadmap';
+                    } elseif ($configuredDefaultTabId === 'faqs' && $tabs->contains(fn ($tab) => $tab['id'] === 'faqs')) {
+                        $defaultTabId = 'faqs';
                     } elseif (!empty($matchedCustom['id']) && $tabs->contains(fn ($tab) => $tab['id'] === $matchedCustom['id'])) {
                         $defaultTabId = $matchedCustom['id'];
                     }
@@ -1575,55 +1590,140 @@
                             </div>
                         @endif
 
-                        @if($hasPrivateContent)
-                            <div id="premium-content" class="single-product-tab-panel">
-                                @if($hasActiveAccess)
-                                    <div class="prose bg-emerald-50/10 dark:bg-emerald-950/10 p-6 rounded-xl border border-emerald-500/20" style="text-align: left;">
-                                        <div style="display: flex; align-items: center; gap: 8px; color: #10b981; margin-bottom: 16px; font-weight: 750; font-size: 1.1rem;">
-                                            <i class="fas fa-unlock"></i>
-                                            <span>{{ _l('Unlocked Premium Content') }}</span>
+                        @if(!empty($hasProductDocumentationTab) && !empty($productDocumentationPosts) && $productDocumentationPosts->isNotEmpty())
+                            @php
+                                $docLayout = data_get($product->settings, 'documentation.display_layout', 'grid');
+                                $docCatName = $productDocumentationCategory->name ?? null;
+                                $docCatUrl = $productDocumentationCategory->frontend_url ?? null;
+                                $getDocPlainText = function ($p) {
+                                    if (!empty($p->content_html) && is_string($p->content_html)) {
+                                        return strip_tags($p->content_html);
+                                    }
+                                    if (!empty($p->content_raw) && is_string($p->content_raw)) {
+                                        return strip_tags($p->content_raw);
+                                    }
+                                    if (!empty($p->excerpt) && is_string($p->excerpt)) {
+                                        return strip_tags($p->excerpt);
+                                    }
+                                    return '';
+                                };
+                            @endphp
+                            <div id="documentation" class="single-product-tab-panel">
+                                <div class="product-doc-container">
+                                    <div class="product-doc-header">
+                                        <div class="product-doc-header__info">
+                                            <div class="product-doc-header__badge">
+                                                <i class="fas fa-book-open"></i>
+                                                <span>{{ $docCatName ?? _l('Guides & Documentation') }}</span>
+                                            </div>
+                                            <h3 class="product-doc-header__title">{{ data_get($product->settings, 'documentation.title') ?: _l('Documentation & Resources') }}</h3>
+                                            <p class="product-doc-header__subtitle">
+                                                {{ _l('Explore detailed tutorials, setup guides, and reference articles for :product.', ['product' => $product->name]) }}
+                                            </p>
                                         </div>
-                                        {!! \Illuminate\Support\Str::markdown($privateContent) !!}
-                                    </div>
-                                @else
-                                    <div style="text-align: center; padding: 48px 24px; border: 2px dashed #cbd5e1; border-radius: 16px; background: rgba(248, 250, 252, 0.5); max-width: 500px; margin: 20px auto;">
-                                        <div style="color: #94a3b8; font-size: 2.5rem; margin-bottom: 16px;">
-                                            <i class="fas fa-lock"></i>
-                                        </div>
-                                        <h4 style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin-bottom: 8px;">
-                                            {{ _l('Premium Content Locked') }}
-                                        </h4>
-                                        <p style="font-size: 0.875rem; color: #64748b; margin-bottom: 24px; line-height: 1.5;">
-                                            {{ _l('This content is reserved for active subscribers. Please purchase a plan or log in to unlock.') }}
-                                        </p>
-                                        @if(!auth()->check())
-                                            @include('partials.external-auth-prompt', [
-                                                'message' => _l('Please log in to unlock premium content.'),
-                                                'product' => $product ?? null,
-                                            ])
+                                        @if($docCatUrl)
+                                            <a href="{{ $docCatUrl }}" class="product-doc-header__viewall" target="_blank">
+                                                <span>{{ _l('View All Docs') }}</span>
+                                                <i class="fas fa-arrow-right"></i>
+                                            </a>
                                         @endif
                                     </div>
-                                @endif
+
+                                    @if($docLayout === 'list')
+                                        <div class="product-doc-list">
+                                            @foreach($productDocumentationPosts as $post)
+                                                @php
+                                                    $plainText = $getDocPlainText($post);
+                                                    $words = str_word_count($plainText);
+                                                    $readingTime = max(1, (int) ceil($words / 200));
+                                                    $postExcerpt = (!empty($post->excerpt) && is_string($post->excerpt)) ? $post->excerpt : \Illuminate\Support\Str::limit($plainText, 140);
+                                                @endphp
+                                                <a href="{{ $post->frontend_url }}" class="product-doc-list-item">
+                                                    <div class="product-doc-list-item__icon">
+                                                        <i class="far fa-file-alt"></i>
+                                                    </div>
+                                                    <div class="product-doc-list-item__content">
+                                                        <h4 class="product-doc-list-item__title">{{ $post->title }}</h4>
+                                                        @if($postExcerpt)
+                                                            <p class="product-doc-list-item__excerpt">{{ $postExcerpt }}</p>
+                                                        @endif
+                                                        <div class="product-doc-list-item__meta">
+                                                            @if($post->published_at)
+                                                                <span><i class="far fa-calendar-alt"></i> {{ $post->published_at->format('M d, Y') }}</span>
+                                                            @endif
+                                                            <span><i class="far fa-clock"></i> {{ $readingTime }} {{ _l('min read') }}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="product-doc-list-item__arrow">
+                                                        <i class="fas fa-chevron-right"></i>
+                                                    </div>
+                                                </a>
+                                            @endforeach
+                                        </div>
+                                    @elseif($docLayout === 'accordion')
+                                        @php
+                                            $docAccordionItems = $productDocumentationPosts->map(function ($post) use ($getDocPlainText) {
+                                                $plainText = $getDocPlainText($post);
+                                                $excerpt = (!empty($post->excerpt) && is_string($post->excerpt)) ? $post->excerpt : \Illuminate\Support\Str::limit($plainText, 200);
+                                                $link = '<div style="margin-top: 12px;"><a href="' . e($post->frontend_url) . '" class="btn btn-sm btn-primary" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; text-decoration: none;">' . e(_l('Read Full Guide')) . ' &rarr;</a></div>';
+                                                return [
+                                                    'title' => (string) $post->title,
+                                                    'description' => '<div class="prose" style="font-size: 0.95rem; line-height: 1.6;">' . e($excerpt) . $link . '</div>',
+                                                    'open' => false,
+                                                    'is_html' => true,
+                                                ];
+                                            })->values()->all();
+                                        @endphp
+                                        <div class="product-doc-accordion">
+                                            <x-accordion :items="$docAccordionItems" style="standard" />
+                                        </div>
+                                    @else
+                                        {{-- Default: Grid Cards --}}
+                                        <div class="product-doc-grid">
+                                            @foreach($productDocumentationPosts as $post)
+                                                @php
+                                                    $plainText = $getDocPlainText($post);
+                                                    $words = str_word_count($plainText);
+                                                    $readingTime = max(1, (int) ceil($words / 200));
+                                                    $postExcerpt = (!empty($post->excerpt) && is_string($post->excerpt)) ? $post->excerpt : \Illuminate\Support\Str::limit($plainText, 120);
+                                                    $thumbnail = $post->featured_image_url;
+                                                @endphp
+                                                <a href="{{ $post->frontend_url }}" class="product-doc-card">
+                                                    @if($thumbnail)
+                                                        <div class="product-doc-card__thumb">
+                                                            <img src="{{ $thumbnail }}" alt="{{ $post->title }}" {!! media_lazy_attr() !!}>
+                                                        </div>
+                                                    @endif
+                                                    <div class="product-doc-card__body">
+                                                        <div class="product-doc-card__top">
+                                                            @if($post->categories->isNotEmpty())
+                                                                <span class="product-doc-card__tag">{{ $post->categories->first()->name }}</span>
+                                                            @endif
+                                                            <span class="product-doc-card__reading"><i class="far fa-clock"></i> {{ $readingTime }} {{ _l('min read') }}</span>
+                                                        </div>
+                                                        <h4 class="product-doc-card__title">{{ $post->title }}</h4>
+                                                        @if($postExcerpt)
+                                                            <p class="product-doc-card__excerpt">{{ $postExcerpt }}</p>
+                                                        @endif
+                                                        <div class="product-doc-card__footer">
+                                                            <span class="product-doc-card__date">
+                                                                @if($post->published_at)
+                                                                    {{ $post->published_at->format('M d, Y') }}
+                                                                @endif
+                                                            </span>
+                                                            <span class="product-doc-card__cta">
+                                                                {{ _l('Read Guide') }} <i class="fas fa-arrow-right"></i>
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </a>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                </div>
                             </div>
                         @endif
 
-                        @if($hasFaqTab)
-                            <div id="faqs" class="single-product-tab-panel">
-                                @php
-                                    $faqAccordionItems = $faqItems->map(function ($faq) {
-                                        return [
-                                            'title' => (string) ($faq['question'] ?? ''),
-                                            'description' => render_dynamic_blocks(htmlspecialchars_decode((string) ($faq['answer'] ?? ''))),
-                                            'open' => !empty($faq['open']),
-                                            'is_html' => true,
-                                        ];
-                                    })->filter(fn ($item) => $item['title'] !== '' || $item['description'] !== '')->values()->all();
-                                @endphp
-                                @if(!empty($faqAccordionItems))
-                                    <x-accordion :items="$faqAccordionItems" style="standard" />
-                                @endif
-                            </div>
-                        @endif
                         @if(!empty($projectReleases) && ($projectReleases->isNotEmpty() || $projectFeatures->isNotEmpty()))
                             <div id="updates-roadmap" class="single-product-tab-panel">
                                 <style>
@@ -1849,137 +1949,53 @@
                             </div>
                         @endif
 
-                        @if(!empty($hasProductDocumentationTab) && !empty($productDocumentationPosts) && $productDocumentationPosts->isNotEmpty())
-                            @php
-                                $docLayout = data_get($product->settings, 'documentation.display_layout', 'grid');
-                                $docCatName = $productDocumentationCategory->name ?? null;
-                                $docCatUrl = $productDocumentationCategory->frontend_url ?? null;
-                                $getDocPlainText = function ($p) {
-                                    if (!empty($p->content_html) && is_string($p->content_html)) {
-                                        return strip_tags($p->content_html);
-                                    }
-                                    if (!empty($p->content_raw) && is_string($p->content_raw)) {
-                                        return strip_tags($p->content_raw);
-                                    }
-                                    if (!empty($p->excerpt) && is_string($p->excerpt)) {
-                                        return strip_tags($p->excerpt);
-                                    }
-                                    return '';
-                                };
-                            @endphp
-                            <div id="documentation" class="single-product-tab-panel">
-                                <div class="product-doc-container">
-                                    <div class="product-doc-header">
-                                        <div class="product-doc-header__info">
-                                            <div class="product-doc-header__badge">
-                                                <i class="fas fa-book-open"></i>
-                                                <span>{{ $docCatName ?? _l('Guides & Documentation') }}</span>
-                                            </div>
-                                            <h3 class="product-doc-header__title">{{ data_get($product->settings, 'documentation.title') ?: _l('Documentation & Resources') }}</h3>
-                                            <p class="product-doc-header__subtitle">
-                                                {{ _l('Explore detailed tutorials, setup guides, and reference articles for :product.', ['product' => $product->name]) }}
-                                            </p>
+                        @if($hasFaqTab)
+                            <div id="faqs" class="single-product-tab-panel">
+                                @php
+                                    $faqAccordionItems = $faqItems->map(function ($faq) {
+                                        return [
+                                            'title' => (string) ($faq['question'] ?? ''),
+                                            'description' => render_dynamic_blocks(htmlspecialchars_decode((string) ($faq['answer'] ?? ''))),
+                                            'open' => !empty($faq['open']),
+                                            'is_html' => true,
+                                        ];
+                                    })->filter(fn ($item) => $item['title'] !== '' || $item['description'] !== '')->values()->all();
+                                @endphp
+                                @if(!empty($faqAccordionItems))
+                                    <x-accordion :items="$faqAccordionItems" style="standard" />
+                                @endif
+                            </div>
+                        @endif
+
+                        @if($hasPrivateContent)
+                            <div id="premium-content" class="single-product-tab-panel">
+                                @if($hasActiveAccess)
+                                    <div class="prose bg-emerald-50/10 dark:bg-emerald-950/10 p-6 rounded-xl border border-emerald-500/20" style="text-align: left;">
+                                        <div style="display: flex; align-items: center; gap: 8px; color: #10b981; margin-bottom: 16px; font-weight: 750; font-size: 1.1rem;">
+                                            <i class="fas fa-unlock"></i>
+                                            <span>{{ _l('Unlocked Premium Content') }}</span>
                                         </div>
-                                        @if($docCatUrl)
-                                            <a href="{{ $docCatUrl }}" class="product-doc-header__viewall" target="_blank">
-                                                <span>{{ _l('View All Docs') }}</span>
-                                                <i class="fas fa-arrow-right"></i>
-                                            </a>
+                                        {!! \Illuminate\Support\Str::markdown($privateContent) !!}
+                                    </div>
+                                @else
+                                    <div style="text-align: center; padding: 48px 24px; border: 2px dashed #cbd5e1; border-radius: 16px; background: rgba(248, 250, 252, 0.5); max-width: 500px; margin: 20px auto;">
+                                        <div style="color: #94a3b8; font-size: 2.5rem; margin-bottom: 16px;">
+                                            <i class="fas fa-lock"></i>
+                                        </div>
+                                        <h4 style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin-bottom: 8px;">
+                                            {{ _l('Premium Content Locked') }}
+                                        </h4>
+                                        <p style="font-size: 0.875rem; color: #64748b; margin-bottom: 24px; line-height: 1.5;">
+                                            {{ _l('This content is reserved for active subscribers. Please purchase a plan or log in to unlock.') }}
+                                        </p>
+                                        @if(!auth()->check())
+                                            @include('partials.external-auth-prompt', [
+                                                'message' => _l('Please log in to unlock premium content.'),
+                                                'product' => $product ?? null,
+                                            ])
                                         @endif
                                     </div>
-
-                                    @if($docLayout === 'list')
-                                        <div class="product-doc-list">
-                                            @foreach($productDocumentationPosts as $post)
-                                                @php
-                                                    $plainText = $getDocPlainText($post);
-                                                    $words = str_word_count($plainText);
-                                                    $readingTime = max(1, (int) ceil($words / 200));
-                                                    $postExcerpt = (!empty($post->excerpt) && is_string($post->excerpt)) ? $post->excerpt : \Illuminate\Support\Str::limit($plainText, 140);
-                                                @endphp
-                                                <a href="{{ $post->frontend_url }}" class="product-doc-list-item">
-                                                    <div class="product-doc-list-item__icon">
-                                                        <i class="far fa-file-alt"></i>
-                                                    </div>
-                                                    <div class="product-doc-list-item__content">
-                                                        <h4 class="product-doc-list-item__title">{{ $post->title }}</h4>
-                                                        @if($postExcerpt)
-                                                            <p class="product-doc-list-item__excerpt">{{ $postExcerpt }}</p>
-                                                        @endif
-                                                        <div class="product-doc-list-item__meta">
-                                                            @if($post->published_at)
-                                                                <span><i class="far fa-calendar-alt"></i> {{ $post->published_at->format('M d, Y') }}</span>
-                                                            @endif
-                                                            <span><i class="far fa-clock"></i> {{ $readingTime }} {{ _l('min read') }}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="product-doc-list-item__arrow">
-                                                        <i class="fas fa-chevron-right"></i>
-                                                    </div>
-                                                </a>
-                                            @endforeach
-                                        </div>
-                                    @elseif($docLayout === 'accordion')
-                                        @php
-                                            $docAccordionItems = $productDocumentationPosts->map(function ($post) use ($getDocPlainText) {
-                                                $plainText = $getDocPlainText($post);
-                                                $excerpt = (!empty($post->excerpt) && is_string($post->excerpt)) ? $post->excerpt : \Illuminate\Support\Str::limit($plainText, 200);
-                                                $link = '<div style="margin-top: 12px;"><a href="' . e($post->frontend_url) . '" class="btn btn-sm btn-primary" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; text-decoration: none;">' . e(_l('Read Full Guide')) . ' &rarr;</a></div>';
-                                                return [
-                                                    'title' => (string) $post->title,
-                                                    'description' => '<div class="prose" style="font-size: 0.95rem; line-height: 1.6;">' . e($excerpt) . $link . '</div>',
-                                                    'open' => false,
-                                                    'is_html' => true,
-                                                ];
-                                            })->values()->all();
-                                        @endphp
-                                        <div class="product-doc-accordion">
-                                            <x-accordion :items="$docAccordionItems" style="standard" />
-                                        </div>
-                                    @else
-                                        {{-- Default: Grid Cards --}}
-                                        <div class="product-doc-grid">
-                                            @foreach($productDocumentationPosts as $post)
-                                                @php
-                                                    $plainText = $getDocPlainText($post);
-                                                    $words = str_word_count($plainText);
-                                                    $readingTime = max(1, (int) ceil($words / 200));
-                                                    $postExcerpt = (!empty($post->excerpt) && is_string($post->excerpt)) ? $post->excerpt : \Illuminate\Support\Str::limit($plainText, 120);
-                                                    $thumbnail = $post->featured_image_url;
-                                                @endphp
-                                                <a href="{{ $post->frontend_url }}" class="product-doc-card">
-                                                    @if($thumbnail)
-                                                        <div class="product-doc-card__thumb">
-                                                            <img src="{{ $thumbnail }}" alt="{{ $post->title }}" {!! media_lazy_attr() !!}>
-                                                        </div>
-                                                    @endif
-                                                    <div class="product-doc-card__body">
-                                                        <div class="product-doc-card__top">
-                                                            @if($post->categories->isNotEmpty())
-                                                                <span class="product-doc-card__tag">{{ $post->categories->first()->name }}</span>
-                                                            @endif
-                                                            <span class="product-doc-card__reading"><i class="far fa-clock"></i> {{ $readingTime }} {{ _l('min read') }}</span>
-                                                        </div>
-                                                        <h4 class="product-doc-card__title">{{ $post->title }}</h4>
-                                                        @if($postExcerpt)
-                                                            <p class="product-doc-card__excerpt">{{ $postExcerpt }}</p>
-                                                        @endif
-                                                        <div class="product-doc-card__footer">
-                                                            <span class="product-doc-card__date">
-                                                                @if($post->published_at)
-                                                                    {{ $post->published_at->format('M d, Y') }}
-                                                                @endif
-                                                            </span>
-                                                            <span class="product-doc-card__cta">
-                                                                {{ _l('Read Guide') }} <i class="fas fa-arrow-right"></i>
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </a>
-                                            @endforeach
-                                        </div>
-                                    @endif
-                                </div>
+                                @endif
                             </div>
                         @endif
 
@@ -2597,25 +2613,52 @@
         margin: auto !important;
     }
     .screenshots-thumbs {
-        margin-top: 12px;
-        padding: 8px 6px;
+        margin-top: 14px;
+        padding: 8px 12px;
         border-radius: 12px;
-        background: rgba(15, 23, 42, 0.58);
+        background: rgba(15, 23, 42, 0.65);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(148, 163, 184, 0.15);
         display: flex;
-        justify-content: center;
+        align-items: center;
+        justify-content: safe center;
         gap: 10px;
         overflow-x: auto;
+        overflow-y: hidden;
         flex: 0 0 auto;
+        max-width: 100%;
+        box-sizing: border-box;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+    }
+    .screenshots-thumbs::-webkit-scrollbar {
+        height: 6px;
+    }
+    .screenshots-thumbs::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .screenshots-thumbs::-webkit-scrollbar-thumb {
+        background: rgba(148, 163, 184, 0.35);
+        border-radius: 999px;
+    }
+    .screenshots-thumbs::-webkit-scrollbar-thumb:hover {
+        background: rgba(148, 163, 184, 0.6);
     }
     .product-gallery-thumb {
-        width: 60px;
-        height: 45px;
-        border-radius: 6px;
+        flex: 0 0 88px;
+        width: 88px;
+        height: 58px;
+        aspect-ratio: 88/58;
+        border-radius: 8px;
         border: 2px solid transparent;
         overflow: hidden;
         cursor: pointer;
         padding: 0;
         background: #0f172a;
+        opacity: 0.55;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        flex-shrink: 0;
+        box-sizing: border-box;
     }
     .product-gallery-thumb img {
         width: 100%;

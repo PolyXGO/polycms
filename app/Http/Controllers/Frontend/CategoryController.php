@@ -46,7 +46,7 @@ class CategoryController extends FrontendController
         if ($type === 'product') {
             // Show products in this category and all its descendant subcategories
             $query = Product::with([
-                'categories:categories.id,categories.name,categories.slug',
+                'categories:categories.id,categories.name,categories.slug,categories.image,categories.meta,categories.depth,categories.parent_id',
                 'tags:tags.id,tags.name,tags.slug',
                 'media' => function ($q) {
                     $q->select(['media.id', 'media.name', 'media.file_name', 'media.disk', 'media.path', 'media.mime_type', 'media.size', 'media.type', 'media.alt_text', 'media.metadata']);
@@ -73,8 +73,9 @@ class CategoryController extends FrontendController
             // Show posts in this category and all its descendant subcategories
             $query = Post::with([
                 'user:id,name,email',
-                'categories:categories.id,categories.name,categories.slug',
-                'tags:post_tags.id,post_tags.name,post_tags.slug'
+                'categories:categories.id,categories.name,categories.slug,categories.image,categories.meta,categories.depth,categories.parent_id',
+                'tags:post_tags.id,post_tags.name,post_tags.slug',
+                'meta',
             ])
                 ->where('type', 'post')
                 ->whereHas('categories', function ($q) use ($categoryIds) {
@@ -125,7 +126,11 @@ class CategoryController extends FrontendController
 
             // Load posts for each child category
             foreach ($childCategories as $child) {
-                $childPostsQuery = Post::with(['meta'])
+                $childPostsQuery = Post::with([
+                    'user:id,name,email',
+                    'categories:categories.id,categories.name,categories.slug,categories.image,categories.meta,categories.depth,categories.parent_id',
+                    'meta',
+                ])
                     ->where('type', 'post')
                     ->whereHas('categories', fn($q) => $q->where('categories.id', $child->id));
 
@@ -141,7 +146,11 @@ class CategoryController extends FrontendController
             $data['childCategories'] = $childCategories;
 
             // Also load posts directly in this category (not in any child)
-            $directPostsQuery = Post::with(['meta'])
+            $directPostsQuery = Post::with([
+                'user:id,name,email',
+                'categories:categories.id,categories.name,categories.slug,categories.image,categories.meta,categories.depth,categories.parent_id',
+                'meta',
+            ])
                 ->where('type', 'post')
                 ->whereHas('categories', fn($q) => $q->where('categories.id', $category->id));
 
@@ -153,7 +162,11 @@ class CategoryController extends FrontendController
             
             // Handle loading a specific article directly within the category context
             if (request()->has('article')) {
-                $activePostQuery = Post::with(['meta', 'user'])
+                $activePostQuery = Post::with([
+                    'user:id,name,email',
+                    'categories:categories.id,categories.name,categories.slug,categories.image,categories.meta,categories.depth,categories.parent_id',
+                    'meta',
+                ])
                     ->where('slug', request('article'))
                     ->where('type', 'post');
 

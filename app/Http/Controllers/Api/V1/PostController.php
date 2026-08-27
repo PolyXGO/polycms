@@ -45,7 +45,7 @@ class PostController extends Controller
         } else {
             $relations = [
                 'user:id,name,email',
-                'categories:categories.id,categories.name,categories.slug',
+                'categories:categories.id,categories.name,categories.slug,categories.image,categories.meta,categories.depth,categories.parent_id',
                 'tags:post_tags.id,post_tags.name,post_tags.slug',
                 'meta',
             ];

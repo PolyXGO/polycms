@@ -27,8 +27,9 @@ class PostController extends FrontendController
 
         $query = Post::with([
             'user:id,name,email',
-            'categories:categories.id,categories.name,categories.slug',
-            'tags:post_tags.id,post_tags.name,post_tags.slug'
+            'categories:categories.id,categories.name,categories.slug,categories.image,categories.meta,categories.depth,categories.parent_id',
+            'tags:post_tags.id,post_tags.name,post_tags.slug',
+            'meta',
         ]);
 
         if (!$isAdmin) {
@@ -98,8 +99,9 @@ class PostController extends FrontendController
     {
         $query = Post::with([
             'user:id,name,email',
-            'categories:categories.id,categories.name,categories.slug',
-            'tags:post_tags.id,post_tags.name,post_tags.slug'
+            'categories:categories.id,categories.name,categories.slug,categories.image,categories.meta,categories.depth,categories.parent_id',
+            'tags:post_tags.id,post_tags.name,post_tags.slug',
+            'meta',
         ])
             ->where('slug', $slug);
 

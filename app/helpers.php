@@ -128,17 +128,37 @@ if (!function_exists('get_default_post_image')) {
     {
         $rawUrl = null;
 
-        // Check category default_featured_image if context is a Post
+        // Check category default_featured_image or image if context is a Post
         if ($context instanceof \App\Models\Post) {
-            $categories = $context->relationLoaded('categories')
-                ? $context->categories
-                : $context->categories()->get();
-
-            foreach ($categories as $category) {
-                $meta = $category->meta ?? [];
+            // 1. Check Primary Category first
+            $primaryCategory = $context->primary_category;
+            if ($primaryCategory) {
+                $meta = $primaryCategory->meta ?? [];
                 if (!empty($meta['default_featured_image'])) {
                     $rawUrl = $meta['default_featured_image'];
-                    break;
+                } elseif (!empty($primaryCategory->image)) {
+                    $rawUrl = $primaryCategory->image;
+                }
+            }
+
+            // 2. Fallback to other assigned categories
+            if (empty($rawUrl)) {
+                $categories = $context->relationLoaded('categories')
+                    ? $context->categories
+                    : $context->categories()->get();
+
+                foreach ($categories as $category) {
+                    if ($primaryCategory && $category->id === $primaryCategory->id) {
+                        continue;
+                    }
+                    $meta = $category->meta ?? [];
+                    if (!empty($meta['default_featured_image'])) {
+                        $rawUrl = $meta['default_featured_image'];
+                        break;
+                    } elseif (!empty($category->image)) {
+                        $rawUrl = $category->image;
+                        break;
+                    }
                 }
             }
         }

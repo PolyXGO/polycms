@@ -79,7 +79,11 @@ class HomeController extends FrontendController
         }
 
         // Default: Get recent posts
-        $postsQuery = Post::with(['user:id,name,email', 'categories:categories.id,categories.name,categories.slug'])
+        $postsQuery = Post::with([
+            'user:id,name,email',
+            'categories:categories.id,categories.name,categories.slug,categories.image,categories.meta,categories.depth,categories.parent_id',
+            'meta',
+        ])
             ->where('type', 'post');
 
         if (!$isAdmin) {
@@ -94,7 +98,7 @@ class HomeController extends FrontendController
 
         // Get featured products
         $productsQuery = Product::with([
-            'categories:categories.id,categories.name,categories.slug',
+            'categories:categories.id,categories.name,categories.slug,categories.image,categories.meta,categories.depth,categories.parent_id',
             'media' => function ($q) {
                 $q->select(['media.id', 'media.name', 'media.file_name', 'media.disk', 'media.path', 'media.mime_type', 'media.size', 'media.type', 'media.alt_text', 'media.metadata']);
             }

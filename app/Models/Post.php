@@ -211,18 +211,39 @@ class Post extends Model
         if (!empty($this->featured_image)) {
             $rawUrl = $this->featured_image;
         } else {
-            $categories = $this->relationLoaded('categories')
-                ? $this->categories
-                : $this->categories()->get();
-
-            foreach ($categories as $category) {
-                $meta = $category->meta ?? [];
+            // 1. Check Primary Category (Mark as Primary)
+            $primaryCategory = $this->primary_category;
+            if ($primaryCategory) {
+                $meta = $primaryCategory->meta ?? [];
                 if (!empty($meta['default_featured_image'])) {
                     $rawUrl = $meta['default_featured_image'];
-                    break;
+                } elseif (!empty($primaryCategory->image)) {
+                    $rawUrl = $primaryCategory->image;
                 }
             }
 
+            // 2. Fallback to other assigned categories if primary has no image
+            if (empty($rawUrl)) {
+                $categories = $this->relationLoaded('categories')
+                    ? $this->categories
+                    : $this->categories()->get();
+
+                foreach ($categories as $category) {
+                    if ($primaryCategory && $category->id === $primaryCategory->id) {
+                        continue;
+                    }
+                    $meta = $category->meta ?? [];
+                    if (!empty($meta['default_featured_image'])) {
+                        $rawUrl = $meta['default_featured_image'];
+                        break;
+                    } elseif (!empty($category->image)) {
+                        $rawUrl = $category->image;
+                        break;
+                    }
+                }
+            }
+
+            // 3. Fallback to global reading default post image setting
             if (empty($rawUrl)) {
                 $rawUrl = get_option('reading_default_post_image', null, 'reading');
             }
@@ -232,7 +253,8 @@ class Post extends Model
             return null;
         }
 
-        return media_url($rawUrl, $variant);
+        $processedUrl = media_url($rawUrl, $variant);
+        return \App\Facades\Hook::applyFilters('post.featured_image_url', $processedUrl ?: null, $this, $variant) ?: ($processedUrl ?: null);
     }
 
     /**

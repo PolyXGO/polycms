@@ -49,7 +49,7 @@ Hook::addAction('routes.frontend.register', function () {
                 ->where('postSlug', '[A-Za-z0-9\-_]+')
                 ->name('theme.flexidocs.show');
 
-            // Category route — also handles standalone flexidocs posts as fallback
+            // Category / Standalone Doc Post route
             \Illuminate\Support\Facades\Route::get(
                 $prefix . '/{slug}',
                 function (string $slug, \Illuminate\Http\Request $request) use ($prefix) {
@@ -59,14 +59,7 @@ Hook::addAction('routes.frontend.register', function () {
                         return redirect(url($prefix . '/' . $slug . '/' . $articleSlug), 301);
                     }
 
-                    // Try category first
-                    $category = \App\Models\Category::where('slug', $slug)->first();
-                    if ($category) {
-                        return app(\App\Http\Controllers\Frontend\CategoryController::class)
-                            ->show($slug, $request);
-                    }
-
-                    // Fallback: find a post with this slug that has a flexidocs template
+                    // 1. Priority: Find a post with this slug that explicitly uses flexidocs template
                     $postQuery = \App\Models\Post::with(['user', 'categories', 'tags', 'meta'])
                         ->where('slug', $slug);
 
@@ -79,6 +72,27 @@ Hook::addAction('routes.frontend.register', function () {
                     if ($post && isFlexidocsTemplate($post->template_theme)) {
                         return app(\App\Http\Controllers\Frontend\PostController::class)
                             ->show($slug, $request);
+                    }
+
+                    // 2. Find a documentation Category with this slug (explicitly uses flexidocs layout/theme)
+                    $category = \App\Models\Category::where('slug', $slug)->first();
+                    if ($category && (isFlexidocsTemplate($category->template_theme) || $category->layout_template_id === 'flexidocs')) {
+                        return app(\App\Http\Controllers\Frontend\CategoryController::class)
+                            ->show($slug, $request);
+                    }
+
+                    // 3. Fallback: If a category exists with this slug but is NOT a flexidocs category,
+                    // redirect to its canonical category URL so it doesn't collide with the /docs prefix
+                    if ($category) {
+                        return redirect(url($category->frontend_url), 301);
+                    }
+
+                    // 4. Fallback: If a non-flexidocs post exists, check if any of its categories uses flexidocs
+                    if ($post) {
+                        $docCat = $post->categories->first(fn($c) => isFlexidocsTemplate($c->template_theme) || $c->layout_template_id === 'flexidocs');
+                        if ($docCat) {
+                            return redirect(url($prefix . '/' . $docCat->slug . '/' . $post->slug), 301);
+                        }
                     }
 
                     abort(404);

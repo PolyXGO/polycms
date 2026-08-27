@@ -902,7 +902,7 @@
     ]
   },
   "resources/css/app.css": {
-    "file": "assets/app-CA7pS-j1.css",
+    "file": "assets/app-jExv-_xI.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "names": [
@@ -1610,7 +1610,7 @@
     ]
   },
   "resources/js/app.ts": {
-    "file": "assets/app-D2Qgx5kF.js",
+    "file": "assets/app-CMvsCOoR.js",
     "name": "app",
     "src": "resources/js/app.ts",
     "isEntry": true,
@@ -1646,7 +1646,7 @@
       "resources/js/Stores/cartStore.ts"
     ],
     "css": [
-      "assets/app-CA7pS-j1.css"
+      "assets/app-jExv-_xI.css"
     ]
   },
   "resources/js/ecommerce-bridge.ts": {
