@@ -192,8 +192,6 @@
  </svg>
  </button>
  </div>
-
- <LandingBlockOptionsPanel />
  </div>
 </template>
 
@@ -210,8 +208,6 @@ import { useDialog } from'../../../composables/useDialog';
 import { EditorContextKey } from'../../../editor/context';
 import LanguageSelectorPanel from'../../../components/editor/panels/shared/LanguageSelectorPanel.vue';
 import { getProductBrandUrl } from'../../../utils/permalink';
-
-import LandingBlockOptionsPanel from'../../../components/editor/panels/LandingBlockOptionsPanel.vue';
 
 const { t } = useTranslation();
 const instance = getCurrentInstance();

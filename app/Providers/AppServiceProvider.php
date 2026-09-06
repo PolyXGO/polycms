@@ -1370,6 +1370,9 @@ class AppServiceProvider extends ServiceProvider
                 ],
             ],
         ]);
+
+        // Register core atomic landing block renderers
+        $this->registerCoreLandingBlocks();
     }
 
     /**
@@ -2029,11 +2032,19 @@ class AppServiceProvider extends ServiceProvider
             'hero_section', 'what_you_get', 'cta_section', 'showcase',
             'testimonial', 'icon_box', 'counter',
             'products_slider', 'products_showcase', 'products',
+            'latest_posts', 'posts', 'posts_list',
         ];
 
         foreach ($blocks as $block) {
             Hook::addFilter("content.render.landing_block.{$block}", function($html, $attrs, $context = [], $renderer = null) use ($block) {
                 $viewName = $block === 'html_block' ? 'html' : $block;
+                if ($viewName === 'posts_list') {
+                    $viewName = 'latest_posts';
+                }
+
+                if (!view()->exists("core.blocks.{$viewName}")) {
+                    return $html;
+                }
                 
                 // Pre-render children if 'blocks' is present and we have a renderer
                 $children = '';

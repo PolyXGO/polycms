@@ -11,4 +11,7 @@ Artisan::command('inspire', function () {
 
 Artisan::starting(function ($artisan) {
     $artisan->resolve(BackfillMissingLicensesCommand::class);
+    if (class_exists(\App\Facades\Hook::class)) {
+        \App\Facades\Hook::doAction('artisan.starting', $artisan);
+    }
 });

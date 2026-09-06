@@ -16,6 +16,7 @@
 
     <!-- Theme Styles -->
     <link rel="stylesheet" href="{{ route('theme.asset', ['themeSlug' => 'flexidocs', 'path' => 'css/wiki.css']) }}?v={{ time() }}">
+    @vite(['resources/css/landing-blocks.css'])
     @stack('theme-styles')
     
     <!-- Tailwind CSS (Development/CDN) -->

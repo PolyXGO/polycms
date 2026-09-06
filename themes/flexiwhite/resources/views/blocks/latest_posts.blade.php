@@ -14,38 +14,54 @@
     $showAuthor = $attrs['show_author'] ?? true;
     $showDate = $attrs['show_date'] ?? true;
 
-    $query = \App\Models\Post::where('type', 'post')
-        ->where('locale', app()->getLocale())
-        ->latest('published_at');
+    $selectionMode = $attrs['selection_mode'] ?? 'category';
+    $specificPostIds = array_values(array_filter((array)($attrs['specific_post_ids'] ?? $attrs['post_ids'] ?? [])));
 
-    if (!is_admin_user()) {
-        $query->where('status', 'published');
-    }
+    if ($selectionMode === 'specific' && !empty($specificPostIds)) {
+        $specificQuery = \App\Models\Post::whereIn('id', $specificPostIds);
+        if (!is_admin_user()) {
+            $specificQuery->where('status', 'published');
+        }
+        $fetchedPosts = $specificQuery->get();
+        // Sort strictly according to the order in $specificPostIds array (Database-agnostic Collection Sorting)
+        $posts = $fetchedPosts->sortBy(function($p) use ($specificPostIds) {
+            $pos = array_search($p->id, $specificPostIds);
+            return $pos !== false ? $pos : 999999;
+        })->values();
+    } else {
+        $query = \App\Models\Post::where('type', 'post')
+            ->where('locale', app()->getLocale())
+            ->latest('published_at');
 
-    if (!empty($categoryId)) {
-        // Resolve localized category if needed to match localized posts
-        if (class_exists(\App\Models\Category::class) && in_array(\App\Traits\HasTranslations::class, class_uses_recursive(\App\Models\Category::class))) {
-            $category = \App\Models\Category::withoutGlobalScope('locale')->find($categoryId);
-            if ($category && isset($category->locale)) {
-                $currentLocale = app()->getLocale();
-                if ($category->locale !== $currentLocale) {
-                    $translatedCategory = $category->getTranslation($currentLocale);
-                    if ($translatedCategory) {
-                        $categoryId = $translatedCategory->id;
+        if (!is_admin_user()) {
+            $query->where('status', 'published');
+        }
+
+        if (!empty($categoryId)) {
+            // Resolve localized category if needed to match localized posts
+            if (class_exists(\App\Models\Category::class) && in_array(\App\Traits\HasTranslations::class, class_uses_recursive(\App\Models\Category::class))) {
+                $category = \App\Models\Category::withoutGlobalScope('locale')->find($categoryId);
+                if ($category && isset($category->locale)) {
+                    $currentLocale = app()->getLocale();
+                    if ($category->locale !== $currentLocale) {
+                        $translatedCategory = $category->getTranslation($currentLocale);
+                        if ($translatedCategory) {
+                            $categoryId = $translatedCategory->id;
+                        }
                     }
                 }
             }
+            $query->whereHas('categories', function($q) use ($categoryId) {
+                $q->where('categories.id', $categoryId);
+            });
         }
-        $query->whereHas('categories', function($q) use ($categoryId) {
-            $q->where('categories.id', $categoryId);
-        });
-    }
 
-    if ($offset > 0) {
-        $query->skip($offset);
-    }
+        if ($offset > 0) {
+            $query->skip($offset);
+        }
 
-    $posts = $query->take($count)->get();
+        $posts = $query->take($count)->get();
+    }
 
     // Support layout and spacing settings
     $margin = $attrs['margin'] ?? '';

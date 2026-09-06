@@ -334,7 +334,7 @@ body {
 }
 
 /* Paragraph and Element Spacing */
-.wiki-content p {
+.wiki-content p:not(.smartads-block p) {
     margin-top: 0 !important;
     margin-bottom: 1.25rem !important;
 }

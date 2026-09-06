@@ -52,11 +52,18 @@ export const LandingBlock = Node.create<LandingBlockOptions>({
                 default: {},
                 parseHTML: element => {
                     const dataAttr = element.getAttribute('data-block-data');
+                    if (!dataAttr) return {};
                     try {
-                        return dataAttr ? JSON.parse(dataAttr) : {};
-                    } catch (e) {
-                        console.error('Failed to parse block data:', dataAttr);
-                        return {};
+                        return JSON.parse(dataAttr);
+                    } catch (e1) {
+                        try {
+                            const parser = new DOMParser();
+                            const decoded = parser.parseFromString(dataAttr, 'text/html').body.textContent || '';
+                            return JSON.parse(decoded);
+                        } catch (e2) {
+                            console.error('Failed to parse block data:', dataAttr);
+                            return {};
+                        }
                     }
                 },
                 renderHTML: attributes => {

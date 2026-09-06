@@ -350,10 +350,11 @@ class AccountController extends Controller
                             $release->download_url = null;
                             $release->download_expired = true;
                         } elseif ($release->download_url && str_starts_with($release->download_url, 'local://')) {
-                            $hash = \Illuminate\Support\Str::random(11);
+                            $userId = \Illuminate\Support\Facades\Auth::id();
+                            $hash = substr(hash_hmac('sha256', "download:{$userId}:{$release->id}", config('app.key')), 0, 11);
                             
-                            // Store in cache for 1 hour, key: download_token:user_id:release_id
-                            $cacheKey = "download_token:" . \Illuminate\Support\Facades\Auth::id() . ":" . $release->id;
+                            // Also store in cache for backward compatibility
+                            $cacheKey = "download_token:" . $userId . ":" . $release->id;
                             \Illuminate\Support\Facades\Cache::put($cacheKey, $hash, now()->addHour());
 
                             $release->download_url = route('account.licenses.download', [
@@ -409,31 +410,72 @@ class AccountController extends Controller
     {
         $release = \Modules\Polyx\ProjectHub\Models\ProjectRelease::findOrFail($releaseId);
         
-        // 1. Validate token (hash)
+        // 1. Validate user authentication & token
         $userId = \Illuminate\Support\Facades\Auth::id();
-        $cacheKey = "download_token:" . $userId . ":" . $release->id;
-        $savedHash = \Illuminate\Support\Facades\Cache::get($cacheKey);
-        
-        if (!$hash || !$savedHash || $hash !== $savedHash) {
-            abort(403, 'Invalid or expired download link. Please reload your licenses page to get a new download link.');
+        if (!$userId) {
+            abort(403, 'Unauthorized. Please log in to your account to download.');
+        }
+
+        $isValid = false;
+        if ($request->hasValidSignature()) {
+            $isValid = true;
+        } elseif ($hash) {
+            $expectedHmac = substr(hash_hmac('sha256', "download:{$userId}:{$release->id}", config('app.key')), 0, 11);
+            if (hash_equals($expectedHmac, $hash)) {
+                $isValid = true;
+            } else {
+                $cacheKey = "download_token:" . $userId . ":" . $release->id;
+                $savedHash = \Illuminate\Support\Facades\Cache::get($cacheKey);
+                if ($savedHash && hash_equals($savedHash, $hash)) {
+                    $isValid = true;
+                }
+            }
         }
         
-        // Avoid immediately invalidating to support browser prefetching/retries. The token expires in 1 hour anyway.
-        // \Illuminate\Support\Facades\Cache::forget($cacheKey);
+        if (!$isValid) {
+            abort(403, 'Invalid or expired download link. Please reload your licenses page to get a new download link.');
+        }
 
         // 2. Validate if the user has a license/subscription for the product of this project
         $projectId = $release->project_id;
-        
+        $projectIds = [$projectId];
+        $project = $release->project;
+        if ($project && $project->translation_group_id) {
+            $siblingProjectIds = \Modules\Polyx\ProjectHub\Models\Project::withoutGlobalScope('locale')
+                ->where('translation_group_id', $project->translation_group_id)
+                ->pluck('id')
+                ->toArray();
+            $projectIds = array_unique(array_merge($projectIds, $siblingProjectIds));
+        }
+
         // Find products linked to this project
         $productIds = \Illuminate\Support\Facades\DB::table('project_products')
-            ->where('project_id', $projectId)
+            ->whereIn('project_id', $projectIds)
             ->pluck('product_id')
             ->toArray();
+
+        // Also include localized sibling products if translation_group_id exists
+        if (!empty($productIds)) {
+            $translationGroupIds = \App\Models\Product::withoutGlobalScope('locale')
+                ->whereIn('id', $productIds)
+                ->whereNotNull('translation_group_id')
+                ->pluck('translation_group_id')
+                ->unique()
+                ->toArray();
+            if (!empty($translationGroupIds)) {
+                $siblingProductIds = \App\Models\Product::withoutGlobalScope('locale')
+                    ->whereIn('translation_group_id', $translationGroupIds)
+                    ->pluck('id')
+                    ->toArray();
+                $productIds = array_merge($productIds, $siblingProductIds);
+            }
+        }
+        $allProductIds = array_unique(array_filter($productIds));
             
         // Check if user owns an active license/subscription for any of these products
-        $license = \App\Models\Ecommerce\ProductLicense::whereHas('subscription', function($q) use ($productIds) {
-                $q->where('user_id', Auth::id())
-                  ->whereIn('product_id', $productIds);
+        $license = \App\Models\Ecommerce\ProductLicense::whereHas('subscription', function($q) use ($allProductIds, $userId) {
+                $q->where('user_id', $userId)
+                  ->whereIn('product_id', $allProductIds);
             })
             ->orderByRaw("CASE status WHEN 'active' THEN 1 WHEN 'expired' THEN 2 WHEN 'suspended' THEN 3 WHEN 'revoked' THEN 4 WHEN 'inactive' THEN 5 ELSE 6 END")
             ->first();

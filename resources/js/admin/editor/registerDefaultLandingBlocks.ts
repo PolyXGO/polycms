@@ -410,6 +410,23 @@ export function registerDefaultLandingBlocks() {
         component: LatestPostsBlock,
         defaultAttrs: {
             heading: "Latest Updates",
+            selection_mode: "category",
+            count: 6,
+            columns: 3,
+            show_view_all: true
+        }
+    });
+
+    landingBlockRegistry.register({
+        key: 'latest_posts',
+        label: 'Posts List',
+        category: 'patterns',
+        isPattern: true,
+        icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>`,
+        component: LatestPostsBlock,
+        defaultAttrs: {
+            heading: "Latest Updates",
+            selection_mode: "category",
             count: 6,
             columns: 3,
             show_view_all: true
@@ -651,6 +668,22 @@ export function registerDefaultLandingBlocks() {
             layout: 'grid',
             sliderVisibleItems: 1,
             sliderAutoPlay: false,
+            sliderContinuous: false,
+            sliderDirection: 'left'
+        }
+    });
+
+    landingBlockRegistry.register({
+        key: 'youtube_slider',
+        label: 'YouTube Gallery Slider',
+        category: 'general',
+        icon: `<svg class="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>`,
+        component: YoutubeGalleryBlock,
+        defaultAttrs: {
+            urls: [''],
+            layout: 'slider',
+            sliderVisibleItems: 2,
+            sliderAutoPlay: true,
             sliderContinuous: false,
             sliderDirection: 'left'
         }

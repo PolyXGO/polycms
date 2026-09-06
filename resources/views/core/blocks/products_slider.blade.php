@@ -33,101 +33,122 @@
     $continuousSpeed = ($rawSpeed > 0 && $rawSpeed <= 20) ? (float)(140 / max(1, $rawSpeed)) : 35.0; // px/s
     $pauseOnHover = ($attrs['pause_on_hover'] ?? true) !== false && ($attrs['pause_on_hover'] ?? '') !== 'no';
 
-    // Build Product Query
-    $query = \App\Models\Product::with(['categories', 'media']);
+    $selectionMode = $attrs['selection_mode'] ?? 'filter';
+    $customProductIds = array_values(array_filter((array)($attrs['custom_product_ids'] ?? $attrs['product_ids'] ?? [])));
 
-    if (!is_admin_user()) {
-        $query->where('status', 'published')
-            ->where('slug', 'not like', 'test-%');
-    }
+    if ($selectionMode === 'custom' && !empty($customProductIds)) {
+        $customQuery = \App\Models\Product::with(['categories', 'media'])
+            ->whereIn('id', $customProductIds);
 
-    // Category filter with localized translation resolution
-    if (!empty($categoryId)) {
-        if (class_exists(\App\Models\Category::class) && in_array(\App\Traits\HasTranslations::class, class_uses_recursive(\App\Models\Category::class))) {
-            $catModel = \App\Models\Category::withoutGlobalScope('locale')->find($categoryId);
-            if ($catModel && isset($catModel->locale)) {
-                $currentLocale = app()->getLocale();
-                if ($catModel->locale !== $currentLocale) {
-                    $translatedCat = $catModel->getTranslation($currentLocale);
-                    if ($translatedCat) {
-                        $categoryId = $translatedCat->id;
+        if (!is_admin_user()) {
+            $customQuery->where('status', 'published');
+        }
+
+        $fetchedProducts = $customQuery->get();
+        // Sort strictly according to the order in $customProductIds array (Database-agnostic Collection Sorting)
+        $products = $fetchedProducts->sortBy(function($p) use ($customProductIds) {
+            $pos = array_search($p->id, $customProductIds);
+            return $pos !== false ? $pos : 999999;
+        })->values();
+    } else {
+        // Build Product Query
+        $query = \App\Models\Product::with(['categories', 'media']);
+
+        if (!is_admin_user()) {
+            $query->where('status', 'published')
+                ->where('slug', 'not like', 'test-%');
+        }
+
+        // Category filter with localized translation resolution
+        if (!empty($categoryId)) {
+            if (class_exists(\App\Models\Category::class) && in_array(\App\Traits\HasTranslations::class, class_uses_recursive(\App\Models\Category::class))) {
+                $catModel = \App\Models\Category::withoutGlobalScope('locale')->find($categoryId);
+                if ($catModel && isset($catModel->locale)) {
+                    $currentLocale = app()->getLocale();
+                    if ($catModel->locale !== $currentLocale) {
+                        $translatedCat = $catModel->getTranslation($currentLocale);
+                        if ($translatedCat) {
+                            $categoryId = $translatedCat->id;
+                        }
                     }
                 }
             }
+            $query->whereHas('categories', function($q) use ($categoryId) {
+                $q->where('product_categories.id', $categoryId);
+            });
         }
-        $query->whereHas('categories', function($q) use ($categoryId) {
-            $q->where('product_categories.id', $categoryId);
-        });
-    }
 
-    // Database driver compatibility for Sales calculation
-    $driver = \Illuminate\Support\Facades\DB::connection()->getDriverName();
-    if ($driver === 'pgsql') {
-        $rawSalesSql = "((SELECT COALESCE(SUM(quantity), 0) FROM order_items JOIN orders ON orders.id = order_items.order_id WHERE order_items.product_id = products.id AND orders.status NOT IN ('cancelled', 'failed')) + CAST(COALESCE(settings->>'external_sales', '0') AS INTEGER) + CAST(COALESCE(settings->>'sales_offset', '0') AS INTEGER)) DESC";
-    } else {
-        $rawSalesSql = "((SELECT COALESCE(SUM(quantity), 0) FROM order_items JOIN orders ON orders.id = order_items.order_id WHERE order_items.product_id = products.id AND orders.status NOT IN ('cancelled', 'failed')) + CAST(COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(settings, '$.external_sales')), ''), '0') AS SIGNED) + CAST(COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(settings, '$.sales_offset')), ''), '0') AS SIGNED)) DESC";
-    }
-
-    // Apply Sorting / Filter Logic
-    if (in_array($filterBy, ['featured', 'features'], true)) {
-        $featuredQuery = (clone $query)->where('featured', true)->orderBy('created_at', 'desc');
-        if ($offset > 0) {
-            $featuredQuery->skip($offset);
-        }
-        $products = $featuredQuery->take($count)->get();
-
-        // If fewer than minRequiredItems, backfill with best sellers!
-        if ($products->count() < $minRequiredItems) {
-            $needed = $count - $products->count();
-            $existingIds = $products->pluck('id')->toArray();
-
-            $backfillQuery = (clone $query)->whereNotIn('id', $existingIds)
-                ->orderByRaw($rawSalesSql)
-                ->orderBy('id', 'desc');
-
-            $bestSellersBackfill = $backfillQuery->take($needed)->get();
-            $products = $products->concat($bestSellersBackfill);
-        }
-    } elseif (in_array($filterBy, ['best_sellers', 'bestsellers', 'best_seller'], true)) {
-        $query->orderByRaw($rawSalesSql)->orderBy('id', 'desc');
-        if ($offset > 0) {
-            $query->skip($offset);
-        }
-        $products = $query->take($count)->get();
-    } elseif (in_array($filterBy, ['best_rated', 'rating'], true)) {
-        if (\Illuminate\Support\Facades\Schema::hasColumn('products', 'avg_rating')) {
-            $query->orderBy('avg_rating', 'desc');
+        // Database driver compatibility for Sales calculation
+        $driver = \Illuminate\Support\Facades\DB::connection()->getDriverName();
+        if ($driver === 'pgsql') {
+            $rawSalesSql = "((SELECT COALESCE(SUM(quantity), 0) FROM order_items JOIN orders ON orders.id = order_items.order_id WHERE order_items.product_id = products.id AND orders.status NOT IN ('cancelled', 'failed')) + CAST(COALESCE(settings->>'external_sales', '0') AS INTEGER) + CAST(COALESCE(settings->>'sales_offset', '0') AS INTEGER)) DESC";
+        } elseif ($driver === 'sqlite') {
+            $rawSalesSql = "((SELECT COALESCE(SUM(quantity), 0) FROM order_items JOIN orders ON orders.id = order_items.order_id WHERE order_items.product_id = products.id AND orders.status NOT IN ('cancelled', 'failed')) + CAST(COALESCE(json_extract(settings, '$.external_sales'), '0') AS INTEGER) + CAST(COALESCE(json_extract(settings, '$.sales_offset'), '0') AS INTEGER)) DESC";
         } else {
+            $rawSalesSql = "((SELECT COALESCE(SUM(quantity), 0) FROM order_items JOIN orders ON orders.id = order_items.order_id WHERE order_items.product_id = products.id AND orders.status NOT IN ('cancelled', 'failed')) + CAST(COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(settings, '$.external_sales')), ''), '0') AS SIGNED) + CAST(COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(settings, '$.sales_offset')), ''), '0') AS SIGNED)) DESC";
+        }
+
+        // Apply Sorting / Filter Logic
+        if (in_array($filterBy, ['featured', 'features'], true)) {
+            $featuredQuery = (clone $query)->where('featured', true)->orderBy('created_at', 'desc');
+            if ($offset > 0) {
+                $featuredQuery->skip($offset);
+            }
+            $products = $featuredQuery->take($count)->get();
+
+            // If fewer than minRequiredItems, backfill with best sellers!
+            if ($products->count() < $minRequiredItems) {
+                $needed = $count - $products->count();
+                $existingIds = $products->pluck('id')->toArray();
+
+                $backfillQuery = (clone $query)->whereNotIn('id', $existingIds)
+                    ->orderByRaw($rawSalesSql)
+                    ->orderBy('id', 'desc');
+
+                $bestSellersBackfill = $backfillQuery->take($needed)->get();
+                $products = $products->concat($bestSellersBackfill);
+            }
+        } elseif (in_array($filterBy, ['best_sellers', 'bestsellers', 'best_seller'], true)) {
+            $query->orderByRaw($rawSalesSql)->orderBy('id', 'desc');
+            if ($offset > 0) {
+                $query->skip($offset);
+            }
+            $products = $query->take($count)->get();
+        } elseif (in_array($filterBy, ['best_rated', 'rating'], true)) {
+            if (\Illuminate\Support\Facades\Schema::hasColumn('products', 'avg_rating')) {
+                $query->orderBy('avg_rating', 'desc');
+            } else {
+                $query->orderBy('views', 'desc')->orderBy('created_at', 'desc');
+            }
+            if ($offset > 0) {
+                $query->skip($offset);
+            }
+            $products = $query->take($count)->get();
+        } elseif (in_array($filterBy, ['trending', 'popular', 'views'], true)) {
             $query->orderBy('views', 'desc')->orderBy('created_at', 'desc');
+            if ($offset > 0) {
+                $query->skip($offset);
+            }
+            $products = $query->take($count)->get();
+        } elseif (in_array($filterBy, ['price_asc', 'price_low_high'], true)) {
+            $query->orderByRaw("COALESCE(NULLIF(sale_price, 0), price) ASC");
+            if ($offset > 0) {
+                $query->skip($offset);
+            }
+            $products = $query->take($count)->get();
+        } elseif (in_array($filterBy, ['price_desc', 'price_high_low'], true)) {
+            $query->orderByRaw("COALESCE(NULLIF(sale_price, 0), price) DESC");
+            if ($offset > 0) {
+                $query->skip($offset);
+            }
+            $products = $query->take($count)->get();
+        } else { // 'newest' / default
+            $query->orderBy('created_at', 'desc');
+            if ($offset > 0) {
+                $query->skip($offset);
+            }
+            $products = $query->take($count)->get();
         }
-        if ($offset > 0) {
-            $query->skip($offset);
-        }
-        $products = $query->take($count)->get();
-    } elseif (in_array($filterBy, ['trending', 'popular', 'views'], true)) {
-        $query->orderBy('views', 'desc')->orderBy('created_at', 'desc');
-        if ($offset > 0) {
-            $query->skip($offset);
-        }
-        $products = $query->take($count)->get();
-    } elseif (in_array($filterBy, ['price_asc', 'price_low_high'], true)) {
-        $query->orderByRaw("COALESCE(NULLIF(sale_price, 0), price) ASC");
-        if ($offset > 0) {
-            $query->skip($offset);
-        }
-        $products = $query->take($count)->get();
-    } elseif (in_array($filterBy, ['price_desc', 'price_high_low'], true)) {
-        $query->orderByRaw("COALESCE(NULLIF(sale_price, 0), price) DESC");
-        if ($offset > 0) {
-            $query->skip($offset);
-        }
-        $products = $query->take($count)->get();
-    } else { // 'newest' / default
-        $query->orderBy('created_at', 'desc');
-        if ($offset > 0) {
-            $query->skip($offset);
-        }
-        $products = $query->take($count)->get();
     }
 
     // Header Icon (Only if explicitly provided via attrs)

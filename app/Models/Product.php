@@ -709,6 +709,8 @@ class Product extends Model
                 $driver = \Illuminate\Support\Facades\DB::connection()->getDriverName();
                 if ($driver === 'pgsql') {
                     $rawSalesSql = "((SELECT COALESCE(SUM(quantity), 0) FROM order_items JOIN orders ON orders.id = order_items.order_id WHERE order_items.product_id = products.id AND orders.status NOT IN ('cancelled', 'failed')) + CAST(COALESCE(settings->>'external_sales', '0') AS INTEGER) + CAST(COALESCE(settings->>'sales_offset', '0') AS INTEGER)) DESC";
+                } elseif ($driver === 'sqlite') {
+                    $rawSalesSql = "((SELECT COALESCE(SUM(quantity), 0) FROM order_items JOIN orders ON orders.id = order_items.order_id WHERE order_items.product_id = products.id AND orders.status NOT IN ('cancelled', 'failed')) + CAST(COALESCE(json_extract(settings, '$.external_sales'), '0') AS INTEGER) + CAST(COALESCE(json_extract(settings, '$.sales_offset'), '0') AS INTEGER)) DESC";
                 } else {
                     $rawSalesSql = "((SELECT COALESCE(SUM(quantity), 0) FROM order_items JOIN orders ON orders.id = order_items.order_id WHERE order_items.product_id = products.id AND orders.status NOT IN ('cancelled', 'failed')) + CAST(COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(settings, '$.external_sales')), ''), '0') AS SIGNED) + CAST(COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(settings, '$.sales_offset')), ''), '0') AS SIGNED)) DESC";
                 }

@@ -80,7 +80,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/account/subscriptions/{subscription}/renew', [\App\Http\Controllers\Frontend\AccountController::class, 'renewSubscription'])->name('account.subscriptions.renew');
     Route::get('/account/licenses', [\App\Http\Controllers\Frontend\AccountController::class, 'licenses'])->name('account.licenses');
     Route::post('/account/licenses/deactivate/{id}', [\App\Http\Controllers\Frontend\AccountController::class, 'deactivateLicense'])->name('account.licenses.deactivate');
-    Route::get('/account/licenses/download/{release}/{hash}', [\App\Http\Controllers\Frontend\AccountController::class, 'downloadRelease'])->name('account.licenses.download');
+    Route::get('/account/licenses/download/{release}/{hash?}', [\App\Http\Controllers\Frontend\AccountController::class, 'downloadRelease'])->name('account.licenses.download');
 
     // Account Addresses
     Route::get('/account/addresses', [\App\Http\Controllers\Frontend\AddressController::class, 'index'])->name('account.addresses.index');

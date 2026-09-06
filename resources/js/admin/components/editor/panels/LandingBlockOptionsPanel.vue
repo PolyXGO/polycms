@@ -462,8 +462,8 @@ const handleGlobalClick = (event: MouseEvent) => {
   const target = event.target as HTMLElement;
   const panel = document.querySelector('.landing-options-panel');
   if (panel && panel.contains(target)) return;
-  if (target.closest('.landing-block-wrapper')) return;
-  if (target.closest('.tiptap-toolbar') || target.closest('[role="menu"]') || target.closest('.dropdown')) return;
+  if (target.closest('.landing-block-wrapper') || target.closest('.nested-landing-block') || target.closest('[data-drag-handle]')) return;
+  if (target.closest('.tiptap-toolbar') || target.closest('[role="menu"]') || target.closest('.dropdown') || target.closest('.modal-container') || target.closest('[role="dialog"]') || target.closest('.p-dropdown')) return;
   
   clearSelection();
 };

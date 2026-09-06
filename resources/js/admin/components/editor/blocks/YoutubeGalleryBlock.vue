@@ -99,27 +99,46 @@
         </div>
       </div>
       
-      <div class="space-y-3 max-h-64 overflow-y-auto pr-2">
-        <div v-for="(url, index) in state.urls" :key="index" class="flex items-start gap-2">
-          <div class="flex-1">
+      <div class="space-y-2 max-h-64 overflow-y-auto pr-2">
+        <div
+          v-for="(url, index) in state.urls"
+          :key="index"
+          draggable="true"
+          @dragstart="onDragStart(index, $event)"
+          @dragover="onDragOver(index, $event)"
+          @drop="onDrop(index, $event)"
+          @dragend="onDragEnd"
+          :class="[
+            'flex items-center gap-2 p-2 rounded-lg border bg-admin-theme-base/60 transition-all',
+            draggedIndex === index ? 'opacity-40 border-dashed border-admin-theme-primary' : 'border-admin-theme-border hover:border-admin-theme-border/80'
+          ]"
+        >
+          <!-- Drag Handle -->
+          <div class="cursor-grab active:cursor-grabbing text-gray-400 hover:text-admin-theme-text p-1 shrink-0 select-none" title="Drag to reorder">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
+            </svg>
+          </div>
+
+          <div class="flex-1 min-w-0">
             <input 
               v-model="state.urls[index]" 
               type="text" 
               placeholder="https://www.youtube.com/watch?v=..."
-              class="w-full px-3 py-2 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text focus:ring-admin-theme-primary focus:border-admin-theme-primary text-sm"
+              class="w-full px-3 py-1.5 border border-admin-theme-border rounded-lg bg-admin-theme-input-bg text-admin-theme-text focus:ring-admin-theme-primary focus:border-admin-theme-primary text-xs font-mono"
               @blur="validateUrl(index)"
             />
-            <div v-if="url && !isValidYoutube(url)" class="text-xs text-red-500 mt-1">
+            <div v-if="url && !isValidYoutube(url)" class="text-[11px] text-red-500 mt-0.5">
               Invalid YouTube URL
             </div>
           </div>
           <button 
             type="button" 
             @click="removeUrl(index)"
-            class="p-2 text-admin-theme-text-muted hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors shrink-0"
+            class="p-1.5 text-admin-theme-text-muted hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors shrink-0"
             title="Remove"
           >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
           </button>
         </div>
       </div>
@@ -362,6 +381,36 @@ const isValidYoutube = (url: string) => {
 const validateUrl = (index: number) => {
   let url = state.urls[index];
   if (url) state.urls[index] = url.trim();
+};
+
+const draggedIndex = ref<number | null>(null);
+
+const onDragStart = (index: number, e: DragEvent) => {
+  draggedIndex.value = index;
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index));
+  }
+};
+
+const onDragOver = (index: number, e: DragEvent) => {
+  e.preventDefault();
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = 'move';
+  }
+};
+
+const onDrop = (index: number, e: DragEvent) => {
+  e.preventDefault();
+  if (draggedIndex.value !== null && draggedIndex.value !== index) {
+    const moved = state.urls.splice(draggedIndex.value, 1)[0];
+    state.urls.splice(index, 0, moved);
+  }
+  draggedIndex.value = null;
+};
+
+const onDragEnd = () => {
+  draggedIndex.value = null;
 };
 
 const addUrl = () => {

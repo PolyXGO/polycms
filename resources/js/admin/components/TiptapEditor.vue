@@ -679,20 +679,20 @@ const emit = defineEmits<{
 
 const transformShortcodesToHtml = (content: string): string => {
   if (!content || typeof content !== 'string') return content;
-  
-  // Unescape &quot; HTML entities back to real double quotes for clean HTML attribute parsing
-  let cleaned = content.replace(/&quot;/g, '"');
+  if (!content.includes('[landing_block')) return content;
   
   // Regex to match [landing_block type="..." data="..."]
   // Pattern: \[landing_block\s+([^\]]+)\]
   const shortcodeRegex = /\[landing_block\s+([^\]]+)\]/g;
   
-  return cleaned.replace(shortcodeRegex, (match, attrsString) => {
+  return content.replace(shortcodeRegex, (match, attrsString) => {
+    // Unescape &quot; only inside shortcode attributes string
+    const cleanedAttrs = attrsString.replace(/&quot;/g, '"');
     const attrs: Record<string, string> = {};
     // Match key="value"
     const attrRegex = /(\w+)\s*=\s*"([^"]*)"/g;
     let m;
-    while ((m = attrRegex.exec(attrsString)) !== null) {
+    while ((m = attrRegex.exec(cleanedAttrs)) !== null) {
       attrs[m[1]] = m[2];
     }
 

@@ -56,9 +56,6 @@
  </svg>
  </button>
  </div>
-
- <!-- Landing Block Options Panel (Teleported to body) -->
- <LandingBlockOptionsPanel />
  </div>
 </template>
 
@@ -92,7 +89,6 @@ import { registerEditorPanelComponent } from'../../editor/panelRegistry';
 import { useGlobalSaveHotkey } from'../../composables/useGlobalSaveHotkey';
 
 import type { TagItem } from'../../components/editor/panels/shared/TagSelector.vue';
-import LandingBlockOptionsPanel from'../../components/editor/panels/LandingBlockOptionsPanel.vue';
 import AdminLoadingState from '../../components/AdminLoadingState.vue';
 import { useLandingStore } from'../../stores/landingStore';
 

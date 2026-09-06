@@ -61,8 +61,6 @@
  </svg>
  </button>
  </div>
-
- <LandingBlockOptionsPanel v-if="!form.is_system" />
  </div>
 </template>
 
@@ -71,7 +69,6 @@ import axios from'axios';
 import { computed, provide, ref, watch } from'vue';
 import { useRoute, useRouter } from'vue-router';
 import EditorPanelLayout from'@/admin/components/editor/EditorPanelLayout.vue';
-import LandingBlockOptionsPanel from'@/admin/components/editor/panels/LandingBlockOptionsPanel.vue';
 import LayoutAssetPrimaryPanel from'@/admin/components/editor/panels/layouts/LayoutAssetPrimaryPanel.vue';
 import LayoutAssetSettingsPanel from'@/admin/components/editor/panels/layouts/LayoutAssetSettingsPanel.vue';
 import { useDialog } from'@/admin/composables/useDialog';

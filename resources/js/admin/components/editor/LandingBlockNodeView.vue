@@ -189,6 +189,16 @@ const isActiveInStore = computed(() => {
  return landingStore.activeBlock?.nodeId === nodeId.value;
 });
 
+// Reactively activate options panel when TipTap node selection highlights this block
+watch(
+  () => props.selected,
+  (isSelected) => {
+    if (isSelected && landingStore.activeBlock?.nodeId !== nodeId.value) {
+      selectBlock();
+    }
+  }
+);
+
 const isAnyBlockDragging = computed(() => Boolean(landingStore.draggingBlock));
 const isDraggingSelf = computed(() => landingStore.draggingBlock?.nodeId === nodeId.value);
 

@@ -109,7 +109,7 @@ class ContentRenderer
             'tableCell' => $this->renderTableCell($block),
             'horizontalRule' => '<hr>',
             'hardBreak' => '<br>',
-            'youtubeGallery' => $this->renderYoutubeGallery($block),
+            'youtubeGallery', 'youtube_gallery', 'youtube_slider' => $this->renderYoutubeGallery($block),
             'modalLink' => $this->renderModalLink($block),
             'mermaidChart' => $this->renderMermaidChart($attrs),
             default => $this->renderUnknown($block),
@@ -371,13 +371,13 @@ class ContentRenderer
         }
 
         // Fallback for core TipTap blocks rendered as landing blocks
-        if (in_array($type, ['youtubeGallery', 'modalLink', 'mermaidChart', 'tabs'], true)) {
+        if (in_array($type, ['youtubeGallery', 'youtube_gallery', 'youtube_slider', 'modalLink', 'mermaidChart', 'tabs'], true)) {
             $legacyBlock = [
                 'type' => $type,
                 'attrs' => $blockAttrs,
             ];
             $html = match ($type) {
-                'youtubeGallery' => $this->renderYoutubeGallery($legacyBlock),
+                'youtubeGallery', 'youtube_gallery', 'youtube_slider' => $this->renderYoutubeGallery($legacyBlock),
                 'modalLink' => $this->renderModalLink($legacyBlock),
                 'mermaidChart' => $this->renderMermaidChart($blockAttrs),
                 'tabs' => $this->renderTabsFallback($blockAttrs),

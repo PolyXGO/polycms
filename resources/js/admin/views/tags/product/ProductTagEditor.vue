@@ -112,8 +112,6 @@
  </div>
  </div>
  </form>
-
- <LandingBlockOptionsPanel />
  </div>
 </template>
 
@@ -132,7 +130,6 @@ import { useValidation } from'../../../composables/useValidation';
 import FormField from'../../../components/forms/FormField.vue';
 import FormInput from'../../../components/forms/FormInput.vue';
 import FormTextarea from'../../../components/forms/FormTextarea.vue';
-import LandingBlockOptionsPanel from'../../../components/editor/panels/LandingBlockOptionsPanel.vue';
 
 const { t } = useTranslation();
 const instance = getCurrentInstance();

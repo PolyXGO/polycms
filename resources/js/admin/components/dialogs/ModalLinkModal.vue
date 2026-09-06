@@ -123,16 +123,12 @@
       {{ isEditing ? (t('Update Element') || 'Update Element') : (t('Insert Element') || 'Insert Element') }}
     </button>
   </div>
-
-  <!-- Landing Block Options Panel (teleported to body, renders above modal when active) -->
-  <LandingBlockOptionsPanel />
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useTranslation } from '@/admin/composables/useTranslation';
 import TiptapEditor from '@/admin/components/TiptapEditor.vue';
-import LandingBlockOptionsPanel from '@/admin/components/editor/panels/LandingBlockOptionsPanel.vue';
 import { useLandingStore } from '@/admin/stores/landingStore';
 
 const props = defineProps<{

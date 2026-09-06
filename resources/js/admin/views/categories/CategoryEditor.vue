@@ -274,7 +274,6 @@
  </div>
  </form>
 
- <LandingBlockOptionsPanel />
  </div>
 </template>
 
@@ -296,8 +295,6 @@ import FormInput from'../../components/forms/FormInput.vue';
 import FormSelect from'../../components/forms/FormSelect.vue';
 import FormTextarea from'../../components/forms/FormTextarea.vue';
 import TemplateSelector from'../../components/TemplateSelector.vue';
-
-import LandingBlockOptionsPanel from'../../components/editor/panels/LandingBlockOptionsPanel.vue';
 import { getCategoryUrl } from'../../utils/permalink';
 
 const { t } = useTranslation();

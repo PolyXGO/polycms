@@ -766,6 +766,27 @@
                         <div class="single-product-stats-row">
                             {!! \App\Facades\Hook::doAction('theme.product.single.meta', $product) !!}
                             
+                            @if(!empty($projectHubProject))
+                                @php
+                                    $projectTotalDl = (int) ($projectHubProject->total_downloads ?? 0);
+                                    $projectStatsMode = data_get($projectHubProject->settings, 'stats_display_mode', 'both');
+                                    $projectTelemetryEnabled = !empty(data_get($projectHubProject->settings, 'telemetry.enabled'));
+                                    $projectTotalActive = (int) \Modules\Polyx\ProjectHub\Models\ProjectActiveInstance::where('project_id', $projectHubProject->id)->count();
+                                @endphp
+                                @if(in_array($projectStatsMode, ['both', 'downloads']) && $projectTotalDl > 0)
+                                    <span class="stats-downloads" style="display: inline-flex; align-items: center; gap: 4px;" title="{{ _l('Total Downloads') }}">
+                                        <i class="fas fa-download stats-icon"></i>
+                                        <strong class="stats-num">{{ number_format($projectTotalDl) }}</strong> <span class="stats-label">{{ _l('downloads') }}</span>
+                                    </span>
+                                @endif
+                                @if(in_array($projectStatsMode, ['both', 'activity']) && ($projectTotalActive > 0 || $projectTelemetryEnabled))
+                                    <span class="stats-active" style="display: inline-flex; align-items: center; gap: 4px;" title="{{ _l('Active Devices') }}">
+                                        <i class="fas fa-desktop stats-icon" style="color: #10b981;"></i>
+                                        <strong class="stats-num">{{ number_format($projectTotalActive) }}</strong> <span class="stats-label">{{ _l('active') }}</span>
+                                    </span>
+                                @endif
+                            @endif
+
                             @if($product->review_count > 0)
                                 <span class="stats-rating" style="display: inline-flex; align-items: center; gap: 4px;">
                                     <span style="display: inline-flex; align-items: center;">
@@ -1573,7 +1594,34 @@
                 }
             @endphp
             @if($tabs->isNotEmpty())
-                {!! \App\Facades\Hook::doAction('theme.product.single.before_details', $product) !!}
+                @php
+                    ob_start();
+                    \App\Facades\Hook::doAction('theme.product.single.before_details', $product);
+                    $hookBeforeDetailsOutput = ob_get_clean();
+                @endphp
+                @if(!empty(trim($hookBeforeDetailsOutput)))
+                    {!! $hookBeforeDetailsOutput !!}
+                @elseif(!empty($projectHubProject))
+                    @php
+                        $hasFreeRel = $projectHubProject->releases()
+                            ->where('status', 'published')
+                            ->whereNotNull('free_download_url')
+                            ->where('free_download_url', '!=', '')
+                            ->exists();
+                        $hasActiveTracking = !empty(data_get($projectHubProject->settings, 'telemetry.enabled'))
+                            || \Modules\Polyx\ProjectHub\Models\ProjectActiveInstance::where('project_id', $projectHubProject->id)->exists();
+                        $hasDlCount = (int) ($projectHubProject->total_downloads ?? 0) > 0;
+                    @endphp
+                    @if($hasFreeRel || $hasActiveTracking || $hasDlCount)
+                        @php
+                            $spInstance = app(\Modules\Polyx\ProjectHub\ProjectHubServiceProvider::class);
+                            $statsPayload = $spInstance ? $spInstance->getProjectDownloadStatsPayload($projectHubProject) : null;
+                        @endphp
+                        @if(!empty($statsPayload))
+                            @include('blocks.download_stats', $statsPayload)
+                        @endif
+                    @endif
+                @endif
                 <div class="single-product-details">
                     <div class="single-product-tab-nav" data-product-tabs data-default-tab="{{ $defaultTabId }}">
                         @foreach($tabs as $tab)
