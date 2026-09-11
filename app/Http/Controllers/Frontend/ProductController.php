@@ -39,6 +39,9 @@ class ProductController extends FrontendController
             $query->where('slug', 'not like', 'test-%');
         }
 
+        // Hide products marked as catalog_visibility=hidden (module/add-on products)
+        $query->visibleInCatalog();
+
         // Apply product filters and sorting (supports best_sellers, newest, best_rated, trending, price, featured, on_sale)
         $query->filterAndSort($request);
 
@@ -256,6 +259,25 @@ class ProductController extends FrontendController
             }
         }
 
+        // Load market modules for the product's linked project (for Modules & Add-ons tab)
+        $marketModules = collect();
+        if ($project && $isProjectHubActive && \Illuminate\Support\Facades\Schema::hasTable('project_market_items')) {
+            $hostProject = $project ?: ($mainProject ?? null);
+            if ($hostProject && $hostProject->marketModules()->wherePivot('is_active', true)->count() === 0 && isset($mainProject) && $mainProject && $mainProject->id !== $hostProject->id) {
+                $hostProject = $mainProject;
+            }
+            $marketModules = $hostProject->marketModules()
+                ->withoutGlobalScope('locale')
+                ->with([
+                    'products:products.id,products.name,products.slug,products.price,products.sale_price,products.status',
+                    'releases' => fn ($q) => $q->where('status', 'published')->orderByDesc('released_at'),
+                ])
+                ->where('projects.status', 'published')
+                ->wherePivot('is_active', true)
+                ->orderByPivot('order', 'asc')
+                ->get();
+        }
+
         $data = [
             'product' => $product,
             'primaryProduct' => $primaryProduct,
@@ -274,6 +296,7 @@ class ProductController extends FrontendController
             'hasProductDocumentationTab' => $hasProductDocumentationTab,
             'productDocumentationCategory' => $productDocumentationCategory,
             'productDocumentationConfig' => $productDocumentationConfig,
+            'marketModules' => $marketModules,
         ];
 
         // Apply theme filter

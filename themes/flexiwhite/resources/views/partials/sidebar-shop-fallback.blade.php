@@ -21,7 +21,7 @@
         <h3 style="font-size: 1.125rem; margin-bottom: 1rem; color: var(--geist-foreground);">{{ _l('Latest Products') }}</h3>
         <ul style="list-style: none; padding: 0;">
             @php
-                $fallbackQuery = \App\Models\Product::where('status', 'published')->where('locale', app()->getLocale())->where('slug', 'not like', 'test-%');
+                $fallbackQuery = \App\Models\Product::where('status', 'published')->where('locale', app()->getLocale())->where('slug', 'not like', 'test-%')->visibleInCatalog();
                 
                 $currentProductObj = $product ?? view()->shared('product') ?? null;
                 if ($currentProductObj instanceof \App\Models\Product) {

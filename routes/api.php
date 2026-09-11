@@ -169,6 +169,7 @@ Route::prefix('v1')->group(function () {
 
         // Capability Presets CRUD
         Route::apiResource('capability-presets', \App\Http\Controllers\Api\V1\Admin\CapabilityPresetController::class);
+        Route::apiResource('admin/capability-presets', \App\Http\Controllers\Api\V1\Admin\CapabilityPresetController::class);
 
         // Product Brands CRUD
         Route::post('product-brands/{productBrand}/translate', [ProductBrandController::class, 'translate'])->name('api.v1.product-brands.translate');

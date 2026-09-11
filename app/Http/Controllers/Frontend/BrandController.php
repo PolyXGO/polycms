@@ -26,6 +26,7 @@ class BrandController extends FrontendController
         if (!$isAdmin) {
             $query->where('status', 'published');
         }
+        $query->visibleInCatalog();
 
         // Apply product filters and sorting
         $query->filterAndSort($request);

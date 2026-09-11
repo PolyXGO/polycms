@@ -1535,6 +1535,10 @@
                     $fixedTabs->push(['id' => 'updates-roadmap', 'title' => _l('Updates & Roadmap'), 'type' => 'updates-roadmap']);
                 }
 
+                if (!empty($marketModules) && $marketModules->isNotEmpty()) {
+                    $fixedTabs->push(['id' => 'modules-addons', 'title' => _l('Modules & Add-ons') . ' (' . $marketModules->count() . ')', 'type' => 'modules-addons']);
+                }
+
                 if ($hasFaqTab) {
                     $fixedTabs->push(['id' => 'faqs', 'title' => _l("FAQ's"), 'type' => 'faq']);
                 }
@@ -1994,6 +1998,284 @@
                                      });
                                  });
                                  </script>
+                            </div>
+                        @endif
+
+                        @if(!empty($marketModules) && $marketModules->isNotEmpty())
+                            <div id="modules-addons" class="single-product-tab-panel">
+                                <style>
+                                    #modules-addons {
+                                        --mod-text-primary: #0f172a;
+                                        --mod-text-secondary: #334155;
+                                        --mod-text-muted: #64748b;
+                                        --mod-border: #e2e8f0;
+                                        --mod-card-bg: #ffffff;
+                                        --mod-card-hover-bg: #f8fafc;
+                                        --mod-badge-free-bg: #dcfce7;
+                                        --mod-badge-free-text: #166534;
+                                        --mod-badge-paid-bg: #dbeafe;
+                                        --mod-badge-paid-text: #1e40af;
+                                        --mod-btn-primary-bg: #3b82f6;
+                                        --mod-btn-primary-hover: #2563eb;
+                                        --mod-btn-secondary-bg: #f1f5f9;
+                                        --mod-btn-secondary-hover: #e2e8f0;
+                                        --mod-btn-secondary-text: #334155;
+                                        --mod-help-bg: rgba(0,0,0,0.6);
+                                        --mod-modal-bg: #ffffff;
+                                        --mod-modal-text: #1e293b;
+                                    }
+                                    .dark #modules-addons,
+                                    html.dark #modules-addons,
+                                    body.dark #modules-addons {
+                                        --mod-text-primary: #f1f5f9;
+                                        --mod-text-secondary: #cbd5e1;
+                                        --mod-text-muted: #94a3b8;
+                                        --mod-border: #334155;
+                                        --mod-card-bg: #1e293b;
+                                        --mod-card-hover-bg: #273548;
+                                        --mod-badge-free-bg: rgba(22, 163, 74, 0.2);
+                                        --mod-badge-free-text: #4ade80;
+                                        --mod-badge-paid-bg: rgba(59, 130, 246, 0.2);
+                                        --mod-badge-paid-text: #93c5fd;
+                                        --mod-btn-primary-bg: #3b82f6;
+                                        --mod-btn-primary-hover: #60a5fa;
+                                        --mod-btn-secondary-bg: #334155;
+                                        --mod-btn-secondary-hover: #475569;
+                                        --mod-btn-secondary-text: #e2e8f0;
+                                        --mod-modal-bg: #1e293b;
+                                        --mod-modal-text: #e2e8f0;
+                                    }
+                                    .mod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-top: 16px; }
+                                    .mod-card { border: 1px solid var(--mod-border); border-radius: 12px; background: var(--mod-card-bg); padding: 20px; transition: all 0.2s ease; position: relative; display: flex; flex-direction: column; gap: 12px; }
+                                    .mod-card:hover { background: var(--mod-card-hover-bg); box-shadow: 0 4px 12px rgba(0,0,0,0.08); transform: translateY(-2px); }
+                                    .mod-card-header { display: flex; align-items: flex-start; gap: 14px; }
+                                    .mod-logo { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--mod-border); }
+                                    .mod-logo-placeholder { width: 48px; height: 48px; border-radius: 10px; flex-shrink: 0; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 18px; }
+                                    .mod-info { flex: 1; min-width: 0; }
+                                    .mod-name { font-size: 1rem; font-weight: 700; color: var(--mod-text-primary); margin: 0 0 4px 0; line-height: 1.3; }
+                                    .mod-tagline { font-size: 0.85rem; color: var(--mod-text-muted); margin: 0; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+                                    .mod-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+                                    .mod-version { font-size: 0.75rem; color: var(--mod-text-muted); font-weight: 500; }
+                                    .mod-badge-free { font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 9999px; background: var(--mod-badge-free-bg); color: var(--mod-badge-free-text); }
+                                    .mod-badge-paid { font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 9999px; background: var(--mod-badge-paid-bg); color: var(--mod-badge-paid-text); }
+                                    .mod-actions { display: flex; align-items: center; gap: 8px; margin-top: auto; }
+                                    .mod-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; font-size: 0.8rem; font-weight: 600; border-radius: 8px; text-decoration: none; transition: all 0.15s ease; cursor: pointer; border: none; white-space: nowrap; }
+                                    .mod-btn-primary { background: var(--mod-btn-primary-bg); color: #fff; }
+                                    .mod-btn-primary:hover { background: var(--mod-btn-primary-hover); color: #fff; text-decoration: none; }
+                                    .mod-btn-secondary { background: var(--mod-btn-secondary-bg); color: var(--mod-btn-secondary-text); }
+                                    .mod-btn-secondary:hover { background: var(--mod-btn-secondary-hover); text-decoration: none; }
+                                    .mod-help-btn { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--mod-border); background: var(--mod-card-bg); color: var(--mod-text-muted); font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s ease; margin-left: auto; flex-shrink: 0; }
+                                    .mod-help-btn:hover { background: var(--mod-btn-primary-bg); color: #fff; border-color: var(--mod-btn-primary-bg); }
+                                    .mod-modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; visibility: hidden; transition: opacity 0.2s ease, visibility 0.2s ease; }
+                                    .mod-modal-overlay.is-open { opacity: 1; visibility: visible; }
+                                    .mod-modal { background: var(--mod-modal-bg); border: 1px solid var(--mod-border); border-radius: 18px; max-width: 860px; width: 94vw; max-height: 85vh; height: auto; display: flex; flex-direction: column; position: relative; box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.45); overflow: hidden; transform: translateY(12px) scale(0.98); transition: transform 0.2s ease; }
+                                    .mod-modal-overlay.is-open .mod-modal { transform: translateY(0) scale(1); }
+                                    .mod-modal-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 24px; border-bottom: 1px solid var(--mod-border); background: var(--mod-card-bg); flex-shrink: 0; }
+                                    .mod-modal-header-left { display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1; }
+                                    .mod-modal-header-logo { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; border: 1px solid var(--mod-border); flex-shrink: 0; }
+                                    .mod-modal-header-avatar { width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 18px; }
+                                    .mod-modal-header-titles { min-width: 0; flex: 1; }
+                                    .mod-modal-header-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+                                    .mod-modal-header h3 { font-size: 1.2rem; font-weight: 700; color: var(--mod-text-primary); margin: 0; line-height: 1.3; border: 0; }
+                                    .mod-modal-header .mod-modal-tagline { font-size: 0.85rem; color: var(--mod-text-muted); margin-top: 3px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+                                    .mod-modal-close { width: 36px; height: 36px; border-radius: 9px; border: 1px solid var(--mod-border); background: var(--mod-card-hover-bg); color: var(--mod-text-muted); font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s ease; flex-shrink: 0; line-height: 1; }
+                                    .mod-modal-close:hover { background: #ef4444; color: #fff; border-color: #ef4444; }
+                                    .mod-modal-body { flex: 1 1 auto; overflow-y: auto; padding: 24px 28px; font-size: 0.95rem; color: var(--mod-modal-text); line-height: 1.7; }
+                                    .mod-modal-body h1, .mod-modal-body h2, .mod-modal-body h3, .mod-modal-body h4 { color: var(--mod-text-primary); font-weight: 700; margin-top: 1.25rem; margin-bottom: 0.5rem; }
+                                    .mod-modal-body h3 { font-size: 1.1rem; border-bottom: 1px solid var(--mod-border); padding-bottom: 0.35rem; }
+                                    .mod-modal-body p { margin-bottom: 0.85rem; }
+                                    .mod-modal-body ul, .mod-modal-body ol { padding-left: 1.25rem; margin-bottom: 0.85rem; }
+                                    .mod-modal-body li { margin-bottom: 0.35rem; }
+                                    .mod-modal-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 24px; border-top: 1px solid var(--mod-border); background: var(--mod-card-bg); flex-shrink: 0; }
+                                    .mod-modal-footer-meta { display: flex; align-items: center; gap: 8px; }
+                                    .mod-modal-footer-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+                                    .mod-category-filter { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+                                    .mod-cat-btn { padding: 5px 14px; font-size: 0.8rem; font-weight: 500; border-radius: 9999px; border: 1px solid var(--mod-border); background: transparent; color: var(--mod-text-secondary); cursor: pointer; transition: all 0.15s ease; }
+                                    .mod-cat-btn:hover, .mod-cat-btn.is-active { background: var(--mod-btn-primary-bg); color: #fff; border-color: var(--mod-btn-primary-bg); }
+                                    @media (max-width: 640px) { .mod-grid { grid-template-columns: 1fr; } .mod-modal { width: 96vw; max-height: 90vh; } .mod-modal-body { padding: 18px 16px; } .mod-modal-header, .mod-modal-footer { padding: 14px 16px; } }
+                                </style>
+
+                                @php
+                                    $marketCategories = $marketModules->pluck('pivot.category')->filter()->unique()->values()->all();
+                                @endphp
+
+                                @if(!empty($marketCategories) && count($marketCategories) > 1)
+                                    <div class="mod-category-filter">
+                                        <button class="mod-cat-btn is-active" data-mod-cat="all">{{ _l('All') }}</button>
+                                        @foreach($marketCategories as $cat)
+                                            <button class="mod-cat-btn" data-mod-cat="{{ $cat }}">{{ $cat }}</button>
+                                        @endforeach
+                                    </div>
+                                @endif
+
+                                <div class="mod-grid">
+                                    @foreach($marketModules as $module)
+                                        @php
+                                            $mPivot = $module->pivot;
+                                            $mLatestRelease = $module->releases->first();
+                                            $mProduct = $module->products->first();
+                                            $mPrice = $mProduct ? (float) ($mProduct->sale_price ?? $mProduct->price ?? 0) : 0;
+                                            $mIsFree = $mProduct ? ($mPrice <= 0) : true;
+                                            $mBuyUrl = $mProduct ? url('/products/' . $mProduct->slug) : null;
+                                            $mVersion = $mLatestRelease ? $mLatestRelease->version : ($module->current_version ?: '1.0.0');
+                                            $mDownloadUrl = null;
+                                            if ($mLatestRelease) {
+                                                if (!empty($mLatestRelease->free_download_url)) {
+                                                    $mDownloadUrl = $mLatestRelease->free_download_url;
+                                                } elseif (!empty($mLatestRelease->download_url) && $mIsFree) {
+                                                    $mDownloadUrl = $mLatestRelease->download_url;
+                                                }
+                                            }
+                                            $mCategory = $mPivot->category ?? '';
+                                        @endphp
+                                        <div class="mod-card" data-mod-category="{{ $mCategory }}">
+                                            <div class="mod-card-header">
+                                                @if($module->logo)
+                                                    <img src="{{ $module->logo }}" alt="{{ $module->name }}" class="mod-logo" loading="lazy">
+                                                @else
+                                                    <div class="mod-logo-placeholder">{{ strtoupper(substr($module->name, 0, 1)) }}</div>
+                                                @endif
+                                                <div class="mod-info">
+                                                    <h4 class="mod-name">{{ $module->name }}</h4>
+                                                    @if($module->tagline)
+                                                        <p class="mod-tagline">{{ $module->tagline }}</p>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                            <div class="mod-meta">
+                                                <span class="mod-version">v{{ $mVersion }}</span>
+                                                @if($mIsFree)
+                                                    <span class="mod-badge-free">{{ _l('Free') }}</span>
+                                                @else
+                                                    <span class="mod-badge-paid">${{ number_format($mPrice, 2) }}</span>
+                                                @endif
+                                                @if($mCategory)
+                                                    <span class="mod-version">{{ $mCategory }}</span>
+                                                @endif
+                                            </div>
+                                            <div class="mod-actions">
+                                                @if($mDownloadUrl)
+                                                    <a href="{{ $mDownloadUrl }}" class="mod-btn mod-btn-primary" target="_blank" rel="noopener">
+                                                        <i class="fa-solid fa-download" style="font-size: 0.75rem;"></i> {{ _l('Download') }}
+                                                    </a>
+                                                @endif
+                                                @if($mBuyUrl)
+                                                    <a href="{{ $mBuyUrl }}" class="mod-btn mod-btn-secondary">
+                                                        @if($mIsFree)
+                                                             <i class="fa-solid fa-circle-info" style="font-size: 0.75rem;"></i> {{ _l('Details') }}
+                                                        @else
+                                                            <i class="fa-solid fa-cart-shopping" style="font-size: 0.75rem;"></i> {{ _l('Buy') }}
+                                                        @endif
+                                                    </a>
+                                                @endif
+                                                <button type="button" class="mod-help-btn" title="{{ _l('View details') }}" data-mod-help-target="mod-help-{{ $module->id }}">?</button>
+                                            </div>
+                                        </div>
+                                        {{-- Help Guide Modal --}}
+                                        <div class="mod-modal-overlay" id="mod-help-{{ $module->id }}">
+                                            <div class="mod-modal" role="dialog" aria-modal="true" aria-labelledby="mod-title-{{ $module->id }}">
+                                                {{-- Fixed Header --}}
+                                                <div class="mod-modal-header">
+                                                    <div class="mod-modal-header-left">
+                                                        @if($module->logo)
+                                                            <img src="{{ $module->logo }}" alt="{{ $module->name }}" class="mod-modal-header-logo">
+                                                        @else
+                                                            <div class="mod-modal-header-avatar">{{ strtoupper(substr($module->name, 0, 1)) }}</div>
+                                                        @endif
+                                                        <div class="mod-modal-header-titles">
+                                                            <div class="mod-modal-header-title-row">
+                                                                <h3 id="mod-title-{{ $module->id }}">{{ $module->name }}</h3>
+                                                                <span class="mod-version">v{{ $mVersion }}</span>
+                                                                @if($mIsFree)
+                                                                    <span class="mod-badge-free">{{ _l('Free') }}</span>
+                                                                @else
+                                                                    <span class="mod-badge-paid">${{ number_format($mPrice, 2) }}</span>
+                                                                @endif
+                                                            </div>
+                                                            @if($module->tagline)
+                                                                <div class="mod-modal-tagline">{{ $module->tagline }}</div>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                    <button type="button" class="mod-modal-close" data-mod-help-close aria-label="{{ _l('Close') }}">&times;</button>
+                                                </div>
+
+                                                {{-- Scrollable Body --}}
+                                                <div class="mod-modal-body">
+                                                    @if($module->description_html)
+                                                        {!! $module->description_html !!}
+                                                    @elseif($module->tagline)
+                                                        <p>{{ $module->tagline }}</p>
+                                                    @else
+                                                        <p style="color: var(--mod-text-muted); font-style: italic;">{{ _l('No additional information available.') }}</p>
+                                                    @endif
+                                                </div>
+
+                                                {{-- Fixed Footer --}}
+                                                <div class="mod-modal-footer">
+                                                    <div class="mod-modal-footer-meta">
+                                                        @if($mCategory)
+                                                            <span class="mod-version" style="padding: 4px 10px; border-radius: 6px; background: var(--mod-card-hover-bg); border: 1px solid var(--mod-border);">
+                                                                <i class="fa-solid fa-folder-open" style="font-size: 0.75rem; margin-right: 4px; opacity: 0.7;"></i>{{ $mCategory }}
+                                                            </span>
+                                                        @endif
+                                                    </div>
+                                                    <div class="mod-modal-footer-actions">
+                                                        <button type="button" class="mod-btn mod-btn-secondary" data-mod-help-close>{{ _l('Close') }}</button>
+                                                        @if($mDownloadUrl)
+                                                            <a href="{{ $mDownloadUrl }}" class="mod-btn mod-btn-secondary" target="_blank" rel="noopener">
+                                                                <i class="fa-solid fa-download" style="font-size: 0.75rem;"></i> {{ _l('Download') }}
+                                                            </a>
+                                                        @endif
+                                                        @if($mBuyUrl)
+                                                            <a href="{{ $mBuyUrl }}" class="mod-btn mod-btn-primary">
+                                                                {{ _l('View Product') }} <i class="fa-solid fa-arrow-right" style="font-size: 0.75rem; margin-left: 4px;"></i>
+                                                            </a>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+
+                                <script>
+                                (function() {
+                                    document.querySelectorAll('.mod-cat-btn').forEach(function(btn) {
+                                        btn.addEventListener('click', function() {
+                                            document.querySelectorAll('.mod-cat-btn').forEach(function(b) { b.classList.remove('is-active'); });
+                                            btn.classList.add('is-active');
+                                            var cat = btn.getAttribute('data-mod-cat');
+                                            document.querySelectorAll('.mod-card').forEach(function(card) {
+                                                if (cat === 'all' || card.getAttribute('data-mod-category') === cat) { card.style.display = ''; }
+                                                else { card.style.display = 'none'; }
+                                            });
+                                        });
+                                    });
+                                    document.querySelectorAll('.mod-help-btn').forEach(function(btn) {
+                                        btn.addEventListener('click', function() {
+                                            var modal = document.getElementById(btn.getAttribute('data-mod-help-target'));
+                                            if (modal) { modal.classList.add('is-open'); document.body.style.overflow = 'hidden'; }
+                                        });
+                                    });
+                                    document.querySelectorAll('[data-mod-help-close]').forEach(function(btn) {
+                                        btn.addEventListener('click', function() {
+                                            var overlay = btn.closest('.mod-modal-overlay');
+                                            if (overlay) { overlay.classList.remove('is-open'); document.body.style.overflow = ''; }
+                                        });
+                                    });
+                                    document.querySelectorAll('.mod-modal-overlay').forEach(function(overlay) {
+                                        overlay.addEventListener('click', function(e) {
+                                            if (e.target === overlay) { overlay.classList.remove('is-open'); document.body.style.overflow = ''; }
+                                        });
+                                    });
+                                    document.addEventListener('keydown', function(e) {
+                                        if (e.key === 'Escape') {
+                                            document.querySelectorAll('.mod-modal-overlay.is-open').forEach(function(o) { o.classList.remove('is-open'); document.body.style.overflow = ''; });
+                                        }
+                                    });
+                                })();
+                                </script>
                             </div>
                         @endif
 
@@ -3092,7 +3374,6 @@
                     @endif
                 </div>
             </div>
-
             <!-- Modal Footer -->
             <div class="product-coupons-modal-footer">
                 <span class="product-coupons-footer-tip">

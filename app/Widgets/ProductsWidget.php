@@ -25,6 +25,7 @@ class ProductsWidget
             $query->published();
             $query->where('slug', 'not like', 'test-%');
         }
+        $query->visibleInCatalog();
 
         $query->orderBy($orderBy, $orderDirection);
 

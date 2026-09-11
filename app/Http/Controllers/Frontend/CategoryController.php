@@ -59,6 +59,7 @@ class CategoryController extends FrontendController
             if (!$isAdmin) {
                 $query->where('status', 'published');
             }
+            $query->visibleInCatalog();
 
             // Apply filters & sorting
             $query->filterAndSort($request);
@@ -211,6 +212,7 @@ class CategoryController extends FrontendController
         if (!$isAdmin) {
             $query->where('status', 'published');
         }
+        $query->visibleInCatalog();
 
         // Apply filters & sorting (best_sellers, newest, best_rated, trending, price, featured, on_sale)
         $query->filterAndSort($request);

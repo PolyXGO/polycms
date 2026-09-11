@@ -764,5 +764,31 @@ class Product extends Model
         return $query;
     }
 
+    /**
+     * Scope to exclude products hidden from catalog listings.
+     * Products with settings.catalog_visibility = 'hidden' will be excluded from
+     * shop index, category pages, brand pages, and related products blocks.
+     * They remain accessible via direct URL (/products/{slug}).
+     */
+    public function scopeVisibleInCatalog($query)
+    {
+        $driver = \Illuminate\Support\Facades\DB::connection()->getDriverName();
+
+        if ($driver === 'pgsql') {
+            return $query->where(function ($q) {
+                $q->whereNull('settings')
+                  ->orWhereRaw("(settings->>'catalog_visibility') IS NULL")
+                  ->orWhereRaw("(settings->>'catalog_visibility') != 'hidden'");
+            });
+        }
+
+        // MySQL & SQLite both support json_extract
+        return $query->where(function ($q) {
+            $q->whereNull('settings')
+              ->orWhereRaw("json_extract(settings, '$.catalog_visibility') IS NULL")
+              ->orWhereRaw("json_extract(settings, '$.catalog_visibility') NOT IN ('hidden', '\"hidden\"')");
+        });
+    }
+
     
 }

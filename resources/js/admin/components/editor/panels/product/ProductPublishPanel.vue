@@ -52,6 +52,29 @@
  </div>
  </div>
 
+ <!-- Catalog Visibility -->
+ <div class="space-y-2">
+ <div class="flex items-center justify-between">
+ <div class="flex items-center gap-2">
+ <span class="text-sm font-semibold text-admin-theme-text-secondary">{{ $t('Catalog Visibility') }}:</span>
+ <strong class="text-sm text-admin-theme-text">{{ catalogVisibilityLabel }}</strong>
+ </div>
+ <button type="button" class="text-xs font-semibold text-admin-theme-primary dark:text-admin-theme-primary hover:underline" @click="showCatalogEditor = !showCatalogEditor">
+ {{ $t('Edit') }}
+ </button>
+ </div>
+ <div v-if="showCatalogEditor" class="space-y-2 pt-2 border-t border-admin-theme-border">
+ <label class="flex items-center gap-2 text-xs text-admin-theme-text cursor-pointer">
+ <input type="radio" :value="'visible'" v-model="catalogVisibility" class="accent-admin-theme-primary" />
+ {{ $t('Visible — Show in shop, categories & search') }}
+ </label>
+ <label class="flex items-center gap-2 text-xs text-admin-theme-text cursor-pointer">
+ <input type="radio" :value="'hidden'" v-model="catalogVisibility" class="accent-admin-theme-primary" />
+ {{ $t('Hidden — Module/Add-on only (accessible via direct URL)') }}
+ </label>
+ </div>
+ </div>
+
  <!-- Meta Info -->
  <div class="space-y-1 py-3 border-y border-admin-theme-border">
  <div v-if="form.created_at" class="flex justify-between text-xs text-admin-theme-text-muted">
@@ -176,6 +199,22 @@ const scheduledLabel = computed(() => {
 });
 
 const isDraft = computed(() => form.value.status ==='draft');
+
+const showCatalogEditor = ref(false);
+const catalogVisibility = computed({
+ get() {
+  return form.value.settings?.catalog_visibility || 'visible';
+ },
+ set(val: string) {
+  if (!form.value.settings) form.value.settings = {};
+  form.value.settings.catalog_visibility = val === 'hidden' ? 'hidden' : undefined;
+ },
+});
+const catalogVisibilityLabel = computed(() => {
+ return catalogVisibility.value === 'hidden'
+  ? $t('Hidden (Module/Add-on)')
+  : $t('Visible');
+});
 
 const toggleStatus = () => {
  showStatusEditor.value = !showStatusEditor.value;
